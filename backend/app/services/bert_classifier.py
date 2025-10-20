@@ -1,5 +1,3 @@
-# app/services/bert_classifier.py
-
 """
 BERT-based LOTS/HOTS Classification Service
 Uses sentence embeddings and cosine similarity
@@ -15,112 +13,71 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.blooms_taxonomy import get_lots_keywords, get_hots_keywords
 
-# Load pre-trained BERT model (lightweight and fast)
-print("Loading BERT model...")
+# -----------------------------
+# Load BERT modelz
+# -----------------------------
 model = SentenceTransformer('all-MiniLM-L6-v2')
-print("BERT model loaded successfully!")
 
-# Generate reference embeddings at startup (do this once)
+# Precompute keyword embeddings
 LOTS_KEYWORDS = get_lots_keywords()
 HOTS_KEYWORDS = get_hots_keywords()
 
-print(f"Generating embeddings for {len(LOTS_KEYWORDS)} LOTS keywords...")
-lots_embeddings = model.encode(LOTS_KEYWORDS)
+lots_embeddings = model.encode(LOTS_KEYWORDS, convert_to_numpy=True)
+hots_embeddings = model.encode(HOTS_KEYWORDS, convert_to_numpy=True)
 
-print(f"Generating embeddings for {len(HOTS_KEYWORDS)} HOTS keywords...")
-hots_embeddings = model.encode(HOTS_KEYWORDS)
-
-print("✓ BERT classification ready!")
-
+# -----------------------------
+# Helper Functions
+# -----------------------------
 
 def classify_question(question_text):
     """
-    Classify a question as LOTS or HOTS using BERT embeddings
-    
-    Args:
-        question_text (str): The question to classify
-        
-    Returns:
-        tuple: (classification, confidence_score)
-        - classification: "LOTS" or "HOTS"
-        - confidence_score: float between 0 and 1
+    Classify a single question as LOTS or HOTS
+    Returns: (classification, confidence)
     """
-    
     if not question_text or not question_text.strip():
-        return "LOTS", 0.5  # Default for empty questions
-    
-    # Generate embedding for the question
-    question_embedding = model.encode([question_text])[0]
-    
-    # Compute average similarity with LOTS keywords
-    lots_similarities = cosine_similarity([question_embedding], lots_embeddings)
-    lots_score = np.mean(lots_similarities)
-    
-    # Compute average similarity with HOTS keywords
-    hots_similarities = cosine_similarity([question_embedding], hots_embeddings)
-    hots_score = np.mean(hots_similarities)
-    
-    # Determine classification based on higher score
+        return "LOTS", 0.5
+
+    question_embedding = model.encode([question_text], convert_to_numpy=True)[0]
+
+    lots_score = np.mean(cosine_similarity([question_embedding], lots_embeddings))
+    hots_score = np.mean(cosine_similarity([question_embedding], hots_embeddings))
+
     if hots_score > lots_score:
-        classification = "HOTS"
-        confidence = float(hots_score)
-    else:
-        classification = "LOTS"
-        confidence = float(lots_score)
-    
-    return classification, confidence
+        return "HOTS", float(hots_score)
+    return "LOTS", float(lots_score)
 
 
 def classify_multiple_questions(questions_list):
     """
-    Classify multiple questions at once (more efficient)
-    
-    Args:
-        questions_list (list): List of question strings
-        
-    Returns:
-        list: List of tuples [(classification, confidence), ...]
+    Classify multiple questions at once (vectorized for speed)
+    Returns: list of tuples [(classification, confidence), ...]
     """
-    
     if not questions_list:
         return []
-    
-    # Generate embeddings for all questions at once
-    question_embeddings = model.encode(questions_list)
-    
+
+    # Generate embeddings for all questions
+    question_embeddings = model.encode(questions_list, convert_to_numpy=True)
+
+    # Compute similarities in a vectorized way
+    lots_sim_matrix = cosine_similarity(question_embeddings, lots_embeddings)
+    hots_sim_matrix = cosine_similarity(question_embeddings, hots_embeddings)
+
+    lots_scores = np.mean(lots_sim_matrix, axis=1)
+    hots_scores = np.mean(hots_sim_matrix, axis=1)
+
     results = []
-    for question_embedding in question_embeddings:
-        # Compute similarities
-        lots_similarities = cosine_similarity([question_embedding], lots_embeddings)
-        lots_score = np.mean(lots_similarities)
-        
-        hots_similarities = cosine_similarity([question_embedding], hots_embeddings)
-        hots_score = np.mean(hots_similarities)
-        
-        # Determine classification
+    for lots_score, hots_score in zip(lots_scores, hots_scores):
         if hots_score > lots_score:
-            classification = "HOTS"
-            confidence = float(hots_score)
+            results.append(("HOTS", float(hots_score)))
         else:
-            classification = "LOTS"
-            confidence = float(lots_score)
-        
-        results.append((classification, confidence))
-    
+            results.append(("LOTS", float(lots_score)))
     return results
 
 
 def get_detailed_classification(question_text):
     """
-    Get detailed classification with scores for both categories
-    
-    Args:
-        question_text (str): The question to classify
-        
-    Returns:
-        dict: Detailed classification info
+    Returns detailed classification with scores for both categories
     """
-    
     if not question_text or not question_text.strip():
         return {
             "classification": "LOTS",
@@ -129,25 +86,15 @@ def get_detailed_classification(question_text):
             "hots_score": 0.5,
             "difference": 0.0
         }
-    
-    # Generate embedding
-    question_embedding = model.encode([question_text])[0]
-    
-    # Compute scores
-    lots_similarities = cosine_similarity([question_embedding], lots_embeddings)
-    lots_score = float(np.mean(lots_similarities))
-    
-    hots_similarities = cosine_similarity([question_embedding], hots_embeddings)
-    hots_score = float(np.mean(hots_similarities))
-    
-    # Determine classification
-    if hots_score > lots_score:
-        classification = "HOTS"
-        confidence = hots_score
-    else:
-        classification = "LOTS"
-        confidence = lots_score
-    
+
+    question_embedding = model.encode([question_text], convert_to_numpy=True)[0]
+
+    lots_score = float(np.mean(cosine_similarity([question_embedding], lots_embeddings)))
+    hots_score = float(np.mean(cosine_similarity([question_embedding], hots_embeddings)))
+
+    classification = "HOTS" if hots_score > lots_score else "LOTS"
+    confidence = max(lots_score, hots_score)
+
     return {
         "classification": classification,
         "confidence": confidence,
@@ -157,9 +104,10 @@ def get_detailed_classification(question_text):
     }
 
 
-# Test the classifier when module is run directly
+# -----------------------------
+# Test block
+# -----------------------------
 if __name__ == "__main__":
-    # Test questions
     test_questions = [
         "What is the capital of France?",  # LOTS - Remember
         "Compare and contrast the French and American revolutions.",  # HOTS - Analyze
@@ -167,11 +115,7 @@ if __name__ == "__main__":
         "Design an experiment to test the effects of temperature on plant growth.",  # HOTS - Create
         "Calculate the area of a rectangle with length 5 and width 3.",  # LOTS - Apply
     ]
-    
-    print("\n" + "="*60)
-    print("TESTING BERT CLASSIFIER")
-    print("="*60)
-    
+
     for i, question in enumerate(test_questions, 1):
         result = get_detailed_classification(question)
         print(f"\n{i}. {question}")

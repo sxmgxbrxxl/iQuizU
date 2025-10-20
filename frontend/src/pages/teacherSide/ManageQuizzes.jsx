@@ -1,12 +1,13 @@
-
-import { useState } from "react";
-import { FileUp, Edit3, Settings, Send, PlusCircle, X, Loader2, CheckCircle, Trash2, Brain } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { FileUp, Edit3, Settings, Send, PlusCircle, X, Loader2, CheckCircle, Trash2, Brain, Users } from "lucide-react";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
+import { db, auth } from "../../firebase/firebaseConfig";
 
 export default function ManageQuizzes() {
-  const [quizzes, setQuizzes] = useState([
-    { id: 1, title: "Midterm Quiz", mode: "Synchronous", code: "QZ1234" },
-    { id: 2, title: "Pre-Final Assessment", mode: "Asynchronous", code: "QZ5678" },
-  ]);
+  const navigate = useNavigate();
+  const [publishedQuizzes, setPublishedQuizzes] = useState([]);
+  const [loadingQuizzes, setLoadingQuizzes] = useState(true);
 
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -21,6 +22,65 @@ export default function ManageQuizzes() {
   const [editedTitle, setEditedTitle] = useState("");
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [publishing, setPublishing] = useState(false);
+
+  // Fetch quizzes from Firestore on component mount
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        fetchQuizzes();
+      } else {
+        setLoadingQuizzes(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchQuizzes = async () => {
+    setLoadingQuizzes(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.log("No user logged in");
+        setLoadingQuizzes(false);
+        return;
+      }
+
+      console.log("Fetching quizzes for teacher:", user.uid);
+
+      // IMPORTANT: Filter by teacherId just like ManageClasses
+      // Note: If you get an index error, remove orderBy temporarily
+      // or create a composite index in Firebase Console
+      const q = query(
+        collection(db, "quizzes"),
+        where("teacherId", "==", user.uid)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      const quizzes = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        quizzes.push({
+          id: doc.id,
+          title: data.title,
+          mode: data.mode || "Published",
+          code: data.code,
+          totalPoints: data.totalPoints,
+          questionCount: data.questions?.length || 0
+        });
+      });
+      
+      console.log(`Found ${quizzes.length} quizzes for this teacher`);
+      setPublishedQuizzes(quizzes);
+    } catch (error) {
+      console.error("Error fetching quizzes:", error);
+      alert("Error loading quizzes. Please refresh the page.");
+    } finally {
+      setLoadingQuizzes(false);
+    }
+  };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -200,22 +260,61 @@ export default function ManageQuizzes() {
     return grouped;
   };
 
-  const handleSaveQuiz = () => {
-    if (generatedQuiz) {
-      const newQuiz = {
-        id: quizzes.length + 1,
+  const handleSaveQuiz = async () => {
+    if (!generatedQuiz) return;
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert("❌ Please log in first!");
+      return;
+    }
+
+    setPublishing(true);
+
+    try {
+      const quizCode = `QZ${Math.floor(1000 + Math.random() * 9000)}`;
+      const totalPoints = generatedQuiz.questions.reduce((sum, q) => sum + q.points, 0);
+      const teacherName = user.displayName || user.email?.split('@')[0] || "Teacher";
+
+      const quizData = {
         title: generatedQuiz.title,
+        code: quizCode,
         mode: "Published",
-        code: `QZ${Math.floor(1000 + Math.random() * 9000)}`
+        questions: generatedQuiz.questions,
+        totalPoints: totalPoints,
+        classificationStats: generatedQuiz.classification_stats || {
+          hots_count: generatedQuiz.questions.filter(q => q.bloom_classification === "HOTS").length,
+          lots_count: generatedQuiz.questions.filter(q => q.bloom_classification === "LOTS").length,
+          hots_percentage: ((generatedQuiz.questions.filter(q => q.bloom_classification === "HOTS").length / generatedQuiz.questions.length) * 100).toFixed(1),
+          lots_percentage: ((generatedQuiz.questions.filter(q => q.bloom_classification === "LOTS").length / generatedQuiz.questions.length) * 100).toFixed(1)
+        },
+        // CRITICAL: Save teacher information
+        teacherId: user.uid,
+        teacherEmail: user.email,
+        teacherName: teacherName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        status: "published"
       };
-      setQuizzes([...quizzes, newQuiz]);
+
+      console.log("Publishing quiz with teacherId:", user.uid);
+
+      await addDoc(collection(db, "quizzes"), quizData);
+
       setShowPreviewModal(false);
       setGeneratedQuiz(null);
-      alert("Quiz published successfully!");
+      
+      await fetchQuizzes();
+      
+      alert("✅ Quiz published successfully!");
+    } catch (error) {
+      console.error("Error publishing quiz:", error);
+      alert("❌ Error publishing quiz. Please try again.");
+    } finally {
+      setPublishing(false);
     }
   };
 
-  // Helper function to get badge color
   const getClassificationBadge = (classification, confidence) => {
     const isHOTS = classification === "HOTS";
     const bgColor = isHOTS ? "bg-purple-100" : "bg-blue-100";
@@ -242,7 +341,6 @@ export default function ManageQuizzes() {
         📝 Manage Quizzes
       </h2>
 
-      {/* Create Quiz Options */}
       <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-8">
         <h3 className="text-lg font-semibold mb-3">Create New Quiz</h3>
         <div className="flex flex-wrap gap-4">
@@ -258,36 +356,56 @@ export default function ManageQuizzes() {
         </div>
       </div>
 
-      {/* Quiz Library */}
       <div>
-        <h3 className="text-xl font-semibold mb-4">Quiz Library</h3>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {quizzes.map((quiz) => (
-            <div
-              key={quiz.id}
-              className="border rounded-xl p-5 shadow-sm hover:shadow-md transition bg-yellow-50"
-            >
-              <h4 className="text-lg font-bold text-gray-800">{quiz.title}</h4>
-              <p className="text-gray-600 text-sm">Mode: {quiz.mode}</p>
-              <p className="text-gray-500 text-sm">Code: {quiz.code}</p>
+        <h3 className="text-xl font-semibold mb-4">Your Published Quizzes</h3>
+        {loadingQuizzes ? (
+          <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600">Loading your quizzes...</span>
+          </div>
+        ) : publishedQuizzes.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+            <p className="text-gray-500 text-lg">No published quizzes yet</p>
+            <p className="text-gray-400 text-sm mt-2">Create and publish a quiz to see it here</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {publishedQuizzes.map((quiz) => (
+              <div
+                key={quiz.id}
+                className="border rounded-xl p-5 shadow-sm hover:shadow-md transition bg-green-50"
+              >
+                <h4 className="text-lg font-bold text-gray-800">{quiz.title}</h4>
+                <p className="text-gray-600 text-sm">Code: {quiz.code}</p>
+                <p className="text-gray-500 text-sm">Questions: {quiz.questionCount}</p>
+                <p className="text-gray-500 text-sm">Total Points: {quiz.totalPoints}</p>
 
-              <div className="flex justify-between items-center mt-4">
-                <button className="text-blue-600 font-semibold hover:underline flex items-center gap-1">
-                  <Edit3 className="w-4 h-4" /> Edit
-                </button>
-                <button className="text-gray-700 font-semibold hover:underline flex items-center gap-1">
-                  <Settings className="w-4 h-4" /> Settings
-                </button>
-                <button className="text-green-600 font-semibold hover:underline flex items-center gap-1">
-                  <Send className="w-4 h-4" /> Publish
-                </button>
+                <div className="flex justify-between items-center mt-4">
+                  <button 
+                    onClick={() => navigate(`/teacher/edit-quiz/${quiz.id}`)}
+                    className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <Edit3 className="w-4 h-4" /> Edit
+                  </button>
+                  <button 
+                    onClick={() => navigate(`/teacher/quiz-settings/${quiz.id}`)}
+                    className="text-gray-700 font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <Settings className="w-4 h-4" /> Settings
+                  </button>
+                  <button 
+                    onClick={() => navigate(`/teacher/assign-quiz/${quiz.id}`)}
+                    className="text-purple-600 font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <Users className="w-4 h-4" /> Assign
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* PDF Upload Modal */}
       {showPdfModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
@@ -375,11 +493,9 @@ export default function ManageQuizzes() {
         </div>
       )}
 
-      {/* Full-Screen Quiz Preview/Edit Modal */}
       {showPreviewModal && generatedQuiz && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
-            {/* Header */}
             <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-t-2xl">
               <div className="flex-1">
                 {isEditingTitle ? (
@@ -443,7 +559,6 @@ export default function ManageQuizzes() {
               </button>
             </div>
 
-            {/* Questions List - Grouped by Type */}
             <div className="flex-1 overflow-y-auto p-6">
               {(() => {
                 const grouped = groupQuestionsByType(generatedQuiz.questions);
@@ -460,7 +575,6 @@ export default function ManageQuizzes() {
                       
                       return (
                         <div key={type} className="space-y-4">
-                          {/* Category Header */}
                           <div className="flex items-center justify-between border-b-2 border-blue-600 pb-2">
                             <h4 className="text-xl font-bold text-blue-700 flex items-center gap-2">
                               📋 {typeLabels[type]}
@@ -476,7 +590,6 @@ export default function ManageQuizzes() {
                             </button>
                           </div>
 
-                          {/* Questions in Category */}
                           <div className="space-y-4">
                             {questions.map((q) => {
                               const isEditing = editingQuestion === q.originalIndex;
@@ -484,7 +597,6 @@ export default function ManageQuizzes() {
                               return (
                                 <div key={q.originalIndex} className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200 hover:border-blue-300 transition">
                                   {isEditing ? (
-                                    /* Edit Mode */
                                     <div className="space-y-4">
                                       <div>
                                         <label className="block text-sm font-semibold mb-2">Question</label>
@@ -626,7 +738,6 @@ export default function ManageQuizzes() {
                                       </div>
                                     </div>
                                   ) : (
-                                    /* View Mode */
                                     <>
                                       <div className="flex items-start gap-3 mb-4">
                                         <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
@@ -717,10 +828,20 @@ export default function ManageQuizzes() {
               </button>
               <button
                 onClick={handleSaveQuiz}
-                className="flex-1 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
+                disabled={publishing}
+                className="flex-1 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 disabled:bg-gray-400"
               >
-                <CheckCircle className="w-5 h-5" />
-                Publish Quiz
+                {publishing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    Publish Quiz
+                  </>
+                )}
               </button>
             </div>
           </div>

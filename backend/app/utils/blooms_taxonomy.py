@@ -1,5 +1,3 @@
-# app/utils/blooms_taxonomy.py
-
 """
 Bloom's Taxonomy keyword definitions for LOTS/HOTS classification
 """

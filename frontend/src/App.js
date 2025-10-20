@@ -13,10 +13,17 @@ import LandingPage from "./pages/general/LandingPage";
 import LoginPage from "./pages/studentSide/LoginPage";
 import SignUpPage from "./pages/studentSide/SignUpPage";
 import StudentDashboard from "./pages/studentSide/StudentDashboard";
+import TakeQuiz from "./pages/studentSide/TakeQuiz";
 import TeacherDashboard from "./pages/teacherSide/TeacherDashboard";
 import ManageClasses from "./pages/teacherSide/ManageClasses";
 import ManageQuizzes from "./pages/teacherSide/ManageQuizzes";
 import ReportsAnalytics from "./pages/teacherSide/ReportsAnalytics";
+
+// QUIZ MANAGEMENT IMPORTS
+import EditQuiz from "./pages/teacherSide/EditQuiz";
+import QuizSettings from "./pages/teacherSide/QuizSettings";
+import AssignQuiz from "./pages/teacherSide/AssignQuiz";
+import QuizControlPanel from "./pages/teacherSide/QuizControlPanel";
 
 import AdminHomePage from "./pages/adminSide/AdminHomePage";
 
@@ -124,6 +131,18 @@ function App() {
           }
         />
 
+        {/* STUDENT TAKE QUIZ */}
+        <Route
+          path="/student/take-quiz/:quizCode"
+          element={
+            authUser && role === "student" ? (
+              <TakeQuiz user={authUser} userDoc={userDoc} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
         {/* TEACHER DASHBOARD */}
         <Route
           path="/teacher"
@@ -138,6 +157,14 @@ function App() {
           <Route path="classes" element={<ManageClasses />} />
           <Route path="quizzes" element={<ManageQuizzes />} />
           <Route path="reports" element={<ReportsAnalytics />} />
+          
+          {/* QUIZ MANAGEMENT ROUTES */}
+          <Route path="edit-quiz/:quizId" element={<EditQuiz />} />
+          <Route path="quiz-settings/:quizId" element={<QuizSettings />} />
+          <Route path="assign-quiz/:quizId" element={<AssignQuiz />} />
+          
+          {/* SYNCHRONOUS QUIZ CONTROL PANEL */}
+          <Route path="quiz-control/:quizId/:classId" element={<QuizControlPanel />} />
         </Route>
 
         {/* ADMIN */}
