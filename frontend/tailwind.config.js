@@ -4,14 +4,28 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#EFEFEF",
+        background: "#D7D4DB",
         components: "#FFFFFF",
-        button: "#D9D9D9",
-        stroke: "#9F9B9B",
+        button: "#3B693B",
+        buttonHover: "#335C33",
+        stroke: "#79827F",
+        title: "#333333",
         subtext: "#5C5C5C",
+        subsubtext: "#7A7A7A",
+        accent: "#1D9F1D",
+        accentHover: "#178717",
       },
       fontFamily: {
         Outfit: "Outfit",
+      },
+      keyframes: {
+        slideDown: {
+          from: { opacity: "0", transform: "translateY(-10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        slideDown: "slideDown 0.3s ease-out",
       },
     },
   },

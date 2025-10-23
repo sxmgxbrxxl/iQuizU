@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { ChevronLeft } from "lucide-react";
 
 export default function LoginPage() {
   const [loginInput, setLoginInput] = useState("");
@@ -176,17 +177,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative h-screen w-full flex items-center justify-center font-Quizzard bg-gradient-to-br from-secondary to-primary">
+    <div className="bg-background relative h-screen w-full flex items-center justify-center font-Outfit">
       {/* Back button */}
       <Link
         to="/"
-        className="absolute top-10 left-10 text-black bg-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 font-bold"
+        className="flex flex-row items-center justify-center absolute top-10 left-10 text-black bg-components px-6 py-4 rounded-full shadow-md hover:shadow-lg transition-shadow duration-200 font-bold"
       >
+        <ChevronLeft className="w-5 h-5 mr-2"/>
         Back
       </Link>
 
       {/* Login Card */}
-      <div className="bg-white p-10 rounded-xl shadow-lg w-96">
+      <div className="bg-components p-10 rounded-3xl shadow-lg w-96">
         <form onSubmit={handleSubmit}>
           <h2 className="text-2xl font-bold mb-6 text-center">Log In to Quizzard</h2>
 
@@ -252,7 +254,7 @@ export default function LoginPage() {
 
           {/* Submit Button */}
           <button
-            className="w-full bg-primary text-white py-2 rounded-lg hover:bg-secondary transition-colors duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full bg-button text-white py-2 rounded-lg hover:bg-secondary transition-colors duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             type="submit"
             disabled={loading}
           >

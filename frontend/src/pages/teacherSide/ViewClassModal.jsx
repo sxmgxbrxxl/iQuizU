@@ -14,7 +14,7 @@ export default function ViewClassModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
-        <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
+        <div className="bg-green-600 text-white p-6 flex justify-between items-center">
           <div>
             <h3 className="text-2xl font-bold">{classData?.name || "Loading..."}</h3>
             <p className="text-blue-100 text-sm">
@@ -23,7 +23,7 @@ export default function ViewClassModal({
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-blue-700 rounded-lg p-2 transition"
+            className="text-white hover:bg-green-700 rounded-lg p-2 transition"
           >
             <X className="w-6 h-6" />
           </button>
@@ -32,10 +32,10 @@ export default function ViewClassModal({
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-green-600" />
             </div>
           ) : students.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-subtext">
               <p>No students found in this class.</p>
             </div>
           ) : (
@@ -107,14 +107,14 @@ export default function ViewClassModal({
         <div className="border-t border-gray-200 p-4 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold"
+            className="px-4 py-2 border border-gray-300 text-subtext rounded-lg hover:bg-gray-50 transition font-semibold"
           >
             Close
           </button>
           <button
             onClick={onCreateAccounts}
             disabled={creatingAccounts || students.every(s => s.hasAccount)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-button text-white rounded-lg hover:bg-buttonHover transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creatingAccounts ? (
               <>

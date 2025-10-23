@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileUp, Edit3, Settings, Send, PlusCircle, X, Loader2, CheckCircle, Trash2, Brain, Users } from "lucide-react";
+import { FileUp, Pen, Settings, Send, PlusCircle, X, Loader2, CheckCircle, Trash2, Brain, Users, NotebookPen } from "lucide-react";
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
 
@@ -336,13 +336,16 @@ export default function ManageQuizzes() {
   };
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        📝 Manage Quizzes
+    <div className="p-8 font-Outfit">
+      <div className="flex flex-row gap-3">
+        <NotebookPen className="w-8 h-8 text-accent mb-2"/>
+      <h2 className="text-2xl font-bold text-title mb-6 flex items-center gap-2">
+        Manage Quizzes
       </h2>
+      </div>
 
-      <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-8">
-        <h3 className="text-lg font-semibold mb-3">Create New Quiz</h3>
+      <div className="bg-green-50 p-6 rounded-xl border border-green-200 mb-8">
+        <h3 className="text-lg text-title font-semibold mb-3">Create New Quiz</h3>
         <div className="flex flex-wrap gap-4">
           <button
             onClick={() => setShowPdfModal(true)}
@@ -357,10 +360,10 @@ export default function ManageQuizzes() {
       </div>
 
       <div>
-        <h3 className="text-xl font-semibold mb-4">Your Published Quizzes</h3>
+        <h3 className="text-xl text-title font-semibold mb-4">Your Published Quizzes</h3>
         {loadingQuizzes ? (
           <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-accent" />
             <span className="ml-3 text-gray-600">Loading your quizzes...</span>
           </div>
         ) : publishedQuizzes.length === 0 ? (
@@ -375,8 +378,8 @@ export default function ManageQuizzes() {
                 key={quiz.id}
                 className="border rounded-xl p-5 shadow-sm hover:shadow-md transition bg-green-50"
               >
-                <h4 className="text-lg font-bold text-gray-800">{quiz.title}</h4>
-                <p className="text-gray-600 text-sm">Code: {quiz.code}</p>
+                <h4 className="text-lg font-bold text-title">{quiz.title}</h4>
+                <p className="text-subtext text-sm">Code: {quiz.code}</p>
                 <p className="text-gray-500 text-sm">Questions: {quiz.questionCount}</p>
                 <p className="text-gray-500 text-sm">Total Points: {quiz.totalPoints}</p>
 
@@ -385,7 +388,7 @@ export default function ManageQuizzes() {
                     onClick={() => navigate(`/teacher/edit-quiz/${quiz.id}`)}
                     className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
                   >
-                    <Edit3 className="w-4 h-4" /> Edit
+                    <Pen className="w-4 h-4" /> Edit
                   </button>
                   <button 
                     onClick={() => navigate(`/teacher/quiz-settings/${quiz.id}`)}
@@ -410,7 +413,7 @@ export default function ManageQuizzes() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Generate Quiz from PDF</h3>
+              <h3 className="text-xl font-bold text-title">Generate Quiz from PDF</h3>
               <button onClick={closePdfModal} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
@@ -418,18 +421,18 @@ export default function ManageQuizzes() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-2">Quiz Title</label>
+                <label className="block text-title text-sm font-semibold mb-2">Quiz Title</label>
                 <input
                   type="text"
                   value={quizTitle}
                   onChange={(e) => setQuizTitle(e.target.value)}
                   placeholder="e.g., Midterm Exam"
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2">Upload PDF</label>
+                <label className="block text-sm font-semibold mb-2 ">Upload PDF</label>
                 <input
                   type="file"
                   accept=".pdf"
@@ -437,7 +440,7 @@ export default function ManageQuizzes() {
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 {selectedFile && (
-                  <p className="text-sm text-green-600 mt-2">Selected: {selectedFile.name}</p>
+                  <p className="text-sm text-accent mt-2">Selected: {selectedFile.name}</p>
                 )}
               </div>
 
@@ -477,7 +480,7 @@ export default function ManageQuizzes() {
               <button
                 onClick={handleGenerateQuiz}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400 flex items-center justify-center gap-2"
+                className="w-full bg-button text-white py-3 rounded-lg font-semibold hover:bg-buttonHover transition disabled:bg-gray-400 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -546,7 +549,7 @@ export default function ManageQuizzes() {
                       onClick={handleTitleEdit}
                       className="bg-blue-800 hover:bg-blue-900 rounded-lg px-3 py-1 text-sm flex items-center gap-1 ml-auto"
                     >
-                      <Edit3 className="w-4 h-4" /> Edit
+                      <Pen className="w-4 h-4" /> Edit
                     </button>
                   </div>
                 )}
@@ -756,7 +759,7 @@ export default function ManageQuizzes() {
                                               onClick={() => handleQuestionEdit(q.originalIndex, q)}
                                               className="ml-auto text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm"
                                             >
-                                              <Edit3 className="w-4 h-4" /> Edit
+                                              <Pen className="w-4 h-4" /> Edit
                                             </button>
                                           </div>
                                           <p className="text-lg font-semibold text-gray-800">{q.question}</p>

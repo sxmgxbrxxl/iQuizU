@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import LU from "../assets/LU.svg";
 import {
   Menu,
   X,
@@ -49,7 +50,7 @@ export default function Sidebar() {
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 bg-white text-gray-700 p-2.5 rounded-xl shadow-lg hover:bg-gray-50 transition-all lg:hidden border border-gray-200 hover:scale-105"
+        className="fixed top-6 left-6 z-50 bg-components text-black p-3 rounded-full shadow-md hover:bg-gray-50 transition-all lg:hidden border border-gray-100 hover:scale-105"
         aria-label="Toggle menu"
       >
         {isOpen ? <X size={22} /> : <Menu size={22} />}
@@ -64,14 +65,14 @@ export default function Sidebar() {
         w-72`}
       >
         {/* Header */}
-        <div className="relative p-6 bg-gradient-to-r from-blue-800/50 to-indigo-800/50 backdrop-blur-sm">
+        <div className="relative p-6 bg-gradient-to-r from-blue-800/50 to-indigo-800/50 backdrop-blur-sm font-Outfit">
           <div
             className={`flex items-center ${
               isCollapsed ? "justify-center" : "gap-3"
             } transition-all duration-300`}
           >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
-              <span className="text-2xl">📚</span>
+            <div className="w-10 h-10 flex items-center justify-center transform hover:scale-110 transition-transform">
+              <img src={LU} alt="Logo" className="w-12 h-12" />
             </div>
             <h1
               className={`text-2xl font-bold text-white transition-all duration-300 ${
@@ -87,7 +88,7 @@ export default function Sidebar() {
           {/* Desktop Collapse Toggle */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full items-center justify-center shadow-lg hover:bg-blue-50 transition-all hover:scale-110 border-2 border-blue-600"
+            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full items-center justify-center shadow-md hover:bg-blue-50 transition-all hover:scale-110 border-2 border-blue-600"
             aria-label="Toggle sidebar"
           >
             {isCollapsed ? (
@@ -114,7 +115,7 @@ export default function Sidebar() {
                 <item.icon size={20} className="text-white" />
               </div>
               <span
-                className={`relative font-medium text-base transition-all duration-300 ${
+                className={`relative font-Outfit font-medium text-base transition-all duration-300 ${
                   isCollapsed
                     ? "opacity-0 w-0 overflow-hidden"
                     : "opacity-100"
@@ -126,7 +127,7 @@ export default function Sidebar() {
           ))}
 
           {/* Divider */}
-          <div className="pt-4 pb-2">
+          <div className="pt-4 pb-2 rounded-full">
             <div className="border-t border-white/20"></div>
           </div>
 
@@ -145,7 +146,7 @@ export default function Sidebar() {
               <LogOut size={20} className="text-white" />
             </div>
             <span
-              className={`relative font-medium text-base transition-all duration-300 ${
+              className={`relative font-Outfit font-medium text-base transition-all duration-300 ${
                 isCollapsed
                   ? "opacity-0 w-0 overflow-hidden"
                   : "opacity-100"
@@ -158,7 +159,7 @@ export default function Sidebar() {
 
         {/* User Profile Section */}
         <div
-          className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-r from-blue-900/50 to-indigo-900/50 backdrop-blur-sm border-t border-white/10 transition-all duration-300 ${
+          className={`absolute font-Outfit bottom-0 left-0 right-0 p-4 bg-gradient-to-r from-blue-900/50 to-indigo-900/50 backdrop-blur-sm border-t border-white/10 transition-all duration-300 ${
             isCollapsed ? "items-center justify-center" : ""
           }`}
         >
@@ -186,13 +187,13 @@ export default function Sidebar() {
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 lg:hidden transition-opacity"
         />
       )}
 
       {/* ✅ Logout Confirmation Modal */}
       {showConfirm && ( 
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm font-Outfit">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 text-center animate-fade-in">
             <h2 className="text-lg font-semibold text-gray-800 mb-3">
               Are you sure you want to logout?

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Upload, Loader2, Eye } from "lucide-react";
+import { Upload, Loader2, Eye, School, Trash } from "lucide-react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { auth, db } from "../../firebase/firebaseConfig";
@@ -558,16 +558,20 @@ export default function ManageClasses() {
   };
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        🏫 Manage Classes
-      </h2>
+    <div className="p-8 font-Outfit">
+      <div className="flex flex-row gap-3">
+        <School className="w-8 h-8 text-accent mb-2" />
+        <h2 className="text-2xl font-bold text-title mb-6 flex items-center gap-2">
+          Manage Classes
+        </h2>
+      </div>
+      
 
-      <div className="border-2 border-dashed border-gray-300 rounded-xl p-6">
+      <div className="border-2 border-dashed border-gray-300 rounded-3xl p-10">
         <div className="text-center">
           <Upload className="mx-auto text-gray-400 w-10 h-10 mb-3" />
-          <p className="text-gray-600 mb-3">Upload your classlist (.csv or .xlsx)</p>
-          <p className="text-sm text-gray-500 mb-3">
+          <p className="text-subtext mb-3">Upload your classlist (.csv or .xlsx)</p>
+          <p className="text-sm text-subtext mb-3">
             Required columns: No, Student No., Name, Gender, Program, Year, Email Address, Contact No.
           </p>
 
@@ -582,7 +586,7 @@ export default function ManageClasses() {
           
           <label
             htmlFor="file-upload"
-            className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg cursor-pointer hover:bg-blue-700 transition disabled:opacity-50"
+            className="inline-block px-6 py-3 bg-button text-white font-semibold rounded-lg cursor-pointer hover:bg-buttonHover transition disabled:opacity-50"
           >
             {uploading ? (
               <span className="flex items-center gap-2">
@@ -595,11 +599,11 @@ export default function ManageClasses() {
           </label>
 
           {fileName && !uploading && !showClassNameModal && (
-            <p className="text-sm text-gray-500 italic mt-3">Selected: {fileName}</p>
+            <p className="text-sm text-subtext italic mt-3">Selected: {fileName}</p>
           )}
 
           {uploadProgress && uploading && (
-            <p className="text-sm text-blue-600 font-medium mt-3">
+            <p className="text-sm text-accent font-medium mt-3">
               {uploadProgress}
             </p>
           )}
@@ -615,7 +619,7 @@ export default function ManageClasses() {
 
         {uploadCount > 0 && !uploading && !errorMessage && (
           <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-700 font-semibold text-center">
+            <p className="text-accent font-semibold text-center">
               ✅ Successfully uploaded {uploadCount} student(s)!
             </p>
           </div>
@@ -623,14 +627,14 @@ export default function ManageClasses() {
       </div>
 
       <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4">Your Classes</h3>
+        <h3 className="text-xl text-title font-semibold mb-4">Your Classes</h3>
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
         ) : classes.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-subtext">
             <p>No classes uploaded yet. Upload a file to get started.</p>
           </div>
         ) : (
@@ -638,27 +642,30 @@ export default function ManageClasses() {
             {classes.map((cls) => (
               <div
                 key={cls.id}
-                className="border rounded-xl p-5 shadow-sm hover:shadow-md transition bg-blue-50"
+                className="border rounded-xl p-5 shadow-sm hover:shadow-md transition bg-green-50"
               >
-                <h4 className="text-lg font-bold text-gray-800">{cls.name}</h4>
-                {cls.subject && <p className="text-gray-600">{cls.subject}</p>}
-                <p className="text-sm text-gray-500">{cls.studentCount} students</p>
-                <p className="text-xs text-gray-400">Teacher: {cls.teacherName}</p>
-                <p className="text-xs text-gray-400 mt-1">
+                <h4 className="text-lg font-bold text-title">{cls.name}</h4>
+                {cls.subject && <p className="text-subtext">{cls.subject}</p>}
+                <p className="text-sm text-subtext mb-2">
+                  {cls.studentCount} students</p>
+                <p className="text-xs text-subsubtext">
+                  Teacher: {cls.teacherName}</p>
+                <p className="text-xs text-subsubtext">
                   Uploaded: {cls.uploadedAt?.toDate().toLocaleDateString()}
                 </p>
                 <div className="mt-3 flex justify-between">
                   <button 
-                    className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
+                    className="text-button font-semibold hover:underline flex items-center gap-1"
                     onClick={() => handleViewClass(cls)}
                   >
                     <Eye className="w-4 h-4" />
                     View
                   </button>
                   <button 
-                    className="text-red-500 hover:underline font-semibold"
+                    className="text-red-500 hover:underline font-semibold flex items-center gap-1"
                     onClick={() => handleRemoveClass(cls.id)}
                   >
+                    <Trash className="w-4 h-4" />
                     Remove
                   </button>
                 </div>

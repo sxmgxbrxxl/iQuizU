@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
-import { ArrowLeft, Save, Edit3, Trash2, PlusCircle, X, CheckCircle } from "lucide-react";
+import { ArrowLeft, Save, Edit3, Trash2, PlusCircle, X, CheckCircle, Loader2, BadgeQuestionMark, CircleStar, Copy } from "lucide-react";
 
 export default function EditQuiz() {
   const { quizId } = useParams();
@@ -199,9 +199,9 @@ export default function EditQuiz() {
 
   if (loading) {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-md">
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-8 font-Outfit">
+        <div className="flex items-center justify-center">
+          <Loader2 className="animate-spin rounded-full h-5 w-5 text-accent"/>
           <span className="ml-3 text-gray-600">Loading quiz...</span>
         </div>
       </div>
@@ -220,12 +220,12 @@ export default function EditQuiz() {
   };
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-md">
+    <div className="p-8 font-Outfit">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => navigate("/teacher/quizzes")}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+          className="flex items-center gap-2 text-subtext hover:text-subsubtext"
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Manage Quizzes
@@ -233,25 +233,25 @@ export default function EditQuiz() {
       </div>
 
       {/* Title Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-6 rounded-xl mb-6">
+      <div className="bg-gradient-to-r from-green-600 to-green-300 text-white p-6 rounded-3xl mb-6">
         {isEditingTitle ? (
           <div className="flex items-center gap-2">
             <input
               type="text"
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
-              className="text-2xl font-bold bg-white text-gray-800 px-3 py-2 rounded flex-1"
+              className="text-2xl font-bold bg-white text-gray-800 px-3 py-2 mr-2 rounded-xl flex-1"
               autoFocus
             />
             <button
               onClick={handleTitleSave}
-              className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded"
+              className="bg-accent hover:bg-accentHover px-4 py-2 rounded-xl"
             >
               Save
             </button>
             <button
               onClick={() => setIsEditingTitle(false)}
-              className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded"
+              className="bg-subtext hover:bg-subsubtext px-4 py-2 rounded-xl"
             >
               Cancel
             </button>
@@ -260,15 +260,15 @@ export default function EditQuiz() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold">{quiz.title}</h2>
-              <div className="flex items-center gap-4 text-sm text-blue-100 mt-2">
-                <span>📝 {quiz.questions.length} questions</span>
-                <span>• {quiz.totalPoints} points</span>
-                <span>Code: {quiz.code}</span>
+              <div className="flex items-center gap-6 text-sm text-white mt-2">
+                <span className="flex flex-row gap-1 items-center"><BadgeQuestionMark className="w-4 h-4"/> {quiz.questions.length} questions</span>
+                <span className="flex flex-row gap-1 items-center"><CircleStar className="w-4 h-4"/> {quiz.totalPoints} points</span>
+                <span className="flex flex-row gap-4">Code: {quiz.code} <Copy className="w-4 h-4 cursor-pointer"/></span>
               </div>
             </div>
             <button
               onClick={handleTitleEdit}
-              className="bg-blue-800 hover:bg-blue-900 rounded-lg px-4 py-2 flex items-center gap-2"
+              className="bg-accent hover:bg-accentHover rounded-lg px-4 py-2 flex items-center gap-2"
             >
               <Edit3 className="w-4 h-4" /> Edit Title
             </button>
@@ -283,16 +283,16 @@ export default function EditQuiz() {
           
           return (
             <div key={type} className="space-y-4">
-              <div className="flex items-center justify-between border-b-2 border-blue-600 pb-2">
-                <h3 className="text-xl font-bold text-blue-700 flex items-center gap-2">
-                  📋 {typeLabels[type]}
-                  <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+              <div className="flex items-center justify-between border-b-2 border-accent pb-6">
+                <h3 className="text-xl font-bold text-title flex items-center gap-2">
+                  {typeLabels[type]}
+                  <span className="text-sm bg-green-100 text-accent px-2 py-1 rounded-full">
                     {questions.length} {questions.length === 1 ? 'question' : 'questions'}
                   </span>
                 </h3>
                 <button
                   onClick={() => handleAddQuestion(type)}
-                  className="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
+                  className="flex items-center gap-1 bg-accent text-white px-3 py-2 rounded-lg hover:bg-accentHover transition text-sm"
                 >
                   <PlusCircle className="w-4 h-4" /> Add Question
                 </button>
@@ -302,7 +302,7 @@ export default function EditQuiz() {
                 {questions.map((q) => {
                   const isEditing = editingQuestion === q.originalIndex;
 
-                  return (
+                  return (  
                     <div key={q.originalIndex} className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
                       {isEditing ? (
                         <div className="space-y-4">
