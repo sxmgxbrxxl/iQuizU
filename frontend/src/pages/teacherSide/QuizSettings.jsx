@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+ } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import {
   ArrowLeft,
@@ -16,6 +24,8 @@ import {
 export default function QuizSettings() {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const assignmentData = location.state;
 
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +46,7 @@ export default function QuizSettings() {
     status: "published",
   });
 
+  // ✅ Fetch quiz on mount
   useEffect(() => {
     fetchQuiz();
   }, [quizId]);
@@ -49,8 +60,20 @@ export default function QuizSettings() {
         const data = docSnap.data();
         setQuiz({ id: docSnap.id, ...data });
 
-        if (data.settings) {
-          setSettings((prev) => ({ ...prev, ...data.settings }));
+        // ✅ Check if coming from assignment
+        if (assignmentData?.fromAssignment) {
+          // Use assignment-specific settings
+          setSettings((prev) => ({
+            ...prev,
+            mode: assignmentData.mode || "asynchronous",
+            deadline: assignmentData.dueDate || "",
+            ...(data.settings || {}), // Merge with quiz settings
+          }));
+        } else {
+          // Use default quiz settings
+          if (data.settings) {
+            setSettings((prev) => ({ ...prev, ...data.settings }));
+          }
         }
       } else {
         alert("Quiz not found!");
@@ -59,6 +82,7 @@ export default function QuizSettings() {
     } catch (error) {
       console.error("Error fetching quiz:", error);
       alert("Error loading quiz.");
+      navigate("/teacher/quizzes");
     } finally {
       setLoading(false);
     }
@@ -67,13 +91,37 @@ export default function QuizSettings() {
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      const docRef = doc(db, "quizzes", quizId);
-      await updateDoc(docRef, {
-        settings: settings,
-        updatedAt: new Date(),
-      });
-
-      alert("✅ Settings saved successfully!");
+      // ✅ If editing an assignment, update assignedQuizzes instead
+      if (assignmentData?.fromAssignment) {
+        const assignmentsRef = collection(db, "assignedQuizzes");
+        const q = query(
+          assignmentsRef,
+          where("quizId", "==", quizId),
+          where("classId", "==", assignmentData.classId)
+        );
+        const snapshot = await getDocs(q);
+        
+        const updatePromises = snapshot.docs.map((docSnap) =>
+          updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
+            dueDate: settings.deadline || settings.dueDate,
+            quizMode: settings.mode,
+            settings: settings,
+            updatedAt: new Date(),
+          })
+        );
+        
+        await Promise.all(updatePromises);
+        alert(`✅ Assignment settings updated for ${assignmentData.className}!`);
+      } else {
+        // Original quiz settings update
+        const docRef = doc(db, "quizzes", quizId);
+        await updateDoc(docRef, {
+          settings: settings,
+          updatedAt: new Date(),
+        });
+        alert("✅ Settings saved successfully!");
+      }
+      
       navigate("/teacher/quizzes");
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -131,6 +179,15 @@ export default function QuizSettings() {
           <div>
             <h2 className="text-2xl font-bold">Quiz Settings</h2>
             <p className="text-gray-300 text-sm mt-1">{quiz.title}</p>
+            {assignmentData?.fromAssignment && (
+              <div className="mt-2 flex items-center gap-4 text-sm">
+                <span className="bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-semibold">
+                  Editing Assignment
+                </span>
+                <span>Class: {assignmentData.className}</span>
+                <span>Students: {assignmentData.studentCount}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -199,6 +256,38 @@ export default function QuizSettings() {
               </p>
             </label>
           </div>
+
+          {settings.mode === "asynchronous" && (
+            <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3 mb-4">
+                <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-bold text-blue-800 mb-1">
+                    Assignment Deadline
+                  </h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Set when students must submit their responses
+                  </p>
+                </div>
+              </div>
+              
+              <label className="block text-sm font-semibold mb-2 text-gray-700">
+                Due Date & Time
+              </label>
+              <input
+                type="datetime-local"
+                value={settings.deadline}
+                onChange={(e) =>
+                  setSettings({ ...settings, deadline: e.target.value })
+                }
+                className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min={new Date().toISOString().slice(0, 16)}
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                ✅ Students can submit anytime until this deadline
+              </p>
+            </div>
+          )}
 
           {settings.mode === "synchronous" && (
             <div className="mt-4 p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
@@ -413,6 +502,23 @@ export default function QuizSettings() {
             </label>
           </div>
         </div>
+
+        {assignmentData?.fromAssignment && (
+          <div className="border-2 border-yellow-200 rounded-xl p-4 bg-yellow-50 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-yellow-900 mb-1">
+                  Editing Assignment for {assignmentData.className}
+                </h4>
+                <p className="text-sm text-yellow-800">
+                  Changes here will only affect this specific assignment. 
+                  The original quiz template remains unchanged.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Access Control */}
         <div className="border-2 border-gray-200 rounded-xl p-6">

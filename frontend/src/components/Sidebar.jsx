@@ -15,10 +15,10 @@ import {
 import { auth } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
 
-export default function Sidebar() {
+export default function Sidebar({ user, userDoc }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false); // ✅ For confirmation modal
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,11 +39,15 @@ export default function Sidebar() {
   };
 
   const menuItems = [
-    { to: "/teacher/dashboard", icon: Home, label: "Dashboard" },
+    { to: "/teacher", icon: Home, label: "Dashboard" },
     { to: "classes", icon: BookOpen, label: "Classes" },
     { to: "quizzes", icon: FileText, label: "Quizzes" },
     { to: "reports", icon: BarChart3, label: "Reports" },
   ];
+
+  // Get user display name
+  const userName = userDoc?.firstName || user?.displayName || "Teacher";
+  const userInitial = userName.charAt(0).toUpperCase();
 
   return (
     <>
@@ -135,7 +139,7 @@ export default function Sidebar() {
           <button
             onClick={() => {
               setIsOpen(false);
-              setShowConfirm(true); // ✅ show confirmation modal
+              setShowConfirm(true);
             }}
             className={`flex items-center gap-4 px-4 py-3.5 text-white hover:bg-red-500/30 rounded-xl transition-all duration-200 w-full group relative overflow-hidden
             ${isCollapsed ? "justify-center" : ""}`}
@@ -166,17 +170,17 @@ export default function Sidebar() {
           {!isCollapsed ? (
             <div className="flex items-center gap-3 px-4 py-3">
               <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/20">
-                T
+                {userInitial}
               </div>
               <div>
-                <p className="text-white font-semibold text-sm">Teacher Name</p>
+                <p className="text-white font-semibold text-sm">{userName}</p>
                 <p className="text-blue-200 text-xs">Educator</p>
               </div>
             </div>
           ) : (
             <div className="flex justify-center">
               <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/20 hover:scale-110 transition-transform cursor-pointer">
-                T
+                {userInitial}
               </div>
             </div>
           )}
@@ -191,7 +195,7 @@ export default function Sidebar() {
         />
       )}
 
-      {/* ✅ Logout Confirmation Modal */}
+      {/* Logout Confirmation Modal */}
       {showConfirm && ( 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm font-Outfit">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 text-center animate-fade-in">

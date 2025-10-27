@@ -5,7 +5,6 @@ import { db, auth } from "../../firebase/firebaseConfig";
 import {
   ArrowLeft,
   Play,
-  Pause,
   StopCircle,
   Users,
   Clock,
@@ -15,6 +14,7 @@ import {
   Zap,
   AlertCircle,
   Eye,
+  Settings as SettingsIcon,
 } from "lucide-react";
 
 export default function QuizControlPanel() {
@@ -27,7 +27,6 @@ export default function QuizControlPanel() {
   const [quizSession, setQuizSession] = useState({
     status: "not_started",
     startedAt: null,
-    pausedAt: null,
     endedAt: null,
   });
   const [loading, setLoading] = useState(true);
@@ -85,42 +84,53 @@ export default function QuizControlPanel() {
         setClassData({ id: classSnap.id, ...classSnap.data() });
       }
 
-      if (quizData.sessions && quizData.sessions[classId]) {
-        setQuizSession(quizData.sessions[classId]);
-      }
-
-      // FIXED: Changed from getDoc to getDocs
-      const studentsRef = collection(db, "users");
+      // Fetch the session status from assignedQuizzes collection
+      const assignmentsRef = collection(db, "assignedQuizzes");
       const q = query(
-        studentsRef,
-        where("role", "==", "student"),
+        assignmentsRef,
+        where("quizId", "==", quizId),
         where("classId", "==", classId)
       );
-      const studentsSnap = await getDocs(q);
+      const assignmentsSnap = await getDocs(q);
+
+      // Get the latest session status from any of the assignments
+      if (assignmentsSnap.size > 0) {
+        const firstDoc = assignmentsSnap.docs[0].data();
+        setQuizSession({
+          status: firstDoc.sessionStatus || "not_started",
+          startedAt: firstDoc.sessionStartedAt || null,
+          endedAt: firstDoc.sessionEndedAt || null,
+        });
+      }
+
+      // Fetch student details from users collection
+      const usersRef = collection(db, "users");
+      const allUsersSnap = await getDocs(usersRef);
+      const userMap = new Map();
+      
+      allUsersSnap.forEach((userDoc) => {
+        const userData = userDoc.data();
+        userMap.set(userDoc.id, userData);
+      });
 
       const studentsList = [];
-      studentsSnap.forEach((doc) => {
+      assignmentsSnap.forEach((doc) => {
         const data = doc.data();
-        const hasQuiz = data.assignedQuizzes?.some(
-          (aq) => aq.quizId === quizId && aq.classId === classId
-        );
+        const studentId = data.studentId;
+        const studentData = userMap.get(studentId);
         
-        if (hasQuiz) {
-          const quizAssignment = data.assignedQuizzes.find(
-            (aq) => aq.quizId === quizId && aq.classId === classId
-          );
-          
-          studentsList.push({
-            id: doc.id,
-            name: data.name || "Unknown",
-            studentNo: data.studentNo || "N/A",
-            status: quizAssignment?.status || "pending",
-            score: quizAssignment?.score || null,
-            completed: quizAssignment?.completed || false,
-            startedAt: quizAssignment?.startedAt || null,
-            submittedAt: quizAssignment?.submittedAt || null,
-          });
-        }
+        studentsList.push({
+          id: studentId,
+          name: studentData?.name || data.studentName || "Unknown",
+          studentNo: studentData?.studentNo || data.studentNo || "N/A",
+          status: data.status || "pending",
+          rawScore: data.rawScorePercentage || null,
+          base50Score: data.base50ScorePercentage || null,
+          completed: data.completed || false,
+          attempts: data.attempts || 0,
+          startedAt: data.startedAt || null,
+          submittedAt: data.submittedAt || null,
+        });
       });
 
       studentsList.sort((a, b) => a.name.localeCompare(b.name));
@@ -136,122 +146,100 @@ export default function QuizControlPanel() {
   const setupRealtimeListeners = () => {
     const unsubscribers = [];
 
-    const quizRef = doc(db, "quizzes", quizId);
-    const unsubQuiz = onSnapshot(quizRef, (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        if (data.sessions && data.sessions[classId]) {
-          setQuizSession(data.sessions[classId]);
-        }
-        setQuiz({ id: doc.id, ...data });
-      }
-    });
-    unsubscribers.push(unsubQuiz);
-
-    const studentsRef = collection(db, "users");
+    // Listen to assignment updates for session status
+    const assignmentsRef = collection(db, "assignedQuizzes");
     const q = query(
-      studentsRef,
-      where("role", "==", "student"),
+      assignmentsRef,
+      where("quizId", "==", quizId),
       where("classId", "==", classId)
     );
     
-    const unsubStudents = onSnapshot(q, (snapshot) => {
-      const updatedStudents = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const hasQuiz = data.assignedQuizzes?.some(
-          (aq) => aq.quizId === quizId && aq.classId === classId
-        );
-        
-        if (hasQuiz) {
-          const quizAssignment = data.assignedQuizzes.find(
-            (aq) => aq.quizId === quizId && aq.classId === classId
-          );
-          
-          updatedStudents.push({
-            id: doc.id,
-            name: data.name || "Unknown",
-            studentNo: data.studentNo || "N/A",
-            status: quizAssignment?.status || "pending",
-            score: quizAssignment?.score || null,
-            completed: quizAssignment?.completed || false,
-            startedAt: quizAssignment?.startedAt || null,
-            submittedAt: quizAssignment?.submittedAt || null,
+    const unsubAssignments = onSnapshot(q, async (snapshot) => {
+      try {
+        // Get session status from first document
+        if (snapshot.size > 0) {
+          const firstDoc = snapshot.docs[0].data();
+          setQuizSession({
+            status: firstDoc.sessionStatus || "not_started",
+            startedAt: firstDoc.sessionStartedAt || null,
+            endedAt: firstDoc.sessionEndedAt || null,
           });
         }
-      });
-      
-      updatedStudents.sort((a, b) => a.name.localeCompare(b.name));
-      setStudents(updatedStudents);
+
+        // Fetch student details from users collection
+        const usersRef = collection(db, "users");
+        const allUsersSnap = await getDocs(usersRef);
+        const userMap = new Map();
+        
+        allUsersSnap.forEach((userDoc) => {
+          const userData = userDoc.data();
+          userMap.set(userDoc.id, userData);
+        });
+
+        const updatedStudents = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const studentId = data.studentId;
+          const studentData = userMap.get(studentId);
+          
+          updatedStudents.push({
+            id: studentId,
+            name: studentData?.name || data.studentName || "Unknown",
+            studentNo: studentData?.studentNo || data.studentNo || "N/A",
+            status: data.status || "pending",
+            rawScore: data.rawScorePercentage || null,
+            base50Score: data.base50ScorePercentage || null,
+            completed: data.completed || false,
+            attempts: data.attempts || 0,
+            startedAt: data.startedAt || null,
+            submittedAt: data.submittedAt || null,
+          });
+        });
+        
+        updatedStudents.sort((a, b) => a.name.localeCompare(b.name));
+        setStudents(updatedStudents);
+      } catch (error) {
+        console.error("Error processing assignments:", error);
+      }
+    }, (error) => {
+      console.error("Error listening to assignments:", error);
     });
-    unsubscribers.push(unsubStudents);
+    unsubscribers.push(unsubAssignments);
 
     return unsubscribers;
   };
 
   const handleStartQuiz = async () => {
     const confirm = window.confirm(
-      "Are you sure you want to START this quiz? Students will be able to access it immediately."
+      "Are you sure you want to START this live quiz? Students will be able to access it."
     );
     if (!confirm) return;
 
     setActionLoading(true);
     try {
-      const quizRef = doc(db, "quizzes", quizId);
-      await updateDoc(quizRef, {
-        [`sessions.${classId}`]: {
-          status: "active",
-          startedAt: new Date(),
-          pausedAt: null,
-          endedAt: null,
-        },
-      });
+      // Update all assignedQuizzes documents for this quiz+class combination
+      const assignmentsRef = collection(db, "assignedQuizzes");
+      const q = query(
+        assignmentsRef,
+        where("quizId", "==", quizId),
+        where("classId", "==", classId)
+      );
+      const assignmentsSnap = await getDocs(q);
 
-      alert("✅ Quiz started! Students can now access it.");
+      const updatePromises = assignmentsSnap.docs.map((docSnap) =>
+        updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
+          sessionStatus: "active",
+          sessionStartedAt: new Date(),
+          sessionEndedAt: null,
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      alert("✅ Quiz started! Students can now access the quiz.");
     } catch (error) {
       console.error("Error starting quiz:", error);
       alert("❌ Error starting quiz. Please try again.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handlePauseQuiz = async () => {
-    const confirm = window.confirm(
-      "Are you sure you want to PAUSE this quiz? Students will not be able to continue."
-    );
-    if (!confirm) return;
-
-    setActionLoading(true);
-    try {
-      const quizRef = doc(db, "quizzes", quizId);
-      await updateDoc(quizRef, {
-        [`sessions.${classId}.status`]: "paused",
-        [`sessions.${classId}.pausedAt`]: new Date(),
-      });
-
-      alert("⏸️ Quiz paused.");
-    } catch (error) {
-      console.error("Error pausing quiz:", error);
-      alert("❌ Error pausing quiz. Please try again.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleResumeQuiz = async () => {
-    setActionLoading(true);
-    try {
-      const quizRef = doc(db, "quizzes", quizId);
-      await updateDoc(quizRef, {
-        [`sessions.${classId}.status`]: "active",
-        [`sessions.${classId}.pausedAt`]: null,
-      });
-
-      alert("▶️ Quiz resumed.");
-    } catch (error) {
-      console.error("Error resuming quiz:", error);
-      alert("❌ Error resuming quiz. Please try again.");
     } finally {
       setActionLoading(false);
     }
@@ -265,11 +253,23 @@ export default function QuizControlPanel() {
 
     setActionLoading(true);
     try {
-      const quizRef = doc(db, "quizzes", quizId);
-      await updateDoc(quizRef, {
-        [`sessions.${classId}.status`]: "ended",
-        [`sessions.${classId}.endedAt`]: new Date(),
-      });
+      // Update all assignedQuizzes documents for this quiz+class combination
+      const assignmentsRef = collection(db, "assignedQuizzes");
+      const q = query(
+        assignmentsRef,
+        where("quizId", "==", quizId),
+        where("classId", "==", classId)
+      );
+      const assignmentsSnap = await getDocs(q);
+
+      const updatePromises = assignmentsSnap.docs.map((docSnap) =>
+        updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
+          sessionStatus: "ended",
+          sessionEndedAt: new Date(),
+        })
+      );
+
+      await Promise.all(updatePromises);
 
       alert("🛑 Quiz ended. Students can no longer submit.");
     } catch (error) {
@@ -293,10 +293,27 @@ export default function QuizControlPanel() {
 
   if (!quiz || !classData) return null;
 
-  const notStartedCount = students.filter((s) => s.status === "pending").length;
+  const notStartedCount = students.filter((s) => s.status === "not_started" || s.status === "pending").length;
   const inProgressCount = students.filter((s) => s.status === "in_progress").length;
   const completedCount = students.filter((s) => s.completed).length;
   const totalStudents = students.length;
+  const passingScore = quiz.settings?.passingScore || 60;
+  
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case "in_progress":
+        return { text: "In Progress", className: "bg-yellow-100 text-yellow-800", Icon: Loader };
+      case "completed":
+        return { text: "Completed", className: "bg-green-100 text-green-800", Icon: CheckCircle };
+      case "not_started":
+      case "pending":
+        return { text: "Not Started", className: "bg-gray-100 text-gray-800", Icon: Clock };
+      case "expired":
+        return { text: "Expired", className: "bg-red-100 text-red-800", Icon: XCircle };
+      default:
+        return { text: status, className: "bg-gray-100 text-gray-800", Icon: Clock };
+    }
+  };
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-md max-w-7xl mx-auto">
@@ -320,7 +337,7 @@ export default function QuizControlPanel() {
           <div>
             <h2 className="text-2xl font-bold">{quiz.title}</h2>
             <p className="text-purple-100 text-sm mt-1">
-              {classData.name} • {quiz.questions?.length || 0} questions
+              Class: {classData.name} • {quiz.questions?.length || 0} questions
             </p>
           </div>
           <div className="text-right">
@@ -328,17 +345,13 @@ export default function QuizControlPanel() {
               className={`px-4 py-2 rounded-lg font-bold text-lg ${
                 quizSession.status === "active"
                   ? "bg-green-400 text-green-900"
-                  : quizSession.status === "paused"
-                  ? "bg-yellow-400 text-yellow-900"
                   : quizSession.status === "ended"
                   ? "bg-red-400 text-red-900"
                   : "bg-gray-300 text-gray-700"
               }`}
             >
               {quizSession.status === "active"
-                ? "🟢 ACTIVE"
-                : quizSession.status === "paused"
-                ? "⏸️ PAUSED"
+                ? "🟢 LIVE"
                 : quizSession.status === "ended"
                 ? "🛑 ENDED"
                 : "⚪ NOT STARTED"}
@@ -347,120 +360,64 @@ export default function QuizControlPanel() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-4 mb-6">
+      {/* Action Buttons */}
+      <div className="mb-6">
         {quizSession.status === "not_started" && (
           <button
             onClick={handleStartQuiz}
             disabled={actionLoading}
-            className="col-span-4 bg-green-600 hover:bg-green-700 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-3 disabled:bg-gray-400"
+            className="w-full bg-green-600 hover:bg-green-700 text-white p-4 rounded-xl font-extrabold text-xl shadow-lg flex items-center justify-center gap-3 disabled:bg-gray-400 transition transform hover:scale-[1.01]"
           >
             {actionLoading ? (
               <>
                 <Loader className="w-6 h-6 animate-spin" />
-                Starting...
+                STARTING LIVE QUIZ...
               </>
             ) : (
               <>
                 <Play className="w-6 h-6" />
-                START QUIZ
+                START LIVE QUIZ
               </>
             )}
           </button>
         )}
 
         {quizSession.status === "active" && (
-          <>
-            <button
-              onClick={handlePauseQuiz}
-              disabled={actionLoading}
-              className="col-span-2 bg-yellow-500 hover:bg-yellow-600 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-3 disabled:bg-gray-400"
-            >
-              {actionLoading ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Pausing...
-                </>
-              ) : (
-                <>
-                  <Pause className="w-5 h-5" />
-                  PAUSE QUIZ
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleEndQuiz}
-              disabled={actionLoading}
-              className="col-span-2 bg-red-600 hover:bg-red-700 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-3 disabled:bg-gray-400"
-            >
-              {actionLoading ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Ending...
-                </>
-              ) : (
-                <>
-                  <StopCircle className="w-5 h-5" />
-                  END QUIZ
-                </>
-              )}
-            </button>
-          </>
-        )}
-
-        {quizSession.status === "paused" && (
-          <>
-            <button
-              onClick={handleResumeQuiz}
-              disabled={actionLoading}
-              className="col-span-2 bg-green-600 hover:bg-green-700 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-3 disabled:bg-gray-400"
-            >
-              {actionLoading ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Resuming...
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5" />
-                  RESUME QUIZ
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleEndQuiz}
-              disabled={actionLoading}
-              className="col-span-2 bg-red-600 hover:bg-red-700 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-3 disabled:bg-gray-400"
-            >
-              {actionLoading ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Ending...
-                </>
-              ) : (
-                <>
-                  <StopCircle className="w-5 h-5" />
-                  END QUIZ
-                </>
-              )}
-            </button>
-          </>
+          <button
+            onClick={handleEndQuiz}
+            disabled={actionLoading}
+            className="w-full bg-red-600 hover:bg-red-700 text-white p-4 rounded-xl font-bold text-xl flex items-center justify-center gap-3 disabled:bg-gray-400 transition transform hover:scale-[1.01]"
+          >
+            {actionLoading ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Ending...
+              </>
+            ) : (
+              <>
+                <StopCircle className="w-5 h-5" />
+                END QUIZ
+              </>
+            )}
+          </button>
         )}
 
         {quizSession.status === "ended" && (
-          <div className="col-span-4 bg-gray-100 border-2 border-gray-300 text-gray-700 p-4 rounded-xl font-bold flex items-center justify-center gap-3">
+          <div className="w-full bg-gray-100 border-2 border-gray-300 text-gray-700 p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3">
             <AlertCircle className="w-6 h-6" />
-            Quiz has ended. No further actions available.
+            Quiz Session Has Ended
           </div>
         )}
       </div>
 
+      {/* Stats Cards */}
       <div className="grid md:grid-cols-4 gap-4 mb-6">
         <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-xl">
           <div className="flex items-center justify-between">
             <Users className="w-8 h-8 text-blue-600" />
             <div className="text-right">
               <div className="text-3xl font-bold text-blue-900">{totalStudents}</div>
-              <div className="text-sm text-blue-700 font-semibold">Total Students</div>
+              <div className="text-sm text-blue-700 font-semibold">Total Assigned</div>
             </div>
           </div>
         </div>
@@ -496,11 +453,18 @@ export default function QuizControlPanel() {
         </div>
       </div>
 
+      {/* Live Student Monitoring Table */}
       <div className="border-2 border-gray-200 rounded-xl p-6">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Eye className="w-6 h-6 text-purple-600" />
-          Live Student Monitoring
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold flex items-center gap-2">
+            <Eye className="w-6 h-6 text-purple-600" />
+            Live Student Monitoring
+          </h3>
+          <p className="text-sm text-gray-500 flex items-center gap-2">
+            <SettingsIcon className="w-4 h-4" />
+            Passing Score: {passingScore}%
+          </p>
+        </div>
 
         {students.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -508,95 +472,85 @@ export default function QuizControlPanel() {
             <p className="text-lg">No students assigned to this quiz</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b-2 border-gray-300">
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <table className="w-full min-w-[800px]">
+              <thead className="bg-gray-100 border-b-2 border-gray-300 sticky top-0 z-10">
                 <tr>
                   <th className="text-left p-3 font-bold text-gray-700">Student Name</th>
                   <th className="text-left p-3 font-bold text-gray-700">Student #</th>
-                  <th className="text-center p-3 font-bold text-gray-700">Status</th>
-                  <th className="text-center p-3 font-bold text-gray-700">Score</th>
-                  <th className="text-center p-3 font-bold text-gray-700">Started At</th>
-                  <th className="text-center p-3 font-bold text-gray-700">Submitted At</th>
+                  <th className="text-center p-3 font-bold text-gray-700">Live Status</th>
+                  <th className="text-center p-3 font-bold text-gray-700">Raw Score</th>
+                  <th className="text-center p-3 font-bold text-gray-700">Base-50 Grade</th>
+                  <th className="text-center p-3 font-bold text-gray-700">Time Taken</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map((student) => (
-                  <tr
-                    key={student.id}
-                    className="border-b border-gray-200 hover:bg-gray-50 transition"
-                  >
-                    <td className="p-3 font-semibold text-gray-800">{student.name}</td>
-                    <td className="p-3 text-gray-600">{student.studentNo}</td>
-                    <td className="p-3 text-center">
-                      {student.completed ? (
-                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold inline-flex items-center gap-1">
-                          <CheckCircle className="w-4 h-4" />
-                          Completed
+                {students.map((student) => {
+                  const { text, className, Icon } = getStatusDisplay(student.completed ? "completed" : student.status);
+                  
+                  const timeDifference = (student.submittedAt?.seconds && student.startedAt?.seconds) 
+                    ? (student.submittedAt.seconds - student.startedAt.seconds)
+                    : null;
+                  
+                  const formatTime = (seconds) => {
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    return `${minutes}m ${remainingSeconds}s`;
+                  };
+
+                  return (
+                    <tr
+                      key={student.id}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition"
+                    >
+                      <td className="p-3 font-semibold text-gray-800">{student.name}</td>
+                      <td className="p-3 text-gray-600">{student.studentNo}</td>
+                      <td className="p-3 text-center">
+                        <span className={`px-3 py-1 ${className} rounded-full text-sm font-semibold inline-flex items-center gap-1`}>
+                          <Icon className="w-4 h-4" />
+                          {text}
                         </span>
-                      ) : student.status === "in_progress" ? (
-                        <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold inline-flex items-center gap-1">
-                          <Loader className="w-4 h-4 animate-spin" />
-                          In Progress
-                        </span>
-                      ) : student.status === "pending" ? (
-                        <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold inline-flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          Not Started
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold inline-flex items-center gap-1">
-                          <XCircle className="w-4 h-4" />
-                          {student.status}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-center">
-                      {student.score !== null ? (
-                        <span className={`font-bold text-lg ${
-                          student.score >= (quiz.settings?.passingScore || 60)
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}>
-                          {student.score}%
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-center text-sm text-gray-600">
-                      {student.startedAt ? (
-                        new Date(student.startedAt.seconds * 1000).toLocaleTimeString('en-PH', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-center text-sm text-gray-600">
-                      {student.submittedAt ? (
-                        new Date(student.submittedAt.seconds * 1000).toLocaleTimeString('en-PH', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-3 text-center">
+                        {student.rawScore !== null ? (
+                          <span className="font-bold text-lg text-blue-600">
+                            {student.rawScore}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-center">
+                        {student.base50Score !== null ? (
+                          <span className={`font-bold text-lg ${
+                            student.base50Score >= passingScore
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}>
+                            {student.base50Score}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-center text-sm text-gray-600">
+                        {timeDifference !== null ? formatTime(timeDifference) : <span className="text-gray-400">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
+      {/* Session Details */}
       {quizSession.status !== "not_started" && (
-        <div className="mt-6 grid md:grid-cols-3 gap-4">
+        <div className="mt-6 grid md:grid-cols-2 gap-4">
           {quizSession.startedAt && (
             <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-              <p className="text-sm font-semibold text-green-700 mb-1">Started At</p>
+              <p className="text-sm font-semibold text-green-700 mb-1">Session Started</p>
               <p className="text-lg font-bold text-green-900">
                 {new Date(quizSession.startedAt.seconds * 1000).toLocaleString('en-PH', {
                   dateStyle: 'medium',
@@ -606,21 +560,9 @@ export default function QuizControlPanel() {
             </div>
           )}
 
-          {quizSession.pausedAt && (
-            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
-              <p className="text-sm font-semibold text-yellow-700 mb-1">Paused At</p>
-              <p className="text-lg font-bold text-yellow-900">
-                {new Date(quizSession.pausedAt.seconds * 1000).toLocaleString('en-PH', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short'
-                })}
-              </p>
-            </div>
-          )}
-
           {quizSession.endedAt && (
             <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-              <p className="text-sm font-semibold text-red-700 mb-1">Ended At</p>
+              <p className="text-sm font-semibold text-red-700 mb-1">Session Ended</p>
               <p className="text-lg font-bold text-red-900">
                 {new Date(quizSession.endedAt.seconds * 1000).toLocaleString('en-PH', {
                   dateStyle: 'medium',
@@ -632,17 +574,19 @@ export default function QuizControlPanel() {
         </div>
       )}
 
+      {/* Instructions Panel */}
       {quizSession.status === "not_started" && (
         <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-6 h-6 text-blue-600 mt-0.5" />
             <div>
-              <h4 className="font-bold text-blue-900 mb-2">Instructions:</h4>
+              <h4 className="font-bold text-blue-900 mb-2">Live Quiz Instructions:</h4>
               <ul className="text-sm text-blue-800 space-y-1 ml-4 list-disc">
-                <li>Click <strong>"START QUIZ"</strong> to allow students to begin</li>
-                <li>Students cannot access the quiz until you start it</li>
-                <li>Monitor student progress in real-time</li>
-                <li>You can pause or end the quiz at any time</li>
+                <li>Click the "START LIVE QUIZ" button to begin the quiz session</li>
+                <li>Students can only access the quiz when status is LIVE</li>
+                <li>Click "END QUIZ" to finish the session and prevent further submissions</li>
+                <li>Monitor student progress in real-time from this dashboard</li>
+                <li>Scores shown are: Raw Score (actual %) and Base-50 Grade (transmuted)</li>
               </ul>
             </div>
           </div>

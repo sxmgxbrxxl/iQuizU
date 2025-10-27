@@ -2,23 +2,38 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
-import { ArrowLeft, Save, Edit3, Trash2, PlusCircle, X, CheckCircle, Loader2, BadgeQuestionMark, CircleStar, Copy } from "lucide-react";
+import { ArrowLeft, Save, Edit3, Trash2, PlusCircle, X, CheckCircle, Loader2, BadgeQuestionMark, CircleStar, Copy, AlertTriangle } from "lucide-react";
 
 export default function EditQuiz() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
   const [quiz, setQuiz] = useState(null);
+  const [originalQuiz, setOriginalQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
 
   useEffect(() => {
     fetchQuiz();
   }, [quizId]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [quiz, originalQuiz, isEditingTitle, editedTitle]);
 
   const fetchQuiz = async () => {
     try {
@@ -26,7 +41,9 @@ export default function EditQuiz() {
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        setQuiz({ id: docSnap.id, ...docSnap.data() });
+        const quizData = { id: docSnap.id, ...docSnap.data() };
+        setQuiz(quizData);
+        setOriginalQuiz(JSON.parse(JSON.stringify(quizData)));
       } else {
         alert("Quiz not found!");
         navigate("/teacher/quizzes");
@@ -36,6 +53,31 @@ export default function EditQuiz() {
       alert("Error loading quiz");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const hasUnsavedChanges = () => {
+    if (!quiz || !originalQuiz) return false;
+    
+    const quizChanged = JSON.stringify(quiz) !== JSON.stringify(originalQuiz);
+    const titleEditing = isEditingTitle;
+    
+    return quizChanged || titleEditing;
+  };
+
+  const handleNavigation = (path) => {
+    if (hasUnsavedChanges()) {
+      setPendingNavigation(path);
+      setShowUnsavedModal(true);
+    } else {
+      navigate(path);
+    }
+  };
+
+  const handleConfirmNavigation = () => {
+    setShowUnsavedModal(false);
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
     }
   };
 
@@ -173,6 +215,9 @@ export default function EditQuiz() {
         updatedAt: new Date()
       });
 
+      // Update original quiz to match current quiz (no more unsaved changes)
+      setOriginalQuiz(JSON.parse(JSON.stringify(quiz)));
+      
       alert("Quiz updated successfully!");
       navigate("/teacher/quizzes");
     } catch (error) {
@@ -219,17 +264,25 @@ export default function EditQuiz() {
     identification: "Identification"
   };
 
+  const hasChanges = hasUnsavedChanges();
+
   return (
     <div className="p-8 font-Outfit">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <button
-          onClick={() => navigate("/teacher/quizzes")}
+          onClick={() => handleNavigation("/teacher/quizzes")}
           className="flex items-center gap-2 text-subtext hover:text-subsubtext"
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Manage Quizzes
         </button>
+        {hasChanges && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-yellow-100 border border-yellow-400 rounded-lg">
+            <AlertTriangle className="w-4 h-4 text-yellow-600" />
+            <span className="text-sm font-semibold text-yellow-700">You have unsaved changes</span>
+          </div>
+        )}
       </div>
 
       {/* Title Section */}
@@ -262,7 +315,7 @@ export default function EditQuiz() {
               <h2 className="text-2xl font-bold">{quiz.title}</h2>
               <div className="flex items-center gap-6 text-sm text-white mt-2">
                 <span className="flex flex-row gap-1 items-center"><BadgeQuestionMark className="w-4 h-4"/> {quiz.questions.length} questions</span>
-                <span className="flex flex-row gap-1 items-center"><CircleStar className="w-4 h-4"/> {quiz.totalPoints} points</span>
+                <span className="flex flex-row gap-1 items-center"><CircleStar className="w-4 h-4"/> {quiz.questions.reduce((sum, q) => sum + q.points, 0)} points</span>
                 <span className="flex flex-row gap-4">Code: {quiz.code} <Copy className="w-4 h-4 cursor-pointer"/></span>
               </div>
             </div>
@@ -526,15 +579,15 @@ export default function EditQuiz() {
       {/* Save Button */}
       <div className="mt-8 flex justify-end gap-3">
         <button
-          onClick={() => navigate("/teacher/quizzes")}
+          onClick={() => handleNavigation("/teacher/quizzes")}
           className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100"
         >
           Cancel
         </button>
         <button
           onClick={handleSaveQuiz}
-          disabled={saving}
-          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:bg-gray-400"
+          disabled={saving || !hasChanges}
+          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {saving ? (
             <>
@@ -549,6 +602,37 @@ export default function EditQuiz() {
           )}
         </button>
       </div>
+
+      {/* Unsaved Changes Modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="w-8 h-8 text-yellow-600" />
+              <h2 className="text-xl font-bold text-gray-800">Unsaved Changes</h2>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              You have unsaved changes. Are you sure you want to leave without saving?
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowUnsavedModal(false)}
+                className="px-4 py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition"
+              >
+                Stay & Continue Editing
+              </button>
+              <button
+                onClick={handleConfirmNavigation}
+                className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+              >
+                Leave Without Saving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

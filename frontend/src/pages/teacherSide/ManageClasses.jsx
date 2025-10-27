@@ -3,10 +3,12 @@ import { Upload, Loader2, Eye, School, Trash } from "lucide-react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { auth, db } from "../../firebase/firebaseConfig";
-import { collection, addDoc, query, where, getDocs, deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import ClassNameModal from './ClassNameModal';
 import ViewClassModal from './ViewClassModal';
+import PasswordConfirmModal from './PasswordConfirmModal';
+import { setAccountCreationFlag } from "../../App";
 
 export default function ManageClasses() {
   const [fileName, setFileName] = useState("");
@@ -20,20 +22,35 @@ export default function ManageClasses() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [creatingAccounts, setCreatingAccounts] = useState(false);
+  const [accountCreationProgress, setAccountCreationProgress] = useState("");
   const [showClassNameModal, setShowClassNameModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pendingUploadData, setPendingUploadData] = useState(null);
   
   const fetchingRef = useRef(false);
   const initialLoadRef = useRef(false);
+  const authRef = useRef(null);
+  const accountCreationInProgressRef = useRef(false);
+  const adminUIDRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (accountCreationInProgressRef.current) {
+        console.log("⚠️ Account creation in progress, ignoring auth state change");
+        return;
+      }
+
       if (user && !initialLoadRef.current) {
-        console.log("User logged in:", user.email);
+        console.log("✅ User logged in:", user.email);
+        authRef.current = { email: user.email, uid: user.uid };
+        adminUIDRef.current = user.uid;
         initialLoadRef.current = true;
         fetchClasses();
+      } else if (!user && initialLoadRef.current) {
+        console.log("⚠️ User logged out, redirecting...");
+        window.location.href = "/login";
       } else if (!user) {
-        console.log("No user logged in");
+        console.log("ℹ️ No user logged in");
         setLoading(false);
       }
     });
@@ -78,11 +95,10 @@ export default function ManageClasses() {
     try {
       setLoadingStudents(true);
       
-      // Query users collection where role = "student" and classId matches
       const q = query(
         collection(db, "users"),
         where("role", "==", "student"),
-        where("classId", "==", classId)
+        where("classIds", "array-contains", classId)
       );
       
       const querySnapshot = await getDocs(q);
@@ -95,7 +111,6 @@ export default function ManageClasses() {
         });
       });
 
-      // Sort by name
       students.sort((a, b) => {
         const aName = a.name || "";
         const bName = b.name || "";
@@ -121,29 +136,149 @@ export default function ManageClasses() {
     setStudentsList([]);
   };
 
-  const createAccountInFirebase = async (studentData) => {
+  const checkStudentExistsByEmail = async (emailAddress) => {
+    if (!emailAddress || emailAddress.trim() === "") {
+      return null;
+    }
+
     try {
-      // Use email address from classlist for Firebase Authentication
-      const email = studentData.emailAddress;
+      const q = query(
+        collection(db, "users"),
+        where("emailAddress", "==", emailAddress.toLowerCase().trim())
+      );
       
-      // Check if email exists
-      if (!email || email.trim() === "") {
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const existingDoc = querySnapshot.docs[0];
+        return {
+          id: existingDoc.id,
+          name: existingDoc.data().name,
+          classIds: existingDoc.data().classIds || [],
+          hasAccount: existingDoc.data().hasAccount,
+          authUID: existingDoc.data().authUID
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error checking student by email:", error);
+      return null;
+    }
+  };
+
+  const checkExistingAccountByEmail = async (email) => {
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("emailAddress", "==", email.toLowerCase().trim()),
+        where("hasAccount", "==", true)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const existingDoc = querySnapshot.docs[0];
+        return {
+          exists: true,
+          uid: existingDoc.data().authUID,
+          studentId: existingDoc.id,
+          name: existingDoc.data().name
+        };
+      }
+      
+      return { exists: false };
+    } catch (error) {
+      console.error("Error checking existing account:", error);
+      throw error;
+    }
+  };
+
+  const validateTeacherPassword = async (teacherEmail, teacherPassword) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
+      console.log("✅ Password validated, staying logged in");
+      return { valid: true };
+    } catch (error) {
+      console.error("❌ Password validation failed:", error);
+      return { valid: false, error: error.message };
+    }
+  };
+
+  const createAccountInFirebase = async (studentData, teacherEmail, teacherPassword, teacherUID) => {
+    try {
+      const email = studentData.emailAddress?.toLowerCase().trim();
+      
+      if (!email || email === "") {
         throw new Error(`No email address found for ${studentData.name}`);
       }
       
-      // Default password for all accounts
+      const existingCheck = await checkExistingAccountByEmail(email);
+      
+      if (existingCheck.exists) {
+        console.log(`⚠️ Account already exists for ${email}`);
+        return {
+          status: "EXISTING_ACCOUNT",
+          authUID: existingCheck.uid,
+          message: `${existingCheck.name} already has an account`
+        };
+      }
+      
       const password = "123456";
 
-      // Create user in Firebase Authentication
-      await createUserWithEmailAndPassword(auth, email, password);
+      await auth.signOut();
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log(`Account created for ${studentData.name} (${studentData.studentNo}) with email: ${email}`);
-      return true;
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const authUID = userCredential.user.uid;
+
+      console.log(`✅ Account created for ${studentData.name} with UID: ${authUID}`);
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      let reAuthSuccess = false;
+      let reAuthAttempts = 0;
+      const maxAttempts = 3;
+      
+      while (!reAuthSuccess && reAuthAttempts < maxAttempts) {
+        try {
+          const teacherCredential = await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
+          
+          if (teacherCredential.user.uid === teacherUID) {
+            reAuthSuccess = true;
+            console.log(`✅ Teacher re-authenticated successfully`);
+          } else {
+            console.warn(`⚠️ Auth UID mismatch - retrying`);
+            reAuthAttempts++;
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (reAuthError) {
+          console.error(`Re-authentication attempt ${reAuthAttempts + 1} failed:`, reAuthError);
+          reAuthAttempts++;
+          if (reAuthAttempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+      
+      if (!reAuthSuccess) {
+        throw new Error("Failed to keep teacher logged in after account creation");
+      }
+
+      return {
+        status: "NEW_ACCOUNT",
+        authUID: authUID
+      };
     } catch (error) {
-      // Handle specific error for existing account
       if (error.code === 'auth/email-already-in-use') {
-        console.log(`Account already exists for email: ${studentData.emailAddress}`);
-        return true; // Consider it success since account exists
+        console.log(`⚠️ Email already exists in Firebase Auth: ${studentData.emailAddress}`);
+        
+        const existingCheck = await checkExistingAccountByEmail(studentData.emailAddress);
+        return {
+          status: "EXISTING_AUTH",
+          authUID: existingCheck.uid || null,
+          message: `Email already in Firebase: ${studentData.emailAddress}`
+        };
       }
       console.error("Error creating account:", error);
       throw error;
@@ -158,76 +293,149 @@ export default function ManageClasses() {
       return;
     }
 
-    if (!window.confirm(`Create accounts for ${studentsWithoutAccounts.length} student(s) in Firebase Authentication?\n\nEmail: From Classlist\nDefault Password: 123456\n\nStudents will login using their Student Number.`)) {
+    setShowPasswordModal(true);
+  };
+
+  const handlePasswordConfirm = async (adminPassword) => {
+    setShowPasswordModal(false);
+
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+      alert("❌ Please log in first!");
       return;
     }
 
-    setCreatingAccounts(true);
+    console.log("🔒 Setting account creation flags...");
+    accountCreationInProgressRef.current = true;
+    setAccountCreationFlag(true);
 
     try {
+      setAccountCreationProgress("Validating credentials...");
+      const passwordValidation = await validateTeacherPassword(currentUser.email, adminPassword);
+      
+      if (!passwordValidation.valid) {
+        alert("❌ Invalid password! Account creation cancelled.\n\nPlease try again with the correct password.");
+        setAccountCreationProgress("");
+        accountCreationInProgressRef.current = false;
+        setAccountCreationFlag(false);
+        return;
+      }
+
+      const teacherEmail = currentUser.email;
+      const teacherUID = currentUser.uid;
+
+      setCreatingAccounts(true);
+      setAccountCreationProgress("Initializing account creation...");
+
+      const studentsWithoutAccounts = studentsList.filter(s => !s.hasAccount);
       let successCount = 0;
+      let existingCount = 0;
       let errorCount = 0;
       const errors = [];
+      const skippedStudents = [];
 
       for (let i = 0; i < studentsWithoutAccounts.length; i++) {
         try {
           const student = studentsWithoutAccounts[i];
-          console.log(`Creating account for: ${student.name} (${i + 1}/${studentsWithoutAccounts.length})`);
+          setAccountCreationProgress(`Creating accounts: ${i + 1}/${studentsWithoutAccounts.length} - ${student.name}`);
+          console.log(`📝 Processing: ${student.name} (${i + 1}/${studentsWithoutAccounts.length})`);
           
-          // Create the account in Firebase Authentication
-          await createAccountInFirebase(student);
+          const result = await createAccountInFirebase(student, teacherEmail, adminPassword, teacherUID);
           
-          // Update hasAccount status in Firestore
-          await updateAccountStatus(student.id, true);
-          
-          successCount++;
+          if (result.status === "NEW_ACCOUNT") {
+            await updateDoc(doc(db, "users", student.id), {
+              hasAccount: true,
+              authUID: result.authUID
+            });
+            successCount++;
+            console.log(`✅ New account: ${student.name}`);
+            
+          } else if (result.status === "EXISTING_ACCOUNT" || result.status === "EXISTING_AUTH") {
+            if (!student.hasAccount) {
+              await updateDoc(doc(db, "users", student.id), {
+                hasAccount: true,
+                authUID: result.authUID || student.authUID
+              });
+            }
+            existingCount++;
+            skippedStudents.push(student.name);
+            console.log(`⚠️ Already exists: ${student.name}`);
+          }
         } catch (error) {
-          console.error("Error creating account:", error);
+          console.error("❌ Error creating account:", error);
           errorCount++;
           errors.push(`${studentsWithoutAccounts[i].name}: ${error.message}`);
         }
       }
 
-      let message = `✅ Successfully created ${successCount} account(s) in Firebase Authentication!`;
-      message += `\n\n📧 Email: From Classlist`;
-      message += `\n🔑 Default Password: 123456`;
-      message += `\n\n⚠️ Students will login using their STUDENT NUMBER`;
-      message += `\nThe system will check Firestore for their email.`;
+      setAccountCreationProgress("Finalizing...");
+
+      console.log("🔍 Final teacher verification...");
+      const finalUser = auth.currentUser;
+      
+      if (!finalUser || finalUser.uid !== teacherUID) {
+        console.warn(`⚠️ Final re-authentication needed...`);
+        
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const finalAuth = await signInWithEmailAndPassword(auth, teacherEmail, adminPassword);
+            if (finalAuth.user.uid === teacherUID) {
+              console.log(`✅ Final verification successful`);
+              break;
+            }
+          } catch (error) {
+            console.error(`Final auth attempt ${attempt + 1} failed:`, error);
+            if (attempt < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      let message = `✅ Account Creation Complete!\n\n`;
+      message += `✅ New accounts: ${successCount}\n`;
+      message += `⚠️ Already had accounts: ${existingCount}\n`;
+      
+      if (successCount > 0) {
+        message += `\n📧 Email: From Classlist`;
+        message += `\n🔑 Default Password: 123456`;
+      }
+      
+      if (existingCount > 0) {
+        message += `\n\n⚠️ Already existing:\n${skippedStudents.slice(0, 5).join('\n')}`;
+        if (skippedStudents.length > 5) {
+          message += `\n... and ${skippedStudents.length - 5} more`;
+        }
+      }
       
       if (errorCount > 0) {
-        message += `\n\n⚠️ ${errorCount} account(s) failed to create.`;
+        message += `\n\n❌ Failed: ${errorCount} student(s)`;
         if (errors.length > 0) {
-          message += `\n\nErrors:\n${errors.slice(0, 5).join('\n')}`;
-          if (errors.length > 5) {
-            message += `\n... and ${errors.length - 5} more`;
+          message += `\n${errors.slice(0, 3).join('\n')}`;
+          if (errors.length > 3) {
+            message += `\n... and ${errors.length - 3} more`;
           }
         }
       }
       
       alert(message);
 
-      // Refresh the student list to show updated hasAccount status
       await fetchStudentsByClass(viewingClass.id);
+      
     } catch (error) {
-      console.error("Error creating accounts:", error);
+      console.error("❌ Error creating accounts:", error);
       alert("❌ Failed to create accounts: " + error.message);
     } finally {
       setCreatingAccounts(false);
-    }
-  };
-
-  const updateAccountStatus = async (studentDocId, hasAccount) => {
-    try {
-      const studentDocRef = doc(db, "users", studentDocId);
+      setAccountCreationProgress("");
       
-      await updateDoc(studentDocRef, {
-        hasAccount: hasAccount
-      });
+      console.log("🔓 Clearing account creation flags...");
+      accountCreationInProgressRef.current = false;
+      setAccountCreationFlag(false);
       
-      console.log(`Updated student ${studentDocId} account status to ${hasAccount}`);
-    } catch (error) {
-      console.error("Error updating account status:", error);
-      throw error;
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   };
 
@@ -302,8 +510,6 @@ export default function ManageClasses() {
 
     console.log("Valid students:", validStudents.length);
 
-    const defaultClassName = file.name.replace(/\.(csv|xlsx|xls)$/i, '');
-    
     setPendingUploadData({
       validStudents,
       file
@@ -341,10 +547,10 @@ export default function ManageClasses() {
 
       console.log(`Created class document: ${classDoc.id}`);
 
-      let totalCount = 0;
+      let newStudentCount = 0;
+      let addedToExistingCount = 0;
       let errorCount = 0;
 
-      // Create individual documents for each student in the users collection
       for (let i = 0; i < validStudents.length; i++) {
         try {
           const student = validStudents[i];
@@ -368,36 +574,54 @@ export default function ManageClasses() {
           }
 
           const cleanStudentNo = studentNo.toString().trim();
+          const cleanEmail = emailAddress?.toString().trim().toLowerCase() || "";
 
-          // Create individual document with random ID for each student
-          await addDoc(collection(db, "users"), {
-            studentNo: cleanStudentNo,
-            name: name.toString().trim(),
-            gender: gender?.toString().trim() || "",
-            program: program?.toString().trim() || "",
-            year: year?.toString().trim() || "",
-            emailAddress: emailAddress?.toString().trim() || "",
-            contactNo: contactNo?.toString().trim() || "",
-            classId: classDoc.id,
-            role: "student",
-            hasAccount: false,
-            createdAt: new Date()
-          });
+          const existingStudent = await checkStudentExistsByEmail(cleanEmail);
 
-          totalCount++;
+          if (existingStudent) {
+            const updatedClassIds = [...new Set([...existingStudent.classIds, classDoc.id])];
+            
+            await updateDoc(doc(db, "users", existingStudent.id), {
+              classIds: updatedClassIds
+            });
+            
+            addedToExistingCount++;
+            console.log(`✅ Added ${name} to class ${className} (already exists)`);
+          } else {
+            await addDoc(collection(db, "users"), {
+              studentNo: cleanStudentNo,
+              name: name.toString().trim(),
+              gender: gender?.toString().trim() || "",
+              program: program?.toString().trim() || "",
+              year: year?.toString().trim() || "",
+              emailAddress: cleanEmail,
+              contactNo: contactNo?.toString().trim() || "",
+              classIds: [classDoc.id],
+              role: "student",
+              hasAccount: false,
+              authUID: null,
+              createdAt: new Date()
+            });
+            
+            newStudentCount++;
+            console.log(`✅ New student created: ${name}`);
+          }
         } catch (studentError) {
           console.error("Error processing student:", validStudents[i], studentError);
           errorCount++;
         }
       }
 
+      const totalCount = newStudentCount + addedToExistingCount;
       setUploadCount(totalCount);
       
       if (totalCount > 0) {
-        let message = `✅ Successfully uploaded ${totalCount} student(s)!\n`;
+        let message = `✅ Upload Complete!\n\n`;
+        message += `✨ New students: ${newStudentCount}\n`;
+        message += `🔗 Added to existing: ${addedToExistingCount}\n`;
         
         if (errorCount > 0) {
-          message += `⚠️ ${errorCount} student(s) failed to upload.`;
+          message += `❌ Errors: ${errorCount}`;
         }
         
         alert(message);
@@ -524,29 +748,38 @@ export default function ManageClasses() {
   };
 
   const handleRemoveClass = async (classId) => {
-    if (!window.confirm("Are you sure you want to remove this class? This will also remove all students in this class from the database.")) {
+    if (!window.confirm("Are you sure you want to remove this class? Students will be removed from this class but their records will remain.")) {
       return;
     }
 
     try {
-      // Query and delete all student documents in this class
       const q = query(
         collection(db, "users"),
         where("role", "==", "student"),
-        where("classId", "==", classId)
+        where("classIds", "array-contains", classId)
       );
       
       const querySnapshot = await getDocs(q);
       
-      const deletePromises = [];
+      const updatePromises = [];
       querySnapshot.forEach((docSnapshot) => {
-        deletePromises.push(deleteDoc(doc(db, "users", docSnapshot.id)));
+        const student = docSnapshot.data();
+        const updatedClassIds = student.classIds.filter(id => id !== classId);
+        
+        if (updatedClassIds.length > 0) {
+          updatePromises.push(
+            updateDoc(doc(db, "users", docSnapshot.id), {
+              classIds: updatedClassIds
+            })
+          );
+        } else {
+          updatePromises.push(deleteDoc(doc(db, "users", docSnapshot.id)));
+        }
       });
       
-      await Promise.all(deletePromises);
-      console.log(`Removed ${deletePromises.length} students from class ${classId}`);
+      await Promise.all(updatePromises);
+      console.log(`Removed class ${classId} from students`);
 
-      // Delete the class document
       await deleteDoc(doc(db, "classes", classId));
 
       alert("✅ Class removed successfully!");
@@ -565,7 +798,6 @@ export default function ManageClasses() {
           Manage Classes
         </h2>
       </div>
-      
 
       <div className="border-2 border-dashed border-gray-300 rounded-3xl p-10">
         <div className="text-center">
@@ -607,6 +839,12 @@ export default function ManageClasses() {
               {uploadProgress}
             </p>
           )}
+
+          {accountCreationProgress && creatingAccounts && (
+            <p className="text-sm text-accent font-medium mt-3">
+              {accountCreationProgress}
+            </p>
+          )}
         </div>
 
         {errorMessage && (
@@ -620,7 +858,7 @@ export default function ManageClasses() {
         {uploadCount > 0 && !uploading && !errorMessage && (
           <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-accent font-semibold text-center">
-              ✅ Successfully uploaded {uploadCount} student(s)!
+              ✅ Successfully processed {uploadCount} student(s)!
             </p>
           </div>
         )}
@@ -675,12 +913,18 @@ export default function ManageClasses() {
         )}
       </div>
 
-      {/* Modals */}
       <ClassNameModal
         isOpen={showClassNameModal}
         defaultName={pendingUploadData?.file.name.replace(/\.(csv|xlsx|xls)$/i, '')}
         onConfirm={confirmClassNameAndUpload}
         onCancel={cancelClassNameModal}
+      />
+
+      <PasswordConfirmModal
+        isOpen={showPasswordModal}
+        studentCount={studentsList.filter(s => !s.hasAccount).length}
+        onConfirm={handlePasswordConfirm}
+        onCancel={() => setShowPasswordModal(false)}
       />
 
       {viewingClass && (
@@ -690,6 +934,7 @@ export default function ManageClasses() {
           students={studentsList}
           loading={loadingStudents}
           creatingAccounts={creatingAccounts}
+          accountCreationProgress={accountCreationProgress}
           onClose={closeModal}
           onCreateAccounts={handleCreateAccountForAll}
         />
