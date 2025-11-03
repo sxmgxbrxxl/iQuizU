@@ -791,12 +791,17 @@ export default function ManageClasses() {
   };
 
   return (
-    <div className="p-8 font-Outfit">
-      <div className="flex flex-row gap-3">
-        <School className="w-8 h-8 text-accent mb-2" />
-        <h2 className="text-2xl font-bold text-title mb-6 flex items-center gap-2">
+    <div className="px-2 py-6 md:p-8 font-Outfit">
+      <div className="flex flex-row gap-3 items-center">
+        <School className="w-8 h-8 text-accent mb-6" />
+        <div className="flex flex-col mb-6">
+          <h2 className="text-2xl font-bold text-title flex items-center gap-2">
           Manage Classes
-        </h2>
+          </h2>
+          <p className="text-md font-light text-subtext">
+            Add, edit, and organize class in a snap.
+          </p>
+        </div>
       </div>
 
       <div className="border-2 border-dashed border-gray-300 rounded-3xl p-10">
@@ -870,6 +875,7 @@ export default function ManageClasses() {
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
+            <span className="ml-3 text-subtext">Loading…</span>
           </div>
         ) : classes.length === 0 ? (
           <div className="text-center py-8 text-subtext">

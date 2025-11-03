@@ -423,7 +423,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           </h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => navigate("/studentDashboard")}
+            onClick={() => navigate("/student")}
             className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition"
           >
             Back to Dashboard
@@ -507,7 +507,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
             The teacher has ended this quiz session. You can no longer submit answers.
           </p>
           <button
-            onClick={() => navigate("/studentDashboard")}
+            onClick={() => navigate("/student")}
             className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition"
           >
             Back to Dashboard

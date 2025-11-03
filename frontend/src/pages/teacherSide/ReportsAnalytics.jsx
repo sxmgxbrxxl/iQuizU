@@ -26,7 +26,8 @@ import {
   X,
   CheckCircle,
   PlusCircle,
-  Save
+  Save,
+  Loader2
 } from "lucide-react";
 import {
   BarChart,
@@ -558,21 +559,29 @@ export default function ReportsAnalytics() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center font-Outfit">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+        <span className="ml-3 text-subtext">Loading…</span>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 font-Outfit">
+    <div className="py-6 px-2 md:p-8 font-Outfit">
       <div className="flex items-center gap-3">
-        <BarChart2 className="w-8 h-8 text-blue-600" />
-        <h1 className="text-3xl font-bold text-gray-800">Reports & Analytics</h1>
+        <BarChart2 className="w-8 h-8 text-accent mb-6" />
+        <div className="flex flex-col mb-6">
+          <h1 className="text-2xl font-bold text-title flex items-center gap-2">
+            Reports & Analytics
+          </h1>
+          <p className="text-md font-light text-subtext">
+            View detailed quiz details and student performance and insights.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl p-6 shadow-md">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 rounded-3xl mb-8">
+        <div className="bg-components rounded-2xl p-6 shadow-md">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Select Class
           </label>

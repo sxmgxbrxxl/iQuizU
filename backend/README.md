@@ -1,25 +1,25 @@
 # Quiz Generator Backend
 
 backend/
-├── venv/                          # virtual environment (auto-generated)
+├── venv/ # virtual environment (auto-generated)
 ├── app/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI entry point
-│   ├── routes/
-│   │   ├── __init__.py
-│   │   └── quiz_routes.py         # quiz generation routes
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── gemini_service.py      # Gemini API logic
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   └── pdf_extractor.py       # PDF text extraction
-│   └── config/
-│       ├── __init__.py
-│       └── settings.py            # environment config
-├── uploads/                       # temporary PDF storage
-├── .env                          # API keys
-├── requirements.txt              # dependencies
+│ ├── **init**.py
+│ ├── main.py # FastAPI entry point
+│ ├── routes/
+│ │ ├── **init**.py
+│ │ └── quiz_routes.py # quiz generation routes
+│ ├── services/
+│ │ ├── **init**.py
+│ │ └── gemini_service.py # Gemini API logic
+│ ├── utils/
+│ │ ├── **init**.py
+│ │ └── pdf_extractor.py # PDF text extraction
+│ └── config/
+│ ├── **init**.py
+│ └── settings.py # environment config
+├── uploads/ # temporary PDF storage
+├── .env # API keys
+├── requirements.txt # dependencies
 ├── .gitignore
 └── README.md
 
@@ -28,6 +28,7 @@ FastAPI backend with Gemini AI integration for automatic quiz generation from PD
 ## Setup
 
 1. Create virtual environment:
+
 ```bash
    python -m venv venv
    source venv/bin/activate  # Mac/Linux
@@ -42,3 +43,4 @@ Create .env file with your Gemini API key:
 
    ## to run the Backend
    uvicorn main:app --reload --port 8000
+```

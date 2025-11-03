@@ -4,6 +4,7 @@ import { auth, db } from "../../firebase/firebaseConfig";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { ChevronLeft } from "lucide-react";
+import LOGO from "../../assets/iQuizU.svg"
 
 export default function LoginPage() {
   const [loginInput, setLoginInput] = useState("");
@@ -181,7 +182,7 @@ export default function LoginPage() {
       {/* Back button */}
       <Link
         to="/"
-        className="flex flex-row items-center justify-center absolute top-10 left-10 text-black bg-components px-6 py-4 rounded-full shadow-md hover:shadow-lg transition-shadow duration-200 font-bold"
+        className="flex flex-row items-center justify-center absolute top-10 left-10 text-black bg-components px-6 py-4 rounded-full shadow-md transition transform duration-200 ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none hover:shadow-lg font-bold"
       >
         <ChevronLeft className="w-5 h-5 mr-2"/>
         Back
@@ -190,7 +191,8 @@ export default function LoginPage() {
       {/* Login Card */}
       <div className="bg-components p-10 rounded-3xl shadow-lg w-96">
         <form onSubmit={handleSubmit}>
-          <h2 className="text-2xl font-bold mb-6 text-center">Log In to Quizzard</h2>
+          <img src={LOGO} alt="Logo" className="h-16 w-16 mx-auto mb-4 rounded-full outline-dotted outline-accent"/>
+          <h2 className="text-2xl font-bold mb-6 text-center">Log In to iQuizU</h2>
 
           {error && (
             <div className="mb-4 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
@@ -254,7 +256,7 @@ export default function LoginPage() {
 
           {/* Submit Button */}
           <button
-            className="w-full bg-button text-white py-2 rounded-lg hover:bg-secondary transition-colors duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full bg-button text-white py-2 rounded-lg hover:bg-secondary  duration-200 transform transition-transform ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             type="submit"
             disabled={loading}
           >
@@ -288,7 +290,7 @@ export default function LoginPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleRecoverAccount}
-                className="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-secondary transition-colors duration-200 font-bold flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-secondary duration-200 transform transition-transform ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none font-bold flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 {loading ? (
@@ -299,7 +301,7 @@ export default function LoginPage() {
               </button>
               <button
                 onClick={handleCloseRecoveryModal}
-                className="flex-1 bg-gray-300 text-gray-800 py-2 rounded-lg hover:bg-gray-400 transition-colors duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-gray-300 text-gray-800 py-2 rounded-lg hover:bg-gray-400 duration-200 transform transition-transform ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 Cancel

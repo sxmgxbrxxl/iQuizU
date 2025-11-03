@@ -368,27 +368,27 @@ export default function StudentDashboard({ user, userDoc }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-Outfit">
-      <nav className="flex items-center justify-between px-8 py-4 bg-white shadow">
-        <h1 className="text-2xl font-bold text-indigo-600">Student Dashboard</h1>
+    <div className="min-h-screen bg-background font-Outfit">
+      <nav className="flex items-center justify-between px-8 py-4 bg-white shadow-sm">
+        <h1 className="text-2xl font-bold text-black">iQuizU</h1>
         <button
           onClick={handleLogout}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200"
+          className="bg-button text-white px-4 py-2 rounded-lg font-semibold hover:bg-buttonHover transition-colors duration-200"
         >
           Logout
         </button>
       </nav>
 
-      <main className="p-8 space-y-8">
+      <main className="p-8 space-y-4">
         <section>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+          <h2 className="text-2xl md:text-5xl font-bold text-title mb-2">
             Welcome back, {userDoc?.name || "Student"}!
           </h2>
-          <p className="text-gray-600">Your dashboard is ready.</p>
+          <p className="text-subtext text-lg md:text-3xl">Your dashboard is ready.</p>
         </section>
 
         {/* Join Live Quiz Section */}
-        <section className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-lg p-6">
+        <section className="bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <Zap className="w-8 h-8 text-white" />
             <div>
@@ -399,7 +399,7 @@ export default function StudentDashboard({ user, userDoc }) {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col md:flex-row gap-3">
             <input
               type="text"
               value={quizCode}

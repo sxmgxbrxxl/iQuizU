@@ -547,20 +547,26 @@ export default function ManageQuizzes() {
   // RENDER
   // -----------------------------------------------------------------
   return (
-    <div className="p-8 font-Outfit">
+    <div className="px-2 py-6 md:p-8 font-Outfit">
       {/* Header */}
-      <div className="flex flex-row gap-3">
-        <NotebookPen className="w-8 h-8 text-accent mb-2" />
-        <h2 className="text-2xl font-bold text-title mb-6 flex items-center gap-2">
-          Manage Quizzes
-        </h2>
+      <div className="flex flex-row gap-3 items-center ">
+        <NotebookPen className="w-8 h-8 text-accent mb-6" />
+        <div className="flex flex-col mb-6">
+          <h2 className="text-2xl font-bold text-title flex items-center gap-2">
+            Manage Quizzes
+          </h2>
+          <p className="text-md font-light text-subtext">
+            Create, edit, and organize your quizzes with ease.
+          </p>
+        </div>
+        
       </div>
 
       {/* Create New Quiz */}
-      <div className="bg-green-50 p-6 rounded-xl border border-green-200 mb-8">
-        <h3 className="text-lg text-title font-semibold mb-3">
+      <div className="bg-green-50 p-8 rounded-3xl border-2 border-green-200 mb-8">
+        <h3 className="text-xl text-title font-semibold mb-3">
           Create New Quiz
-        </h3>
+        </h3> 
         <div className="flex flex-wrap gap-4">
           <button
             onClick={() => setShowPdfModal(true)}
@@ -572,6 +578,66 @@ export default function ManageQuizzes() {
             <PlusCircle className="w-5 h-5" /> Manual Quiz Creation
           </button>
         </div>
+      </div>
+
+      {/* Published Quizzes */}
+      <div className="border-2 border-gray-300 border-dashed rounded-3xl p-8 mb-8 ">
+        <h3 className="text-xl text-title font-semibold mb-4">
+          Your Published Quizzes
+        </h3>
+
+        {loadingQuizzes ? (
+          <div className="flex items-center justify-center py-12 ">
+            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+            <span className="ml-3 text-subtext">Loading…</span>
+          </div>
+        ) : publishedQuizzes.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+            <p className="text-gray-500 text-lg">No published quizzes yet</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {publishedQuizzes.map((q) => (
+              <div
+                key={q.id}
+                className="border rounded-2xl p-5 shadow-sm hover:shadow-md transition bg-green-50"
+              >
+                <div className="relative flex flex-row">
+                  <div className="flex flex-col">
+                    <h4 className="text-lg font-bold text-title">{q.title}</h4>
+                    <p className="text-gray-500 text-sm">
+                      Questions: {q.questionCount}
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      Total Points: {q.totalPoints}
+                    </p>
+                  </div>
+                  <button 
+                    ///onClick={} lagyan nalang po here yung sa pagd-delete ng published quiz 
+                    className="absolute top-2 right-1 w-4 h-4 text-red-600 transition-all active:scale-95 hover:scale-105 duration-200">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                
+
+                <div className="flex justify-between items-center gap-2 mt-4">
+                  <button
+                    onClick={() => navigate(`/teacher/edit-quiz/${q.id}`)}
+                    className="text-blue-600 rounded-xl bg-blue-100 px-3 py-2 font-semibold flex items-center gap-1 transform-all active:scale-95 hover:scale-105 duration-200"
+                  >
+                    <Pen className="w-4 h-4" /> <span className="hidden md:block">Edit</span>
+                  </button>
+                  <button
+                    onClick={() => navigate(`/teacher/assign-quiz/${q.id}`)}
+                    className="text-purple-600 bg-purple-100 px-3 py-2 rounded-xl font-semibold flex items-center gap-1 transform-all active:scale-95 hover:scale-105 duration-200"
+                  >
+                    <Users className="w-4 h-4" /> <span className="hidden md:block">Assign</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Synchronous Quizzes Toggle */}
@@ -598,7 +664,7 @@ export default function ManageQuizzes() {
 
       {/* Synchronous Quizzes Section */}
       {showSynchronousQuizzes && (
-        <div className="mb-8 bg-yellow-50 rounded-xl border-2 border-yellow-200 p-6">
+        <div className="mb-8 bg-yellow-50 rounded-3xl border-2 border-yellow-200 p-6">
           <h3 className="text-xl text-title font-semibold mb-4 flex items-center gap-2">
             <Zap className="w-6 h-6 text-yellow-600" /> Live Quizzes
           </h3>
@@ -889,56 +955,6 @@ export default function ManageQuizzes() {
           )}
         </div>
       )}
-
-      {/* Published Quizzes */}
-      <div>
-        <h3 className="text-xl text-title font-semibold mb-4">
-          Your Published Quizzes
-        </h3>
-
-        {loadingQuizzes ? (
-          <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
-            <span className="ml-3 text-gray-600">Loading…</span>
-          </div>
-        ) : publishedQuizzes.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-            <p className="text-gray-500 text-lg">No published quizzes yet</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {publishedQuizzes.map((q) => (
-              <div
-                key={q.id}
-                className="border rounded-xl p-5 shadow-sm hover:shadow-md transition bg-green-50"
-              >
-                <h4 className="text-lg font-bold text-title">{q.title}</h4>
-                <p className="text-gray-500 text-sm">
-                  Questions: {q.questionCount}
-                </p>
-                <p className="text-gray-500 text-sm">
-                  Total Points: {q.totalPoints}
-                </p>
-
-                <div className="flex justify-between items-center mt-4">
-                  <button
-                    onClick={() => navigate(`/teacher/edit-quiz/${q.id}`)}
-                    className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
-                  >
-                    <Pen className="w-4 h-4" /> Edit
-                  </button>
-                  <button
-                    onClick={() => navigate(`/teacher/assign-quiz/${q.id}`)}
-                    className="text-purple-600 font-semibold hover:underline flex items-center gap-1"
-                  >
-                    <Users className="w-4 h-4" /> Assign
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* PDF Modal */}
       {showPdfModal && (

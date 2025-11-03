@@ -11,11 +11,17 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 
 // GENERAL PAGES
 import LandingPage from "./pages/general/LandingPage";
+import FeaturesPage from "./pages/general/FeaturesPage";
+import AboutPage from "./pages/general/AboutPage";
 import LoginPage from "./pages/studentSide/LoginPage";
 import SignUpPage from "./pages/studentSide/SignUpPage";
 
 // STUDENT PAGES
 import StudentDashboard from "./pages/studentSide/StudentDashboard";
+import ExperimentalDashboard from "./pages/studentSide/ExperimentalDashboard"; //TRIAL pwedeng idelete
+import StudentProfile from "./pages/studentSide/StudentProfile"; // Profile page
+import StudentQuizzes from "./pages/studentSide/StudentQuizzes"; //Quizzes Page
+import StudentPerformance from "./pages/studentSide/StudentPerformance"; // Performance Page
 import TakeAsyncQuiz from "./pages/studentSide/TakeAsyncQuiz"; // ✅ FIXED: Updated import name
 import TakeSyncQuiz from "./pages/studentSide/TakeSyncQuiz";
 
@@ -24,6 +30,7 @@ import TeacherDashboard from "./pages/teacherSide/TeacherDashboard";
 import ManageClasses from "./pages/teacherSide/ManageClasses";
 import ManageQuizzes from "./pages/teacherSide/ManageQuizzes";
 import ReportsAnalytics from "./pages/teacherSide/ReportsAnalytics";
+import TeacherProfile from "./pages/teacherSide/TeacherProfile";
 
 // QUIZ MANAGEMENT
 import EditQuiz from "./pages/teacherSide/EditQuiz";
@@ -65,7 +72,9 @@ function App() {
 
       // ✅ CRITICAL: Block ALL auth state changes during account creation
       if (isAccountCreationInProgress) {
-        console.log(`⛔ BLOCKED: Account creation in progress, ignoring change #${changeNumber}`);
+        console.log(
+          `⛔ BLOCKED: Account creation in progress, ignoring change #${changeNumber}`
+        );
         return;
       }
 
@@ -103,7 +112,9 @@ function App() {
       } else {
         // ✅ Only clear state if we're not in account creation mode
         if (previousAuthUserRef.current) {
-          console.log(`⚠️ User logged out (was: ${previousAuthUserRef.current.email})`);
+          console.log(
+            `⚠️ User logged out (was: ${previousAuthUserRef.current.email})`
+          );
           setAuthUser(null);
           setUserDoc(null);
           setRole(null);
@@ -143,6 +154,8 @@ function App() {
       <Routes>
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/about" element={<AboutPage />} />
 
         <Route
           path="/login"
@@ -151,7 +164,7 @@ function App() {
               role === "teacher" ? (
                 <Navigate to="/teacher" replace />
               ) : role === "student" ? (
-                <Navigate to="/studentDashboard" replace />
+                <Navigate to="/student" replace /> //TRIAL
               ) : role === "admin" ? (
                 <Navigate to="/AdminHomePage" replace />
               ) : (
@@ -178,6 +191,31 @@ function App() {
             )
           }
         />
+
+        {/*EXPERIMENTAL DASHBOARD ROUTE*/}
+        <Route
+          path="/student"
+          element={
+            authUser && role === "student" ? (
+              <ExperimentalDashboard user={authUser} userDoc={userDoc} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        >
+          <Route
+            path="profile"
+            element={<StudentProfile user={authUser} userDoc={userDoc} />} //ADD for other student subpages
+          />
+          <Route
+            path="quizzes"
+            element={<StudentQuizzes user={authUser} userDoc={userDoc} />}
+          />
+          <Route
+            path="performance"
+            element={<StudentPerformance user={authUser} userDoc={userDoc} />}
+          />
+        </Route>
 
         {/* Student Take Quiz by Quiz Code */}
         <Route
@@ -248,6 +286,9 @@ function App() {
             path="quiz-results/:quizId/:classId"
             element={<QuizResults />}
           />
+
+          {/* TEACHER PROFILE ROUTE */}
+          <Route path="profile" element={<TeacherProfile />} />
         </Route>
 
         {/* ============================

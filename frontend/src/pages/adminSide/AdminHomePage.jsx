@@ -4,6 +4,7 @@ import { LogOut, Upload, BarChart3, Home, UserPlus } from "lucide-react";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { createUserWithEmailAndPassword, updateCurrentUser, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import LOGO from "../../assets/iQuizU.svg";
 
 export default function AdminHomePage() {
   const navigate = useNavigate();
@@ -79,29 +80,35 @@ export default function AdminHomePage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-100 font-Quizzard">
+    <div className="min-h-screen flex bg-gray-100 font-Outfit">
       {/* Sidebar */}
-      <aside className="w-64 bg-gradient-to-b from-primary to-secondary text-white flex flex-col p-6">
-        <h1 className="text-2xl font-bold mb-10 text-center">Quizzard Admin</h1>
-
-        <nav className="flex flex-col space-y-3">
-          <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:text-primary transition">
+      <aside className="w-64 bg-accent text-white flex flex-col py-10">
+        <div className="flex flex-row gap-2 items-center px-10 mb-4">
+          <img src={LOGO} alt="Logo" className="h-10 w-10"/>
+          <div>
+            <h1 className="text-2xl font-bold cursor-default">iQuizU</h1>
+            <p className="text-sm -mt-1 cursor-default">Admin</p>
+          </div>
+        </div>
+        
+        <nav className="flex flex-col space-y-6 mt-2 px-6">
+          <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-accentHover hover:text-primary transition">
             <Home size={20} />
             <span>Dashboard</span>
           </button>
 
-          <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:text-primary transition">
+          <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-accentHover hover:text-primary transition">
             <Upload size={20} />
             <span>Upload Module</span>
           </button>
 
-          <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:text-primary transition">
+          <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-accentHover hover:text-primary transition">
             <BarChart3 size={20} />
             <span>Analytics</span>
           </button>
         </nav>
 
-        <div className="mt-auto">
+        <div className="mt-auto px-6">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-600 bg-red-500 text-white w-full justify-center transition"

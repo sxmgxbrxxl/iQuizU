@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import LU from "../assets/LU.svg";
+import LOGO from "../assets/iQuizU.svg";
 import {
   Menu,
   X,
@@ -47,6 +47,7 @@ export default function Sidebar({ user, userDoc }) {
 
   // Get user display name
   const userName = userDoc?.firstName || user?.displayName || "Teacher";
+  const userEmail = userDoc?.email || user?.email || userDoc?.teacherEmail || "Educator";
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (
@@ -54,7 +55,7 @@ export default function Sidebar({ user, userDoc }) {
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-6 left-6 z-50 bg-components text-black p-3 rounded-full shadow-md hover:bg-gray-50 transition-all lg:hidden border border-gray-100 hover:scale-105"
+        className="fixed top-6 right-6 z-50 bg-components text-black p-3 rounded-full shadow-md hover:bg-gray-50 transition-all lg:hidden border border-gray-100 hover:scale-105"
         aria-label="Toggle menu"
       >
         {isOpen ? <X size={22} /> : <Menu size={22} />}
@@ -62,98 +63,131 @@ export default function Sidebar({ user, userDoc }) {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 shadow-2xl transition-all duration-300 ease-in-out z-40
+        className={`fixed top-0 left-0 h-screen bg-gradient-to-br from-green-600 via-green-700 to-green-800 shadow-2xl transition-all duration-300 ease-in-out z-40
         ${isOpen ? "translate-x-0" : "-translate-x-full"} 
         lg:translate-x-0
         ${isCollapsed ? "lg:w-20" : "lg:w-72"}
         w-72`}
       >
         {/* Header */}
-        <div className="relative p-6 bg-gradient-to-r from-blue-800/50 to-indigo-800/50 backdrop-blur-sm font-Outfit">
-          <div
-            className={`flex items-center ${
-              isCollapsed ? "justify-center" : "gap-3"
-            } transition-all duration-300`}
-          >
-            <div className="w-10 h-10 flex items-center justify-center transform hover:scale-110 transition-transform">
-              <img src={LU} alt="Logo" className="w-12 h-12" />
-            </div>
-            <h1
-              className={`text-2xl font-bold text-white transition-all duration-300 ${
-                isCollapsed
-                  ? "opacity-0 w-0 overflow-hidden"
-                  : "opacity-100"
-              }`}
+          <div className="relative bg-gradient-to-r from-green-800/50 to-blue-800/50 backdrop-blur-sm font-Outfit cursor-default">
+            <div
+              className={`flex items-center ${
+                isCollapsed ? "justify-center py-6 ml-4" : "px-10 py-6 gap-3"
+              } transition-all duration-300`}
             >
-              iQuizU
-            </h1>
-          </div>
+              {/* Logo and Text Container */}
+              <div className="flex items-center gap-4 transform hover:scale-105 transition-transform duration-300">
+                {/* Logo */}
+                <img
+                  src={LOGO}
+                  alt="Logo"
+                  className={`transition-all duration-300 ${
+                    isCollapsed ? "w-10 h-10" : "w-12 h-12"
+                  }`}
+                />
+                
+                <div
+                  className={`flex flex-col text-white overflow-hidden transition-all duration-300 ${
+                    isCollapsed ? "opacity-0 max-w-0" : "opacity-100 max-w-xs"
+                  }`}
+                >
+                  <h1 className="text-2xl font-bold leading-tight">iQuizU</h1>
+                  <p className="text-sm -mt-1">Teacher</p>
+                </div>
+              </div>
+            </div>  
 
           {/* Desktop Collapse Toggle */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full items-center justify-center shadow-md hover:bg-blue-50 transition-all hover:scale-110 border-2 border-blue-600"
+            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full items-center justify-center shadow-md hover:bg-green-50 transition-all hover:scale-110 border-2 border-green-600"
             aria-label="Toggle sidebar"
           >
             {isCollapsed ? (
-              <ChevronRight size={14} className="text-blue-600" />
+              <ChevronRight size={14} className="text-green-600" />
             ) : (
-              <ChevronLeft size={14} className="text-blue-600" />
+              <ChevronLeft size={14} className="text-green-600" />
             )}
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="px-3 py-6 space-y-1 overflow-y-auto h-[calc(100vh-200px)]">
-          {menuItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`flex items-center gap-4 px-4 py-3.5 text-white hover:bg-white/20 rounded-xl transition-all duration-200 group relative overflow-hidden
-              ${isCollapsed ? "justify-center" : ""}`}
-              onClick={() => setIsOpen(false)}
-              title={isCollapsed ? item.label : ""}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
-              <div className="relative w-10 h-10 bg-white/10 group-hover:bg-white/20 rounded-xl flex items-center justify-center transition-all group-hover:scale-110">
-                <item.icon size={20} className="text-white" />
-              </div>
-              <span
-                className={`relative font-Outfit font-medium text-base transition-all duration-300 ${
-                  isCollapsed
-                    ? "opacity-0 w-0 overflow-hidden"
-                    : "opacity-100"
-                }`}
+        <nav
+          className={`flex flex-col px-4 py-6 space-y-3 overflow-y-auto h-[calc(100vh-200px)] transition-all duration-300 ${
+            isCollapsed ? "px-2" : "px-6"
+          }`}
+        >
+          {/* --- Menu Items --- */}
+          <div className="flex flex-col space-y-3">
+            {menuItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setIsOpen(false)}
+                title={isCollapsed ? item.label : ""}
+                className={`flex items-center relative overflow-hidden rounded-xl text-white transition-all duration-300 group
+                  ${
+                    isCollapsed
+                      ? "justify-center py-3 hover:bg-white/10"
+                      : "gap-4 px-3 py-3 hover:bg-white/10"
+                  }`}
               >
-                {item.label}
-              </span>
-            </Link>
-          ))}
+                {/* Hover gradient effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
 
-          {/* Divider */}
-          <div className="pt-4 pb-2 rounded-full">
-            <div className="border-t border-white/20"></div>
+                {/* Icon */}
+                <div className="relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-transform duration-300">
+                  <item.icon size={22} className="text-white" />
+                </div>
+
+                {/* Label */}
+                <span
+                  className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${
+                    isCollapsed
+                      ? "opacity-0 max-w-0 overflow-hidden"
+                      : "opacity-100 max-w-xs"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            ))}
           </div>
 
-          {/* Logout Button */}
+          {/* --- Divider --- */}
+          <div className="pt-4 pb-2">
+            <div className="border-t border-white/20 rounded-full"></div>
+          </div>
+
+          {/* --- Logout Button --- */}
           <button
             onClick={() => {
               setIsOpen(false);
               setShowConfirm(true);
             }}
-            className={`flex items-center gap-4 px-4 py-3.5 text-white hover:bg-red-500/30 rounded-xl transition-all duration-200 w-full group relative overflow-hidden
-            ${isCollapsed ? "justify-center" : ""}`}
             title={isCollapsed ? "Logout" : ""}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/20 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
-            <div className="relative w-10 h-10 bg-white/10 group-hover:bg-red-500/30 rounded-xl flex items-center justify-center transition-all group-hover:scale-110">
-              <LogOut size={20} className="text-white" />
-            </div>
-            <span
-              className={`relative font-Outfit font-medium text-base transition-all duration-300 ${
+            className={`flex items-center relative overflow-hidden rounded-xl text-white transition-all duration-300 group w-full
+              ${
                 isCollapsed
-                  ? "opacity-0 w-0 overflow-hidden"
-                  : "opacity-100"
+                  ? "justify-center py-3 hover:bg-red-500/30"
+                  : "gap-4 px-3 py-3.5 hover:bg-red-500/30"
+              }`}
+          >
+            {/* Hover gradient effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/20 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
+
+            {/* Icon */}
+            <div className="relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-transform duration-300">
+              <LogOut size={22} className="text-white" />
+            </div>
+
+            {/* Label */}
+            <span
+              className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${
+                isCollapsed
+                  ? "opacity-0 max-w-0 overflow-hidden"
+                  : "opacity-100 max-w-xs"
               }`}
             >
               Logout
@@ -163,29 +197,28 @@ export default function Sidebar({ user, userDoc }) {
 
         {/* User Profile Section */}
         <div
-          className={`absolute font-Outfit bottom-0 left-0 right-0 p-4 bg-gradient-to-r from-blue-900/50 to-indigo-900/50 backdrop-blur-sm border-t border-white/10 transition-all duration-300 ${
-            isCollapsed ? "items-center justify-center" : ""
-          }`}
-        >
-          {!isCollapsed ? (
-            <div className="flex items-center gap-3 px-4 py-3">
+          onClick={() => (setIsOpen(false), navigate('/teacher/profile'))}
+          className={`flex w-full absolute bottom-0 font-Outfit items-center bg-gradient-to-r from-green-900/50 to-blue-900/50 backdrop-blur-sm border-t border-white/10 transition-all duration-300 cursor-pointer ${
+            isCollapsed ? "items-center justify-center py-6 pl-4" : "px-10 py-6 gap-3"
+              } transition-all duration-300`}
+            >
+            {/* Profile and Name */}
+            <div className="flex items-center gap-4 transform hover:scale-105 transition-transform duration-300">
+              {/* Initial */}
               <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/20">
                 {userInitial}
               </div>
-              <div>
+              <div
+                className={`flex flex-col text-white overflow-hidden transition-all duration-300 ${
+                    isCollapsed ? "opacity-0 max-w-0" : "opacity-100 max-w-xs"
+                  }`}
+                >
                 <p className="text-white font-semibold text-sm">{userName}</p>
-                <p className="text-blue-200 text-xs">Educator</p>
+                <p className="text-blue-200 font-light text-xs">{userEmail}</p>
               </div>
             </div>
-          ) : (
-            <div className="flex justify-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/20 hover:scale-110 transition-transform cursor-pointer">
-                {userInitial}
-              </div>
-            </div>
-          )}
+          </div>  
         </div>
-      </div>
 
       {/* Overlay for mobile */}
       {isOpen && (
