@@ -28,7 +28,15 @@ export default function QuizResults({ quiz, assignment, quizResults, questions, 
     try {
       const analysis = analyzeAllQuestions();
       
-      const GEMINI_API_KEY = "AIzaSyA4OK7avwRMHHJtODovIp3i9jbc8JWrDkM";
+      // ✅ FIX: Access environment variable correctly for Create React App
+      const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+      
+      // ✅ FIX: Check if API key exists before making request
+      if (!GEMINI_API_KEY) {
+        console.warn("REACT_APP_GEMINI_API_KEY not found in environment variables");
+        generateFallbackRecommendations();
+        return;
+      }
       
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
@@ -396,7 +404,7 @@ Generate 6-10 recommendations now:`;
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInDown {
           from {
             opacity: 0;
