@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import LOGO from "../assets/iQuizU.svg";
 import {
@@ -11,6 +11,7 @@ import {
     Home,
     ChevronLeft,
     ChevronRight,
+    Trophy,
     } from "lucide-react";
     import { auth } from "../firebase/firebaseConfig";
     import { signOut } from "firebase/auth";
@@ -20,6 +21,7 @@ import {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         document.documentElement.style.setProperty(
@@ -40,9 +42,18 @@ import {
 
     const menuItems = [
         { to: "/student", icon: Home, label: "Dashboard" },
-        { to: "quizzes", icon: FileText, label: "Quizzes" },
-        { to: "performance", icon: BarChart3, label: "Performance" },
+        { to: "/student/quizzes", icon: FileText, label: "Quizzes" },
+        { to: "/student/performance", icon: BarChart3, label: "Performance" },
+        { to: "/student/leaderboards", icon: Trophy, label: "Leaderboards" },
     ];
+
+    // Function to check if link is active
+    const isActive = (path) => {
+        if (path === "/student") {
+            return location.pathname === "/student";
+        }
+        return location.pathname.includes(path);
+    };
 
     // Get user display name
     const userName = userDoc?.firstName || user?.displayName || "Student";
@@ -123,20 +134,26 @@ import {
                 <Link
                     key={item.to}
                     to={item.to}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                        setIsOpen(false);
+                        if (isActive(item.to)) {
+                            window.dispatchEvent(new Event('refreshPage'));
+                        }
+                    }}
                     title={isCollapsed ? item.label : ""}
                     className={`flex items-center relative overflow-hidden rounded-xl text-white transition-all duration-300 group
                     ${
                         isCollapsed
                         ? "justify-center py-3 hover:bg-white/10"
                         : "gap-4 px-3 py-3 hover:bg-white/10"
-                    }`}
+                    }
+                    ${isActive(item.to) ? "bg-white/20 shadow-lg" : ""}`}
                 >
                     {/* Hover gradient effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
 
                     {/* Icon */}
-                    <div className="relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-transform duration-300">
+                    <div className={`relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-transform duration-300 ${isActive(item.to) ? "scale-110" : ""}`}>
                     <item.icon size={22} className="text-white" />
                     </div>
 

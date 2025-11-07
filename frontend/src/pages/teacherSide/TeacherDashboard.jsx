@@ -58,15 +58,24 @@ export default function TeacherDashboard({ user, userDoc }) {
     fetchTotalQuizzes();
   }, [teacherId]);
 
-  // 🔹 Fetch total number of students
+  // 🔹 Fetch total number of students through classes
   useEffect(() => {
     const fetchTotalStudents = async () => {
       if (!teacherId) return;
       try {
         setLoadingStudents(true);
-        const q = query(collection(db, "students"), where("teacherId", "==", teacherId));
-        const snapshot = await getDocs(q);
-        setTotalStudents(snapshot.size);
+        
+        // Get all classes for this teacher
+        const classesQuery = query(collection(db, "classes"), where("teacherId", "==", teacherId));
+        const classesSnapshot = await getDocs(classesQuery);
+        
+        // Sum up studentCount from all classes
+        let totalStudentCount = 0;
+        classesSnapshot.forEach(doc => {
+          totalStudentCount += doc.data().studentCount || 0;
+        });
+        
+        setTotalStudents(totalStudentCount);
       } catch (error) {
         console.error("Error fetching students:", error);
       } finally {

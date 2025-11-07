@@ -18,11 +18,11 @@ import SignUpPage from "./pages/studentSide/SignUpPage";
 
 // STUDENT PAGES
 import StudentDashboard from "./pages/studentSide/StudentDashboard";
-import ExperimentalDashboard from "./pages/studentSide/ExperimentalDashboard"; //TRIAL pwedeng idelete
-import StudentProfile from "./pages/studentSide/StudentProfile"; // Profile page
-import StudentQuizzes from "./pages/studentSide/StudentQuizzes"; //Quizzes Page
-import StudentPerformance from "./pages/studentSide/StudentPerformance"; // Performance Page
-import TakeAsyncQuiz from "./pages/studentSide/TakeAsyncQuiz"; // ✅ FIXED: Updated import name
+import StudentProfile from "./pages/studentSide/StudentProfile";
+import StudentQuizzes from "./pages/studentSide/StudentQuizzes";
+import StudentPerformance from "./pages/studentSide/StudentPerformance";
+import Leaderboards from "./pages/studentSide/LeaderBoards";
+import TakeAsyncQuiz from "./pages/studentSide/TakeAsyncQuiz";
 import TakeSyncQuiz from "./pages/studentSide/TakeSyncQuiz";
 
 // TEACHER PAGES
@@ -37,10 +37,13 @@ import EditQuiz from "./pages/teacherSide/EditQuiz";
 import QuizSettings from "./pages/teacherSide/QuizSettings";
 import AssignQuiz from "./pages/teacherSide/AssignQuiz";
 import QuizControlPanel from "./pages/teacherSide/QuizControlPanel";
-import QuizResults from "./pages/teacherSide/QuizResults"; // ✅ NEW: Quiz Results
+import QuizResults from "./pages/teacherSide/QuizResults";
 
 // ADMIN PAGE
 import AdminHomePage from "./pages/adminSide/AdminHomePage";
+
+// COMPONENTS
+import StudentSidebar from "./components/StudentSideBar";
 
 // ✅ GLOBAL FLAG TO PREVENT REDIRECTS DURING ACCOUNT CREATION
 let isAccountCreationInProgress = false;
@@ -48,6 +51,49 @@ let isAccountCreationInProgress = false;
 export function setAccountCreationFlag(value) {
   isAccountCreationInProgress = value;
   console.log(`🔧 Account creation flag set to: ${value}`);
+}
+
+// ✅ STUDENT LAYOUT WRAPPER WITH SIDEBAR
+function StudentLayout({ user, userDoc, children }) {
+  const [sidebarWidth, setSidebarWidth] = useState("288px");
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const width = getComputedStyle(document.documentElement)
+        .getPropertyValue("--sidebar-width")
+        .trim();
+      if (width) {
+        setSidebarWidth(width);
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+
+    const initialWidth = getComputedStyle(document.documentElement)
+      .getPropertyValue("--sidebar-width")
+      .trim();
+    if (initialWidth) {
+      setSidebarWidth(initialWidth);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="flex h-screen bg-background">
+      <StudentSidebar user={user} userDoc={userDoc} />
+      
+      <div
+        className="flex-1 overflow-y-auto transition-all duration-300"
+        style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function App() {
@@ -86,21 +132,43 @@ function App() {
         try {
           const usersRef = collection(db, "users");
 
+          // Try to find by email first
           let q = query(usersRef, where("email", "==", user.email));
           let snapshot = await getDocs(q);
 
+          // If not found, try emailAddress field
           if (snapshot.empty) {
             q = query(usersRef, where("emailAddress", "==", user.email));
             snapshot = await getDocs(q);
           }
 
+          // ✅ FIXED: Try to find by authUID if still not found
+          if (snapshot.empty) {
+            console.log(`🔍 Trying to find by authUID: ${user.uid}`);
+            q = query(usersRef, where("authUID", "==", user.uid));
+            snapshot = await getDocs(q);
+          }
+
           if (!snapshot.empty) {
-            const docData = snapshot.docs[0].data();
-            setUserDoc(docData);
-            setRole(docData.role || null);
-            console.log(`✅ User role found: ${docData.role}`);
+            const doc = snapshot.docs[0];
+            
+            // ✅ CRITICAL FIX: Include document ID!
+            const userDocWithId = {
+              id: doc.id,  // <-- IMPORTANT: Document ID from Firestore
+              ...doc.data()
+            };
+            
+            console.log(`✅ User document found!`);
+            console.log(`   Document ID: ${doc.id}`);
+            console.log(`   Auth UID: ${user.uid}`);
+            console.log(`   Role: ${userDocWithId.role}`);
+            console.log(`   Name: ${userDocWithId.name || userDocWithId.displayName}`);
+            
+            setUserDoc(userDocWithId);
+            setRole(userDocWithId.role || null);
           } else {
             console.log(`⚠️ No user document found for: ${user.email}`);
+            console.log(`   Tried: email, emailAddress, and authUID fields`);
             setUserDoc(null);
             setRole(null);
           }
@@ -138,13 +206,62 @@ function App() {
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
-          fontSize: "18px",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          margin: 0,
+          padding: 0,
         }}
       >
-        Loading...
+        {/* Animated spinner */}
+        <div
+          style={{
+            width: "60px",
+            height: "60px",
+            border: "4px solid rgba(255, 255, 255, 0.3)",
+            borderTop: "4px solid white",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            marginBottom: "30px",
+          }}
+        />
+
+        {/* Loading text */}
+        <h1
+          style={{
+            color: "white",
+            fontSize: "28px",
+            fontWeight: "600",
+            margin: "0 0 10px 0",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Pakiss pwede ba?
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          style={{
+            color: "rgba(255, 255, 255, 0.8)",
+            fontSize: "14px",
+            margin: "0",
+            letterSpacing: "1px",
+          }}
+        >
+          Sandali lang 🎯
+        </p>
+
+        {/* CSS Animation */}
+        <style>{`
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
       </div>
     );
   }
@@ -164,7 +281,7 @@ function App() {
               role === "teacher" ? (
                 <Navigate to="/teacher" replace />
               ) : role === "student" ? (
-                <Navigate to="/student" replace /> //TRIAL
+                <Navigate to="/student" replace />
               ) : role === "admin" ? (
                 <Navigate to="/AdminHomePage" replace />
               ) : (
@@ -179,10 +296,12 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
 
         {/* ============================
-            ✅ STUDENT ROUTES
+            ✅ STUDENT ROUTES WITH SIDEBAR
         ============================ */}
+        
+        {/* Main Student Dashboard */}
         <Route
-          path="/studentDashboard"
+          path="/student"
           element={
             authUser && role === "student" ? (
               <StudentDashboard user={authUser} userDoc={userDoc} />
@@ -192,30 +311,77 @@ function App() {
           }
         />
 
-        {/*EXPERIMENTAL DASHBOARD ROUTE*/}
+        {/* Student Profile */}
         <Route
-          path="/student"
+          path="/student/profile"
           element={
             authUser && role === "student" ? (
-              <ExperimentalDashboard user={authUser} userDoc={userDoc} />
+              <StudentLayout user={authUser} userDoc={userDoc}>
+                <div className="max-w-7xl mx-auto p-6">
+                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
+                    <StudentProfile user={authUser} userDoc={userDoc} />
+                  </div>
+                </div>
+              </StudentLayout>
             ) : (
               <Navigate to="/login" replace />
             )
           }
-        >
-          <Route
-            path="profile"
-            element={<StudentProfile user={authUser} userDoc={userDoc} />} //ADD for other student subpages
-          />
-          <Route
-            path="quizzes"
-            element={<StudentQuizzes user={authUser} userDoc={userDoc} />}
-          />
-          <Route
-            path="performance"
-            element={<StudentPerformance user={authUser} userDoc={userDoc} />}
-          />
-        </Route>
+        />
+
+        {/* Student Quizzes */}
+        <Route
+          path="/student/quizzes"
+          element={
+            authUser && role === "student" ? (
+              <StudentLayout user={authUser} userDoc={userDoc}>
+                <div className="max-w-7xl mx-auto p-6">
+                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
+                    <StudentQuizzes user={authUser} userDoc={userDoc} />
+                  </div>
+                </div>
+              </StudentLayout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Student Performance */}
+        <Route
+          path="/student/performance"
+          element={
+            authUser && role === "student" ? (
+              <StudentLayout user={authUser} userDoc={userDoc}>
+                <div className="max-w-7xl mx-auto p-6">
+                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
+                    <StudentPerformance user={authUser} userDoc={userDoc} />
+                  </div>
+                </div>
+              </StudentLayout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Student Leaderboards */}
+        <Route
+          path="/student/leaderboards"
+          element={
+            authUser && role === "student" ? (
+              <StudentLayout user={authUser} userDoc={userDoc}>
+                <div className="max-w-7xl mx-auto p-6">
+                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
+                    <Leaderboards user={authUser} userDoc={userDoc} />
+                  </div>
+                </div>
+              </StudentLayout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
         {/* Student Take Quiz by Quiz Code */}
         <Route
@@ -241,7 +407,7 @@ function App() {
           }
         />
 
-        {/* ✅ NEW: Student Take Synchronous Quiz */}
+        {/* Student Take Synchronous Quiz */}
         <Route
           path="/student/take-sync-quiz/:assignmentId"
           element={
@@ -281,7 +447,7 @@ function App() {
             element={<QuizControlPanel />}
           />
 
-          {/* ✅ NEW: QUIZ RESULTS ROUTE */}
+          {/* QUIZ RESULTS ROUTE */}
           <Route
             path="quiz-results/:quizId/:classId"
             element={<QuizResults />}

@@ -5,9 +5,6 @@ import {
   getDoc,
   updateDoc,
   collection,
-  query,
-  where,
-  getDocs,
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -21,7 +18,6 @@ import {
   CheckCircle,
   XCircle,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Award,
   TrendingUp,
@@ -45,6 +41,34 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const [quizResults, setQuizResults] = useState(null);
 
   const isAssignedQuiz = !!assignmentId;
+
+  // Save progress to localStorage
+  useEffect(() => {
+    if (assignmentId && answers && Object.keys(answers).length > 0) {
+      const progressData = {
+        answers,
+        currentQuestionIndex,
+        timestamp: new Date().getTime(),
+      };
+      localStorage.setItem(`quiz_progress_${assignmentId}`, JSON.stringify(progressData));
+    }
+  }, [answers, currentQuestionIndex, assignmentId]);
+
+  // Load saved progress
+  useEffect(() => {
+    if (assignmentId && questions.length > 0) {
+      const savedProgress = localStorage.getItem(`quiz_progress_${assignmentId}`);
+      if (savedProgress) {
+        try {
+          const { answers: savedAnswers, currentQuestionIndex: savedIndex } = JSON.parse(savedProgress);
+          setAnswers(savedAnswers);
+          setCurrentQuestionIndex(savedIndex);
+        } catch (error) {
+          console.error("Error loading saved progress:", error);
+        }
+      }
+    }
+  }, [assignmentId, questions.length]);
 
   useEffect(() => {
     if (isAssignedQuiz) {
@@ -70,22 +94,31 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const fetchIdentificationChoices = async (quizId) => {
     try {
       const quizRef = doc(db, "quizzes", quizId);
       const quizSnap = await getDoc(quizRef);
-      
+
       if (quizSnap.exists()) {
         const quizData = quizSnap.data();
         const allQuestions = quizData.questions || [];
-        
+
         const identificationAnswers = allQuestions
-          .filter(q => q.type === "identification")
-          .map(q => q.correct_answer)
-          .filter(answer => answer && answer.trim() !== "");
-        
+          .filter((q) => q.type === "identification")
+          .map((q) => q.correct_answer)
+          .filter((answer) => answer && answer.trim() !== "");
+
         const uniqueAnswers = [...new Set(identificationAnswers)];
-        
+
         const choicesMap = {};
         allQuestions.forEach((question, index) => {
           if (question.type === "identification") {
@@ -93,12 +126,32 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
             choicesMap[index] = shuffledChoices;
           }
         });
-        
+
         setIdentificationChoices(choicesMap);
       }
     } catch (error) {
       console.error("Error fetching identification choices:", error);
     }
+  };
+
+  const groupQuestionsByType = (questionsToGroup) => {
+    const grouped = {
+      multiple_choice: [],
+      true_false: [],
+      identification: [],
+    };
+
+    questionsToGroup.forEach((q) => {
+      if (q.type === "multiple_choice") {
+        grouped.multiple_choice.push(q);
+      } else if (q.type === "true_false") {
+        grouped.true_false.push(q);
+      } else if (q.type === "identification") {
+        grouped.identification.push(q);
+      }
+    });
+
+    return grouped;
   };
 
   const fetchAssignedQuiz = async () => {
@@ -167,12 +220,22 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
       let quizQuestions = quizData.questions || [];
 
+      const grouped = groupQuestionsByType(quizQuestions);
+
       if (assignmentData.settings?.shuffleQuestions) {
-        quizQuestions = shuffleArray([...quizQuestions]);
+        grouped.multiple_choice = shuffleArray(grouped.multiple_choice);
+        grouped.true_false = shuffleArray(grouped.true_false);
+        grouped.identification = shuffleArray(grouped.identification);
       }
 
+      const orderedQuestions = [
+        ...grouped.multiple_choice,
+        ...grouped.true_false,
+        ...grouped.identification,
+      ];
+
       if (assignmentData.settings?.shuffleChoices) {
-        quizQuestions = quizQuestions.map((q) => {
+        const finalQuestions = orderedQuestions.map((q) => {
           if (q.type === "multiple_choice" && q.choices) {
             return {
               ...q,
@@ -181,9 +244,10 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           }
           return q;
         });
+        setQuestions(finalQuestions);
+      } else {
+        setQuestions(orderedQuestions);
       }
-
-      setQuestions(quizQuestions);
 
       if (assignmentData.settings?.timeLimit) {
         setTimeLeft(assignmentData.settings.timeLimit * 60);
@@ -215,15 +279,6 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const shuffleArray = (array) => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
   };
 
   const handleAnswerChange = (questionIndex, answer) => {
@@ -265,10 +320,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       }
     });
 
-    // Calculate raw score percentage
     const rawScorePercentage = totalPoints > 0 ? Math.round((correctPoints / totalPoints) * 100) : 0;
-    
-    // Calculate base-50 score percentage (Transmutation)
     const base50ScorePercentage = Math.round(50 + (rawScorePercentage / 2));
 
     return {
@@ -284,16 +336,13 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
     const unanswered = questions.filter((_, index) => !answers[index]);
     if (unanswered.length > 0) {
-      if (
-        !window.confirm(
-          `You have ${unanswered.length} unanswered question(s). Submit anyway?`
-        )
-      ) {
-        return;
-      }
+      alert(`Please answer all questions before submitting. You have ${unanswered.length} unanswered question(s).`);
+      return;
     }
 
-    await submitQuiz();
+    if (window.confirm("Are you sure you want to submit your quiz? You cannot change your answers after submission.")) {
+      await submitQuiz();
+    }
   };
 
   const handleAutoSubmit = async () => {
@@ -321,18 +370,34 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       await addDoc(collection(db, "quizSubmissions"), {
         assignmentId: assignmentId,
         quizId: quiz.id,
+        quizTitle: quiz.title || "Untitled Quiz",
+        
         studentId: currentUser.uid,
-        studentName: userDoc?.name || "Unknown",
+        studentName: userDoc?.name || userDoc?.firstName + " " + (userDoc?.lastName || "") || currentUser.email || "Unknown",
+        studentNo: userDoc?.studentNo || assignment.studentNo || "",
+        studentDocId: assignment.studentDocId || null,
+        
+        teacherEmail: assignment.teacherEmail || null,
+        teacherName: assignment.teacherName || null,
+        
+        classId: assignment.classId || null,
+        className: assignment.className || "Unknown Class",
+        subject: assignment.subject || quiz.subject || "",
+        
         answers: answers,
         rawScorePercentage: rawScorePercentage,
         base50ScorePercentage: base50ScorePercentage,
         correctPoints: correctPoints,
         totalPoints: totalPoints,
+        totalQuestions: questions.length,
+        
         submittedAt: serverTimestamp(),
         quizMode: "asynchronous",
       });
 
-      // Set results and show results screen
+      // Clear saved progress after successful submission
+      localStorage.removeItem(`quiz_progress_${assignmentId}`);
+
       setQuizResults({
         rawScorePercentage,
         base50ScorePercentage,
@@ -358,12 +423,6 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const goToNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
-  const goToPreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
@@ -403,10 +462,10 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl shadow-md">
-          <Loader className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading quiz...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md">
+          <Loader className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600 text-sm sm:text-base">Loading quiz...</p>
         </div>
       </div>
     );
@@ -415,15 +474,15 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-md max-w-md w-full text-center">
-          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md max-w-md w-full text-center">
+          <XCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
             Unable to Load Quiz
           </h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-sm sm:text-base text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => navigate("/studentDashboard")}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
+            onClick={() => navigate("/student")}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm sm:text-base"
           >
             Back to Dashboard
           </button>
@@ -436,90 +495,80 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     return null;
   }
 
-  // Results Screen
   if (showResults && quizResults) {
     const remark = getGradeRemark(quizResults.base50ScorePercentage);
-    
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 font-Outfit">
-        <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white text-center">
-            <Award className="w-20 h-20 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold mb-2">Quiz Completed!</h1>
-            <p className="text-indigo-100">Great job on completing the quiz</p>
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 sm:p-8 text-white text-center">
+            <Award className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4" />
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Quiz Completed!</h1>
+            <p className="text-sm sm:text-base text-indigo-100">Great job on completing the quiz</p>
           </div>
 
-          {/* Results Content */}
-          <div className="p-8">
-            {/* Quiz Title */}
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">{quiz.title}</h2>
-              <p className="text-gray-600">{assignment.className}</p>
+          <div className="p-4 sm:p-8">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">{quiz.title}</h2>
+              <p className="text-sm sm:text-base text-gray-600">{assignment.className}</p>
             </div>
 
-            {/* Score Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {/* Raw Score */}
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 text-center">
-                <div className="text-sm text-blue-600 font-semibold mb-2">Raw Score</div>
-                <div className="text-4xl font-bold text-blue-700 mb-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 sm:mb-8">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 sm:p-6 text-center">
+                <div className="text-xs sm:text-sm text-blue-600 font-semibold mb-2">Raw Score</div>
+                <div className="text-3xl sm:text-4xl font-bold text-blue-700 mb-1">
                   {quizResults.rawScorePercentage}%
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                   {quizResults.correctPoints} / {quizResults.totalPoints} points
                 </div>
               </div>
 
-              {/* Base-50 Score */}
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-300 rounded-2xl p-6 text-center">
-                <div className="text-sm text-indigo-600 font-semibold mb-2">Base-50 Grade</div>
-                <div className="text-4xl font-bold text-indigo-700 mb-1">
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-300 rounded-2xl p-4 sm:p-6 text-center">
+                <div className="text-xs sm:text-sm text-indigo-600 font-semibold mb-2">Base-50 Grade</div>
+                <div className="text-3xl sm:text-4xl font-bold text-indigo-700 mb-1">
                   {quizResults.base50ScorePercentage}%
                 </div>
-                <div className={`text-sm font-bold ${remark.color}`}>
+                <div className={`text-xs sm:text-sm font-bold ${remark.color}`}>
                   {remark.text}
                 </div>
               </div>
             </div>
 
-            {/* Statistics */}
-            <div className="bg-gray-50 rounded-2xl p-6 mb-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
+            <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
+              <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 Quiz Statistics
               </h3>
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-gray-800">{quizResults.totalQuestions}</div>
-                  <div className="text-sm text-gray-600">Total Questions</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-800">{quizResults.totalQuestions}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Total Questions</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-green-600">{quizResults.correctPoints}</div>
-                  <div className="text-sm text-gray-600">Correct</div>
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">{quizResults.correctPoints}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Correct</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-xl sm:text-2xl font-bold text-red-600">
                     {quizResults.totalPoints - quizResults.correctPoints}
                   </div>
-                  <div className="text-sm text-gray-600">Incorrect</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Incorrect</div>
                 </div>
               </div>
             </div>
 
-            {/* Info Box */}
-            <div className="bg-indigo-50 border-l-4 border-indigo-500 rounded-lg p-4 mb-8">
-              <p className="text-sm text-gray-700">
+            <div className="bg-indigo-50 border-l-4 border-indigo-500 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8">
+              <p className="text-xs sm:text-sm text-gray-700">
                 <strong className="text-indigo-700">Note:</strong> Your raw score of {quizResults.rawScorePercentage}% 
                 has been transmuted to a Base-50 grade of {quizResults.base50ScorePercentage}% using the formula: 
                 Grade = 50 + (Raw Score ÷ 2)
               </p>
             </div>
 
-            {/* Action Button */}
             <button
-              onClick={() => navigate("/studentDashboard")}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
+              onClick={() => navigate("/student")}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
             >
               Return to Dashboard
             </button>
@@ -533,35 +582,29 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-Outfit">
-      {/* Header */}
       <div className="bg-white shadow-md sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
             <button
               onClick={() => {
-                if (
-                  window.confirm(
-                    "Are you sure you want to leave? Your progress will be lost."
-                  )
-                ) {
-                  navigate("/studentDashboard");
-                }
+                navigate("/student");
               }}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition"
+              className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-800 transition text-sm sm:text-base"
             >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Dashboard
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
             </button>
 
             {timeLeft !== null && (
               <div
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold ${
+                className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-sm sm:text-base ${
                   timeLeft <= 300
                     ? "bg-red-100 text-red-700"
                     : "bg-blue-100 text-blue-700"
                 }`}
               >
-                <Clock className="w-5 h-5" />
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                 {formatTime(timeLeft)}
               </div>
             )}
@@ -569,51 +612,49 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto p-6">
-        {/* Quiz Info */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+      <main className="max-w-5xl mx-auto p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
             {quiz.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
             <span className="font-semibold text-indigo-700">
               📚 {assignment.className}
             </span>
             {assignment.subject && <span>• {assignment.subject}</span>}
             <span>• {questions.length} Questions</span>
-            <span>• Total Points: {quiz.totalPoints || questions.length}</span>
+            <span className="hidden sm:inline">• Total Points: {quiz.totalPoints || questions.length}</span>
           </div>
 
           {assignment.instructions && (
-            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-              <p className="text-sm text-gray-700">
+            <div className="mt-4 p-3 sm:p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p className="text-xs sm:text-sm text-gray-700">
                 <strong>Instructions:</strong> {assignment.instructions}
               </p>
             </div>
           )}
         </div>
 
-        {/* Question Type Badge */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 font-bold text-lg ${getQuestionTypeColor(currentQuestion.type)}`}>
-            <span>Question Type: {getQuestionTypeLabel(currentQuestion.type)}</span>
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className={`inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full border-2 font-bold text-sm sm:text-lg ${getQuestionTypeColor(currentQuestion.type)}`}>
+            <span className="hidden sm:inline">Question Type: {getQuestionTypeLabel(currentQuestion.type)}</span>
+            <span className="sm:hidden">{getQuestionTypeLabel(currentQuestion.type)}</span>
           </div>
-          <div className="text-sm text-gray-600 font-semibold">
+          <div className="text-xs sm:text-sm text-gray-600 font-semibold">
             Question {currentQuestionIndex + 1} of {questions.length}
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">Progress</span>
-            <span className="text-sm font-semibold text-indigo-600">
+            <span className="text-xs sm:text-sm font-semibold text-gray-700">Progress</span>
+            <span className="text-xs sm:text-sm font-semibold text-indigo-600">
               {Object.keys(answers).length} / {questions.length} answered
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
             <div
-              className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
+              className="bg-indigo-600 h-2 sm:h-3 rounded-full transition-all duration-300"
               style={{
                 width: `${(Object.keys(answers).length / questions.length) * 100}%`,
               }}
@@ -621,32 +662,31 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           </div>
         </div>
 
-        {/* Current Question */}
-        <div className="bg-white rounded-2xl shadow-md p-8 border-2 border-indigo-200 mb-6">
-          <div className="flex items-start gap-4 mb-6">
-            <span className="flex-shrink-0 w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
+        <div className="bg-white rounded-2xl shadow-md p-4 sm:p-8 border-2 border-indigo-200 mb-4 sm:mb-6">
+          <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <span className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-base sm:text-lg">
               {currentQuestionIndex + 1}
             </span>
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <span className="text-xs sm:text-sm text-gray-600">
                   {currentQuestion.points || 1}{" "}
                   {currentQuestion.points === 1 ? "point" : "points"}
                 </span>
               </div>
-              <p className="text-xl font-semibold text-gray-800 leading-relaxed">
+              <p className="text-base sm:text-xl font-semibold text-gray-800 leading-relaxed">
                 {currentQuestion.question}
               </p>
             </div>
           </div>
 
-          <div className="ml-16">
+          <div className="sm:ml-16">
             {currentQuestion.type === "multiple_choice" && (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {currentQuestion.choices?.map((choice, choiceIndex) => (
                   <label
                     key={choiceIndex}
-                    className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition ${
+                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${
                       answers[currentQuestionIndex] === choice.text
                         ? "border-indigo-500 bg-indigo-50 shadow-md"
                         : "border-gray-200 hover:border-indigo-300 bg-white hover:shadow-sm"
@@ -660,9 +700,9 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                       onChange={(e) =>
                         handleAnswerChange(currentQuestionIndex, e.target.value)
                       }
-                      className="w-6 h-6 text-indigo-600"
+                      className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600"
                     />
-                    <span className="flex-1 text-gray-800 text-lg">
+                    <span className="flex-1 text-gray-800 text-sm sm:text-lg">
                       {String.fromCharCode(65 + choiceIndex)}. {choice.text}
                     </span>
                   </label>
@@ -671,11 +711,11 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
             )}
 
             {currentQuestion.type === "true_false" && (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {["True", "False"].map((option) => (
                   <label
                     key={option}
-                    className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition ${
+                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${
                       answers[currentQuestionIndex] === option
                         ? "border-indigo-500 bg-indigo-50 shadow-md"
                         : "border-gray-200 hover:border-indigo-300 bg-white hover:shadow-sm"
@@ -689,9 +729,9 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                       onChange={(e) =>
                         handleAnswerChange(currentQuestionIndex, e.target.value)
                       }
-                      className="w-6 h-6 text-indigo-600"
+                      className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600"
                     />
-                    <span className="flex-1 text-gray-800 font-semibold text-lg">
+                    <span className="flex-1 text-gray-800 font-semibold text-sm sm:text-lg">
                       {option}
                     </span>
                   </label>
@@ -704,7 +744,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                 <select
                   value={answers[currentQuestionIndex] || ""}
                   onChange={(e) => handleAnswerChange(currentQuestionIndex, e.target.value)}
-                  className="w-full px-5 py-4 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white text-gray-800 cursor-pointer hover:border-indigo-300 transition text-lg"
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 pr-10 sm:pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white text-gray-800 cursor-pointer hover:border-indigo-300 transition text-sm sm:text-lg"
                 >
                   <option value="" disabled>
                     Select your answer...
@@ -715,85 +755,40 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-gray-400 pointer-events-none" />
               </div>
             )}
           </div>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-end mt-4 sm:mt-6">
+          {currentQuestionIndex === questions.length - 1 ? (
             <button
-              onClick={goToPreviousQuestion}
-              disabled={currentQuestionIndex === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+              onClick={handleSubmit}
+              disabled={submitting || Object.keys(answers).length !== questions.length}
+              className="flex items-center gap-2 bg-green-600 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-bold hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base"
             >
-              <ChevronLeft className="w-5 h-5" />
-              Previous
-            </button>
-
-            <div className="flex items-center gap-2">
-              {answers[currentQuestionIndex] ? (
-                <CheckCircle className="w-5 h-5 text-green-600" />
+              {submitting ? (
+                <>
+                  <Loader className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  Submitting...
+                </>
               ) : (
-                <AlertCircle className="w-5 h-5 text-yellow-600" />
+                <>
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Submit Quiz
+                </>
               )}
-              <span className="text-sm text-gray-600">
-                {answers[currentQuestionIndex] ? "Answered" : "Not answered"}
-              </span>
-            </div>
-
-            {currentQuestionIndex === questions.length - 1 ? (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex items-center gap-2 bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {submitting ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    Submit Quiz
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={goToNextQuestion}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
-              >
-                Next
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Question Navigation Grid */}
-        <div className="mt-6 bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Question Navigator</h3>
-          <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
-            {questions.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentQuestionIndex(index)}
-                className={`w-full aspect-square rounded-lg font-bold text-sm transition ${
-                  index === currentQuestionIndex
-                    ? "bg-indigo-600 text-white ring-2 ring-indigo-300"
-                    : answers[index]
-                    ? "bg-green-100 text-green-700 hover:bg-green-200"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {index + 1}
-              </button>
-            ))}
-          </div>
+            </button>
+          ) : (
+            <button
+              onClick={goToNextQuestion}
+              className="flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition text-sm sm:text-base"
+            >
+              Next
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          )}
         </div>
       </main>
     </div>

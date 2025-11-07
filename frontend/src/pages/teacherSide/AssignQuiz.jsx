@@ -678,29 +678,34 @@ export default function AssignQuiz() {
                   )}
 
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                      <Timer className="w-4 h-4 text-blue-600" />
-                      Time Limit (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={assignmentSettings.timeLimit || ""}
-                      onChange={(e) =>
-                        setAssignmentSettings({
-                          ...assignmentSettings,
-                          timeLimit: e.target.value
-                            ? parseInt(e.target.value)
-                            : null,
-                        })
-                      }
-                      placeholder="No limit"
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-600 mt-1">
-                      Leave empty for no time limit
-                    </p>
-                  </div>
+                  <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                    <Timer className="w-4 h-4 text-blue-600" />
+                    Time Limit (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={assignmentSettings.timeLimit || ""}
+                    onChange={(e) =>
+                      setAssignmentSettings({
+                        ...assignmentSettings,
+                        timeLimit: e.target.value
+                          ? parseInt(e.target.value)
+                          : null,
+                      })
+                    }
+                    placeholder={isSynchronous ? "No limit" : "No limit (fixed for async)"}
+                    disabled={!isSynchronous}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      !isSynchronous ? "bg-gray-100 cursor-not-allowed text-gray-500" : ""
+                    }`}
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    {isSynchronous 
+                      ? "Leave empty for no time limit" 
+                      : "Time limit is disabled for self-paced quizzes"}
+                  </p>
+                </div>
 
                   <div className="space-y-3">
                     <label className="flex items-center gap-2 text-sm font-semibold">

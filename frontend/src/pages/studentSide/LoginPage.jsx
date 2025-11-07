@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import LOGO from "../../assets/iQuizU.svg"
 
 export default function LoginPage() {
@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,14 +98,14 @@ export default function LoginPage() {
     setError("");
     setRecoveryMessage("");
 
-    const trimmedInput = loginInput.trim();
+    const trimmedInput = recoveryEmail.trim();
 
     if (!trimmedInput) {
       setError("Please enter your email or student number first.");
       return;
     }
 
-    setLoading(true);
+    setRecoveryLoading(true);
 
     try {
       let emailToSend = "";
@@ -115,7 +117,7 @@ export default function LoginPage() {
 
         if (snapshot.empty) {
           setError("No account found with this email.");
-          setLoading(false);
+          setRecoveryLoading(false);
           return;
         }
 
@@ -128,7 +130,7 @@ export default function LoginPage() {
 
         if (snapshot.empty) {
           setError("No account found with this student number.");
-          setLoading(false);
+          setRecoveryLoading(false);
           return;
         }
 
@@ -137,14 +139,19 @@ export default function LoginPage() {
 
         if (!emailToSend) {
           setError("No email address found for this account.");
-          setLoading(false);
+          setRecoveryLoading(false);
           return;
         }
       }
 
       await sendPasswordResetEmail(auth, emailToSend);
-      setRecoveryMessage(`Password reset link sent to ${emailToSend}`);
-      setShowRecoveryModal(false);
+      setRecoveryMessage(`✓ Password reset link sent to ${emailToSend}`);
+      setRecoveryEmail("");
+      
+      // Auto close modal after 3 seconds on success
+      setTimeout(() => {
+        handleCloseRecoveryModal();
+      }, 3000);
     } catch (err) {
       console.error("Recovery error:", err);
       
@@ -162,19 +169,22 @@ export default function LoginPage() {
           setError("Failed to send recovery email. Please try again later.");
       }
     } finally {
-      setLoading(false);
+      setRecoveryLoading(false);
     }
   };
 
   const handleOpenRecoveryModal = () => {
     setError("");
     setRecoveryMessage("");
+    setRecoveryEmail("");
     setShowRecoveryModal(true);
   };
 
   const handleCloseRecoveryModal = () => {
     setShowRecoveryModal(false);
     setError("");
+    setRecoveryMessage("");
+    setRecoveryEmail("");
   };
 
   return (
@@ -274,35 +284,68 @@ export default function LoginPage() {
 
       {/* Password Recovery Modal */}
       {showRecoveryModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-xl w-80 shadow-xl">
-            <h3 className="text-lg font-bold mb-3">Recover Account</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Enter your email or student number. We'll send a password reset link to your registered email.
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4 overflow-y-auto">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl my-auto">
+            {/* Close button */}
+            <button
+              onClick={handleCloseRecoveryModal}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              disabled={recoveryLoading}
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <h3 className="text-2xl font-bold mb-2">Recover Your Account</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Enter your email or student number and we'll send you a password reset link.
             </p>
             
             {error && (
-              <div className="mb-3 text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg p-2">
+              <div className="mb-4 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
                 {error}
               </div>
             )}
 
-            <div className="flex gap-2">
+            {recoveryMessage && (
+              <div className="mb-4 text-green-600 text-sm bg-green-50 border border-green-200 rounded-lg p-3">
+                {recoveryMessage}
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-gray-700 mb-2 text-sm font-medium">
+                Email or Student Number
+              </label>
+              <input
+                type="text"
+                value={recoveryEmail}
+                onChange={(e) => setRecoveryEmail(e.target.value)}
+                placeholder="e.g., 2024-001 or student@email.com"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                disabled={recoveryLoading}
+                autoComplete="username"
+              />
+            </div>
+
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={handleRecoverAccount}
-                className="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-secondary duration-200 transform transition-transform ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none font-bold flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 duration-200 font-bold flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                disabled={recoveryLoading || !recoveryEmail.trim()}
               >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                {recoveryLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Sending...
+                  </>
                 ) : (
-                  "Send Link"
+                  "Send Reset Link"
                 )}
               </button>
               <button
                 onClick={handleCloseRecoveryModal}
-                className="flex-1 bg-gray-300 text-gray-800 py-2 rounded-lg hover:bg-gray-400 duration-200 transform transition-transform ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
+                className="flex-1 bg-gray-300 text-gray-800 py-3 rounded-lg hover:bg-gray-400 duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                disabled={recoveryLoading}
               >
                 Cancel
               </button>
