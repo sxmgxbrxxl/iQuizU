@@ -1,14 +1,129 @@
-import { useState, useEffect, useRef } from "react";
-import { Loader2, CircleUserRound, KeyRound } from "lucide-react";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db } from "../../firebase/firebaseConfig";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
+import {
+    Loader2,
+    KeyRound,
+    CheckCircle,
+    XCircle,
+    AlertTriangle,
+    X,
+    Mail,
+    IdCard,
+    Pencil,
+    CircleUserRound
+} from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../../firebase/firebaseConfig";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { auth, db } from "../../firebase/firebaseConfig";
+import { ProfileSkeleton } from "../../components/SkeletonLoaders";
+
+// ─── Custom Toast Notification ───────────────────────────────────────────────
+function Toast({ toast, onClose }) {
+    useEffect(() => {
+        if (!toast) return;
+        const timer = setTimeout(() => onClose(), 3500);
+        return () => clearTimeout(timer);
+    }, [toast, onClose]);
+
+    if (!toast) return null;
+
+    const styles = {
+        success: {
+            bg: "bg-green-50 border-green-200",
+            icon: <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />,
+            text: "text-green-800",
+        },
+        error: {
+            bg: "bg-red-50 border-red-200",
+            icon: <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />,
+            text: "text-red-800",
+        },
+        warning: {
+            bg: "bg-yellow-50 border-yellow-200",
+            icon: <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0" />,
+            text: "text-yellow-800",
+        },
+        info: {
+            bg: "bg-blue-50 border-blue-200",
+            icon: <Mail className="w-5 h-5 text-blue-500 flex-shrink-0" />,
+            text: "text-blue-800",
+        },
+    };
+
+    const s = styles[toast.type] || styles.info;
+
+    return createPortal(
+        <div className="fixed top-20 right-6 z-[9999] animate-slideIn max-w-sm w-full">
+            <div className={`flex items-start gap-3 p-4 rounded-xl border shadow-lg ${s.bg}`}>
+                {s.icon}
+                <p className={`text-sm font-medium flex-1 ${s.text}`}>{toast.message}</p>
+                <button onClick={onClose} className="p-0.5 hover:bg-black/5 rounded-lg transition">
+                    <X className="w-4 h-4 text-gray-400" />
+                </button>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+// ─── Custom Confirm Dialog ───────────────────────────────────────────────────
+function ConfirmDialog({ isOpen, title, message, confirmLabel, cancelLabel, onConfirm, onCancel, icon, color }) {
+    useEffect(() => {
+        if (!isOpen) return;
+        const scrollableParent = document.querySelector('.overflow-y-auto');
+        document.body.style.overflow = 'hidden';
+        if (scrollableParent) scrollableParent.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+            if (scrollableParent) scrollableParent.style.overflow = '';
+        };
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const colorMap = {
+        orange: { btn: "bg-orange-500 hover:bg-orange-600", iconBg: "bg-orange-100", iconColor: "text-orange-600" },
+        red: { btn: "bg-red-500 hover:bg-red-600", iconBg: "bg-red-100", iconColor: "text-red-600" },
+        blue: { btn: "bg-blue-500 hover:bg-blue-600", iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+        green: { btn: "bg-green-600 hover:bg-green-700", iconBg: "bg-green-100", iconColor: "text-green-600" },
+    };
+    const c = colorMap[color] || colorMap.blue;
+
+    return createPortal(
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn">
+                <div className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className={`w-12 h-12 rounded-full ${c.iconBg} flex items-center justify-center flex-shrink-0`}>
+                            {icon || <AlertTriangle className={`w-6 h-6 ${c.iconColor}`} />}
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed ml-16">{message}</p>
+                </div>
+                <div className="px-6 py-4 bg-gray-50 flex gap-3 justify-end border-t border-gray-100">
+                    <button
+                        onClick={onCancel}
+                        className="px-5 py-2.5 border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-100 transition text-sm"
+                    >
+                        {cancelLabel || "Cancel"}
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className={`px-5 py-2.5 ${c.btn} text-white rounded-xl font-semibold transition text-sm`}
+                    >
+                        {confirmLabel || "Confirm"}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}
 
 // Helper functions for year handling
 const normalizeYear = (yearValue) => {
     if (!yearValue) return "";
-    // Convert "1st", "2nd", "3rd", "4th", "5th" to "1", "2", "3", "4", "5"
     const match = yearValue.toString().match(/^(\d+)/);
     return match ? match[1] : yearValue;
 };
@@ -20,12 +135,24 @@ const displayYear = (yearValue) => {
     return suffixes[num] ? `${suffixes[num]} Year` : `${num}th Year`;
 };
 
+// ─── Main Component ──────────────────────────────────────────────────────────
 export default function StudentProfile({ user, userDoc }) {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
     const fileInputRef = useRef(null);
+
+    // Toast state
+    const [toast, setToast] = useState(null);
+    const showToast = useCallback((type, message) => {
+        setToast({ type, message });
+    }, []);
+    const clearToast = useCallback(() => setToast(null), []);
+
+    // Confirm dialog state
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
 
     // form state
     const [fullName, setFullName] = useState("");
@@ -34,8 +161,6 @@ export default function StudentProfile({ user, userDoc }) {
     const [phone, setPhone] = useState("");
     const [bio, setBio] = useState("");
     const [photoURL, setPhotoURL] = useState("");
-    
-    // Add state for year, gender, studentNo
     const [year, setYear] = useState("");
     const [gender, setGender] = useState("");
     const [studentNo, setStudentNo] = useState("");
@@ -43,34 +168,20 @@ export default function StudentProfile({ user, userDoc }) {
     // readonly info
     const displayName = userDoc?.name || user?.displayName || "Student";
     const userInitial = (displayName && displayName.charAt(0).toUpperCase()) || "S";
-
-    // Get the correct document ID from userDoc
-    const userDocId = userDoc?.id || null;
+    const userDocId = userDoc?.id || user?.uid || null;
 
     useEffect(() => {
-        console.log("=== STUDENT PROFILE DEBUG ===");
-        console.log("Auth UID:", user?.uid);
-        console.log("UserDoc ID:", userDocId);
-        console.log("UserDoc data:", userDoc);
-        console.log("Year:", userDoc?.year);
-        console.log("Gender:", userDoc?.gender);
-        console.log("Student No:", userDoc?.studentNo);
-        console.log("============================");
-
         setFullName(userDoc?.name || user?.displayName || "");
         setDepartment(userDoc?.program || "");
         setEmailAddr(userDoc?.emailAddress || user?.email || "");
         setPhone(userDoc?.contactNo || "");
         setBio(userDoc?.bio || "");
         setPhotoURL(userDoc?.photoURL || "");
-        
-        // Normalize year from "1st" format to "1" format
         setYear(normalizeYear(userDoc?.year) || "");
         setGender(userDoc?.gender || "");
         setStudentNo(userDoc?.studentNo || "");
-        
         setLoading(false);
-    }, [user, userDoc, userDocId]);
+    }, [user, userDoc]);
 
     // Convert image to Base64
     const convertToBase64 = (file) => {
@@ -87,139 +198,58 @@ export default function StudentProfile({ user, userDoc }) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
-            alert('Please select an image file');
+            showToast("warning", "Please select an image file");
             return;
         }
 
-        // Validate file size (max 500KB for Firestore - be safe!)
         if (file.size > 500 * 1024) {
-            alert('File size must be less than 500KB. Please use a smaller image.');
+            showToast("warning", "File size must be less than 500KB");
             return;
         }
 
-        // Check if we have userDocId
         if (!userDocId) {
-            alert('❌ User document not found. Please refresh the page.');
+            showToast("error", "User document not found");
             return;
         }
 
         try {
             setUploading(true);
-
-            console.log("Starting upload...");
-            console.log("Using Document ID:", userDocId);
-            console.log("File size:", file.size, "bytes");
-
-            // Convert image to Base64
             const base64String = await convertToBase64(file);
-            console.log("Base64 conversion success, length:", base64String.length);
-
-            // Reference to user document using the CORRECT document ID
             const userDocRef = doc(db, "users", userDocId);
-            
-            // Check if document exists
             const docSnap = await getDoc(userDocRef);
-            
+
             if (!docSnap.exists()) {
-                console.error("Document does not exist!");
                 throw new Error("User document not found");
             }
 
-            console.log("Updating existing document...");
-            // Update existing document
-            await updateDoc(userDocRef, {
-                photoURL: base64String
-            });
-
-            console.log("Firestore update success!");
-
-            // Update local state
+            await updateDoc(userDocRef, { photoURL: base64String });
             setPhotoURL(base64String);
-            
-            alert('Profile photo updated successfully!');
+            showToast("success", "Profile photo updated successfully!");
         } catch (error) {
-            console.error("FULL ERROR:", error);
-            console.error("Error code:", error.code);
-            console.error("Error message:", error.message);
-            
-            let errorMsg = 'Failed to upload photo. ';
-            if (error.code === 'permission-denied') {
-                errorMsg += 'Permission denied. Check Firestore rules.';
-            } else if (error.message.includes('not found')) {
-                errorMsg += 'User document not found.';
-            } else {
-                errorMsg += error.message;
-            }
-            
-            alert(errorMsg);
+            console.error("Error uploading photo:", error);
+            showToast("error", "Failed to upload photo");
         } finally {
             setUploading(false);
         }
     };
 
-    // Handle password reset email
-    const handleChangePassword = async () => {
-        const email = user?.email || emailAddr;
-        
-        if (!email) {
-            alert('❌ No email address found. Please add an email to your profile first.');
-            return;
-        }
-
-        const confirmSend = window.confirm(
-            `A password reset link will be sent to:\n${email}\n\nDo you want to continue?`
-        );
-
-        if (!confirmSend) return;
-
-        try {
-            setSendingPasswordReset(true);
-            
-            await sendPasswordResetEmail(auth, email);
-            
-            alert(`✅ Password reset email sent to ${email}\n\nPlease check your inbox and spam folder. Click the link in the email to reset your password.`);
-        } catch (error) {
-            console.error("Error sending password reset email:", error);
-            
-            let errorMsg = 'Failed to send password reset email. ';
-            if (error.code === 'auth/user-not-found') {
-                errorMsg += 'No account found with this email.';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMsg += 'Invalid email address.';
-            } else if (error.code === 'auth/too-many-requests') {
-                errorMsg += 'Too many requests. Please try again later.';
-            } else {
-                errorMsg += error.message;
-            }
-            
-            alert(errorMsg);
-        } finally {
-            setSendingPasswordReset(false);
-        }
-    };
-
     // Handle profile save
     const handleSaveProfile = async () => {
-        // Check if we have userDocId
         if (!userDocId) {
-            alert('❌ User document not found. Please refresh the page.');
+            showToast("error", "User document not found");
             return;
         }
 
         try {
+            setSaving(true);
             const userDocRef = doc(db, "users", userDocId);
-            
-            // Check if document exists
             const docSnap = await getDoc(userDocRef);
-            
+
             if (!docSnap.exists()) {
-                console.error("Document does not exist!");
                 throw new Error("User document not found");
             }
 
-            // Include year, gender, studentNo in update
             await updateDoc(userDocRef, {
                 name: fullName,
                 program: department,
@@ -230,192 +260,106 @@ export default function StudentProfile({ user, userDoc }) {
                 gender: gender,
                 studentNo: studentNo
             });
-            
-            alert('Profile updated successfully!');
+
+            showToast("success", "Profile updated successfully!");
             setEditing(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
         } catch (error) {
             console.error("Error updating profile:", error);
-            alert('Failed to update profile. Please try again.');
+            showToast("error", "Failed to update profile");
+        } finally {
+            setSaving(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center font-Outfit">
-                <Loader2 className="w-8 h-8 animate-spin text-accent" />
-                <span className="ml-3 text-subtext">Loading…</span>
-            </div>
-        );
-    }
+    // Handle password reset email logic
+    const handleChangePassword = () => {
+        const email = user?.email || emailAddr;
 
-    // Show error if no userDoc found
-    if (!userDocId) {
-        return (
-            <div className="min-h-screen flex items-center justify-center font-Outfit">
-                <div className="text-center">
-                    <p className="text-red-500 font-semibold mb-4">❌ User document not found</p>
-                    <p className="text-subtext">Please contact your administrator or try logging in again.</p>
-                </div>
-            </div>
-        );
+        if (!email) {
+            showToast("error", "No email address found");
+            return;
+        }
+
+        setConfirmDialog({
+            isOpen: true,
+            title: "Reset Password",
+            message: `A password reset link will be sent to ${email}. Please check your inbox and spam folder after confirming.`,
+            confirmLabel: "Send Reset Link",
+            cancelLabel: "Cancel",
+            color: "orange",
+            icon: <KeyRound className="w-6 h-6 text-orange-600" />,
+            onConfirm: async () => {
+                setConfirmDialog({ isOpen: false });
+                try {
+                    setSendingPasswordReset(true);
+                    await sendPasswordResetEmail(auth, email);
+                    showToast("success", `Password reset email sent to ${email}`);
+                } catch (error) {
+                    console.error("Error sending password reset:", error);
+                    showToast("error", "Failed to send password reset email");
+                } finally {
+                    setSendingPasswordReset(false);
+                }
+            },
+            onCancel: () => setConfirmDialog({ isOpen: false }),
+        });
+    };
+
+    if (loading) {
+        return <ProfileSkeleton />;
     }
 
     return (
-        <div className="py-6 px-2 md:p-8 font-Outfit animate-fadeIn">
-            <div className="flex flex-row gap-3 items-center">
-                <CircleUserRound className="w-8 h-8 text-accent mb-6" />
-                <div className="flex flex-col mb-6">
-                    <h2 className="text-2xl font-bold text-title flex items-center gap-2">
-                        Profile
-                    </h2>
-                    <p className="text-md font-light text-subtext">
-                        Your personal profile and academic details.
-                    </p>
+        <div className="font-Outfit animate-fadeIn mb-12">
+            <Toast toast={toast} onClose={clearToast} />
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                confirmLabel={confirmDialog.confirmLabel}
+                cancelLabel={confirmDialog.cancelLabel}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={confirmDialog.onCancel}
+                icon={confirmDialog.icon}
+                color={confirmDialog.color}
+            />
+
+            {/* ─── Gradient Banner Header (Green Theme) ─── */}
+            <div className="relative bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 rounded-2xl mx-3 md:mx-6 mt-4 px-6 py-8 md:py-10 overflow-hidden shadow-lg">
+                <div className="absolute top-[-30px] right-[-30px] w-40 h-40 bg-white/10 rounded-full" />
+                <div className="absolute bottom-[-20px] right-[80px] w-24 h-24 bg-white/5 rounded-full" />
+
+                <div className="relative flex items-center gap-3">
+                    <IdCard className="w-8 h-8 md:w-10 md:h-10 text-white/90" />
+                    <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">My Profile</h1>
                 </div>
+                <p className="relative text-green-100 text-sm md:text-base mt-1 ml-11 md:ml-[52px]">
+                    Your personal profile and academic details.
+                </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-6 mt-2 animate-slideIn">
-                <div className="bg-components p-6 rounded-2xl shadow-md w-full">
-                    <h2 className="text-xl md:text-2xl text-title font-semibold">User Information</h2>
-                    {editing ? (
-                        <div className="mt-4 space-y-4">
-
-                            <div className="flex flex-row gap-4 mt-4 items-center">
-                                <label className="w-36 text-subtext">Student No:</label>
-                                <input
-                                    type="text"
-                                    value={studentNo}
-                                    disabled
-                                    className="border p-2 rounded-xl w-full bg-gray-100 cursor-not-allowed"
-                                    title="Student number cannot be changed"
-                                />
-                            </div>
-                            
-                            <div className="flex flex-row gap-4 mt-4 items-center">
-                                <label className="w-36 text-subtext">Full Name:</label>
-                                <input
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="border p-2 rounded-xl w-full"
-                                />
-                            </div>
-                            
-                            <div className="flex flex-row gap-4 mt-4 items-center">
-                                <label className="w-36 text-subtext">Program:</label>
-                                <input
-                                    type="text"
-                                    value={department}
-                                    onChange={(e) => setDepartment(e.target.value)}
-                                    className="border p-2 rounded-xl w-full"
-                                />
-                            </div>
-                            
-                            <div className="flex flex-row gap-4 mt-4 items-center">
-                                <label className="w-36 text-subtext">Year Level:</label>
-                                <select
-                                    value={year}
-                                    onChange={(e) => setYear(e.target.value)}
-                                    className="border p-2 rounded-xl w-full"
-                                >
-                                    <option value="">Select Year</option>
-                                    <option value="1">1st Year</option>
-                                    <option value="2">2nd Year</option>
-                                    <option value="3">3rd Year</option>
-                                    <option value="4">4th Year</option>
-                                    <option value="5">5th Year</option>
-                                </select>
-                            </div>
-                            
-                            <div className="flex flex-row gap-4 mt-4 items-center">
-                                <label className="w-36 text-subtext">Gender:</label>
-                                <select
-                                    value={gender}
-                                    onChange={(e) => setGender(e.target.value)}
-                                    className="border p-2 rounded-xl w-full"
-                                >
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                    <option value="Prefer not to say">Prefer not to say</option>
-                                </select>
-                            </div>
-                            
-                            <div className="flex flex-row gap-4 mt-4 items-center">
-                                <label className="w-36 text-subtext">Email Address:</label>
-                                <input
-                                    type="email"
-                                    value={emailAddr}
-                                    onChange={(e) => setEmailAddr(e.target.value)}
-                                    className="border p-2 rounded-xl w-full"
-                                />
-                            </div>
-                            
-                            <div className="flex flex-row gap-4 mt-4 items-center">
-                                <label className="w-36 text-subtext">Phone:</label>
-                                <input
-                                    type="text"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    className="border p-2 rounded-xl w-full"
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="mt-4 space-y-6">
-     
-                            <div className="flex items-center gap-4">
-                                <span className="w-36 text-subtext">Student No:</span>
-                                <span className="font-medium">{studentNo || "-"}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <span className="w-36 text-subtext">Full Name:</span>
-                                <span className="font-medium">{fullName || displayName}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <span className="w-36 text-subtext">Program:</span>
-                                <span className="font-medium">{department || "-"}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <span className="w-36 text-subtext">Year Level:</span>
-                                <span className="font-medium">{displayYear(year)}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <span className="w-36 text-subtext">Gender:</span>
-                                <span className="font-medium">{gender || "-"}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <span className="w-36 text-subtext">Email Address:</span>
-                                <span className="font-medium">{emailAddr || "-"}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <span className="w-36 text-subtext">Phone:</span>
-                                <span className="font-medium">{phone || "-"}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex flex-col p-10 gap-4 items-center rounded-3xl bg-components shadow-md">
+            {/* ─── Profile Photo Section ─── */}
+            <div className="flex flex-col items-center mt-8 mb-2">
+                <div className="relative group">
                     {photoURL ? (
                         <img
                             src={photoURL}
                             alt="Profile"
-                            className="w-52 h-52 rounded-full object-cover shadow-lg ring-2 ring-white/20"
+                            className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-xl ring-4 ring-white"
                         />
                     ) : (
-                        <div className="w-52 h-52 text-8xl bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/20">
+                        <div className="w-32 h-32 md:w-40 md:h-40 text-5xl md:text-7xl bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
                             {userInitial}
                         </div>
                     )}
-                    
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="absolute bottom-1 right-1 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
+                    >
+                        {uploading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Pencil className="w-4 h-4 text-white" />}
+                    </button>
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -423,77 +367,230 @@ export default function StudentProfile({ user, userDoc }) {
                         accept="image/*"
                         className="hidden"
                     />
-                    
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="bg-button px-6 py-4 rounded-xl text-base text-white font-semibold hover:bg-buttonHover transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                        {uploading ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Uploading...
-                            </>
-                        ) : (
-                            'Change Profile Photo'
-                        )}
-                    </button>
                 </div>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mt-4">{fullName || displayName}</h2>
+                <p className="text-gray-500 text-sm">{department || "Student"}</p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 flex-wrap animate-slideIn">
-                <button
-                    className="bg-button px-4 py-2 rounded-lg text-white font-semibold hover:bg-buttonHover transition mt-4"
-                    onClick={() => {
-                        if (editing) {
-                            handleSaveProfile();
-                        } else {
-                            setEditing(true);
-                        }
-                    }}
-                >
-                    {editing ? "Save Changes" : "Edit Profile"}
-                </button>
-                
-                {editing && (
-                    <button
-                        className="bg-gray-300 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-400 transition mt-4"
-                        onClick={() => {
-                            setEditing(false);
-                            // Reset to original values
-                            setFullName(userDoc?.name || user?.displayName || "");
-                            setDepartment(userDoc?.program || "");
-                            setEmailAddr(userDoc?.emailAddress || user?.email || "");
-                            setPhone(userDoc?.contactNo || "");
-                            setBio(userDoc?.bio || "");
-                            setYear(normalizeYear(userDoc?.year) || "");
-                            setGender(userDoc?.gender || "");
-                            setStudentNo(userDoc?.studentNo || "");
-                        }}
-                    >
-                        Cancel
-                    </button>
-                )}
+            {/* ─── Personal Details Card ─── */}
+            <div className="mx-3 md:mx-6 mt-6 mb-6">
+                <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                        <h3 className="text-lg md:text-xl font-bold text-green-600">Personal Details</h3>
+                        {!editing && (
+                            <button
+                                onClick={() => setEditing(true)}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition"
+                            >
+                                <Pencil className="w-4 h-4" />
+                                Edit
+                            </button>
+                        )}
+                    </div>
 
-                {/* Change Password Button */}
-                <button
-                    className="bg-orange-500 px-4 py-2 rounded-lg text-white font-semibold hover:bg-orange-700 transition mt-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleChangePassword}
-                    disabled={sendingPasswordReset}
-                >
-                    {sendingPasswordReset ? (
-                        <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Sending...
-                        </>
-                    ) : (
-                        <>
-                            <KeyRound className="w-4 h-4" />
-                            Change Password
-                        </>
-                    )}
-                </button>
+                    <div className="p-6">
+                        {editing ? (
+                            <div className="space-y-5">
+                                {/* Student No (Read-only) */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Student No</label>
+                                    <input
+                                        type="text"
+                                        value={studentNo}
+                                        disabled
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        title="Student number cannot be changed"
+                                    />
+                                </div>
+
+                                {/* Full Name */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Full Name</label>
+                                    <input
+                                        type="text"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                    />
+                                </div>
+
+                                {/* Program */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Program</label>
+                                    <input
+                                        type="text"
+                                        value={department}
+                                        onChange={(e) => setDepartment(e.target.value)}
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                    />
+                                </div>
+
+                                {/* Year Level */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Year Level</label>
+                                    <select
+                                        value={year}
+                                        onChange={(e) => setYear(e.target.value)}
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                    >
+                                        <option value="">Select Year</option>
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                        <option value="5">5th Year</option>
+                                    </select>
+                                </div>
+
+                                {/* Gender */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Gender</label>
+                                    <select
+                                        value={gender}
+                                        onChange={(e) => setGender(e.target.value)}
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                    >
+                                        <option value="">Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                    </select>
+                                </div>
+
+                                {/* Email */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Email Address</label>
+                                    <input
+                                        type="email"
+                                        value={emailAddr}
+                                        onChange={(e) => setEmailAddr(e.target.value)}
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                    />
+                                </div>
+
+                                {/* Phone */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Phone</label>
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/\D/g, "");
+                                            if (value.length <= 11) setPhone(value);
+                                        }}
+                                        maxLength={11}
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                    />
+                                </div>
+
+                                {/* Save / Cancel buttons */}
+                                <div className="flex gap-3 pt-3 border-t border-gray-100">
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        disabled={saving}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {saving ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            "Save Changes"
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setEditing(false);
+                                            // Reset values
+                                            setFullName(userDoc?.name || user?.displayName || "");
+                                            setDepartment(userDoc?.program || "");
+                                            setEmailAddr(userDoc?.emailAddress || user?.email || "");
+                                            setPhone(userDoc?.contactNo || "");
+                                            setBio(userDoc?.bio || "");
+                                            setYear(normalizeYear(userDoc?.year) || "");
+                                            setGender(userDoc?.gender || "");
+                                        }}
+                                        className="px-5 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-100 transition text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-5">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Student No</span>
+                                    <span className="font-semibold text-gray-800">{studentNo || "-"}</span>
+                                </div>
+                                <div className="border-b border-gray-50" />
+
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Full Name</span>
+                                    <span className="font-semibold text-gray-800">{fullName || displayName}</span>
+                                </div>
+                                <div className="border-b border-gray-50" />
+
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Program</span>
+                                    <span className="font-semibold text-gray-800">{department || "-"}</span>
+                                </div>
+                                <div className="border-b border-gray-50" />
+
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Year Level</span>
+                                    <span className="font-semibold text-gray-800">{displayYear(year)}</span>
+                                </div>
+                                <div className="border-b border-gray-50" />
+
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Gender</span>
+                                    <span className="font-semibold text-gray-800">{gender || "-"}</span>
+                                </div>
+                                <div className="border-b border-gray-50" />
+
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Email Address</span>
+                                    <span className="font-semibold text-gray-800 break-all sm:break-normal">{emailAddr || "-"}</span>
+                                </div>
+                                <div className="border-b border-gray-50" />
+
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Phone</span>
+                                    <span className="font-semibold text-gray-800">{phone || "-"}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ─── Security Card ─── */}
+                <div className="bg-white rounded-2xl shadow-md overflow-hidden mt-4 border border-gray-100">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                        <h3 className="text-lg md:text-xl font-bold text-orange-500">Security</h3>
+                    </div>
+                    <div className="p-6">
+                        <p className="text-gray-500 text-sm mb-4">Send a password reset link to your registered email address.</p>
+                        <button
+                            className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={handleChangePassword}
+                            disabled={sendingPasswordReset}
+                        >
+                            {sendingPasswordReset ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Sending...
+                                </>
+                            ) : (
+                                <>
+                                    <KeyRound className="w-4 h-4" />
+                                    Change Password
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -420,3 +420,43 @@ export function EditQuizSkeleton() {
         </div>
     );
 }
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// QuizListSkeleton — used in StudentDashboard.jsx and StudentQuizzes.jsx
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export function QuizListSkeleton({ count = 3 }) {
+    return (
+        <div className="space-y-4 font-Outfit animate-pulse">
+            <SkeletonKeyframes />
+            {[...Array(count)].map((_, i) => (
+                <div
+                    key={i}
+                    className="border-2 border-gray-100 rounded-xl p-5 bg-white shadow-sm"
+                >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                            {/* Title & Badge */}
+                            <div className="flex items-center gap-3 mb-3">
+                                <SkeletonBlock width="60%" height="22px" delay={i * 0.1} />
+                                <SkeletonBlock width="80px" height="24px" rounded="9999px" delay={i * 0.1 + 0.05} />
+                            </div>
+
+                            {/* Info lines */}
+                            <div className="space-y-2 mb-2">
+                                <SkeletonBlock width="40%" height="14px" delay={i * 0.1 + 0.1} />
+                                <SkeletonBlock width="35%" height="14px" delay={i * 0.1 + 0.15} />
+                                <SkeletonBlock width="50%" height="14px" delay={i * 0.1 + 0.2} />
+                            </div>
+                        </div>
+
+                        {/* Button */}
+                        <div className="w-full sm:w-auto mt-2 sm:mt-0">
+                            <SkeletonBlock width="120px" height="40px" rounded="8px" delay={i * 0.1 + 0.25} />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}

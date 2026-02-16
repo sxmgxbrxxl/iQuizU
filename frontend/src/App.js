@@ -94,7 +94,7 @@ function StudentLayout({ user, userDoc, children }) {
       <StudentSidebar user={user} userDoc={userDoc} />
 
       <div
-        className="flex-1 overflow-y-auto transition-all duration-300"
+        className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
         {children}
@@ -534,11 +534,7 @@ function App() {
           element={
             authUser && role === "student" ? (
               <StudentLayout user={authUser} userDoc={userDoc}>
-                <div className="max-w-7xl mx-auto p-6">
-                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
-                    <StudentQuizzes user={authUser} userDoc={userDoc} />
-                  </div>
-                </div>
+                <StudentQuizzes user={authUser} userDoc={userDoc} />
               </StudentLayout>
             ) : (
               <Navigate to="/login" replace />
@@ -552,11 +548,7 @@ function App() {
           element={
             authUser && role === "student" ? (
               <StudentLayout user={authUser} userDoc={userDoc}>
-                <div className="max-w-7xl mx-auto p-6">
-                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
-                    <StudentPerformance user={authUser} userDoc={userDoc} />
-                  </div>
-                </div>
+                <StudentPerformance user={authUser} userDoc={userDoc} />
               </StudentLayout>
             ) : (
               <Navigate to="/login" replace />
@@ -570,11 +562,7 @@ function App() {
           element={
             authUser && role === "student" ? (
               <StudentLayout user={authUser} userDoc={userDoc}>
-                <div className="max-w-7xl mx-auto p-6">
-                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
-                    <Leaderboards user={authUser} userDoc={userDoc} />
-                  </div>
-                </div>
+                <Leaderboards user={authUser} userDoc={userDoc} />
               </StudentLayout>
             ) : (
               <Navigate to="/login" replace />

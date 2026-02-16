@@ -1090,8 +1090,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
               {questionTimeLeft !== null && (
                 <div
                   className={`flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 rounded-lg font-bold text-sm md:text-base ${questionTimeLeft <= 10
-                      ? "bg-red-500 text-white animate-pulse"
-                      : "bg-white text-purple-700"
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "bg-white text-purple-700"
                     }`}
                 >
                   <Clock className="w-4 h-4 md:w-5 md:h-5" />
@@ -1313,8 +1313,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                   <label
                     key={choiceIndex}
                     className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${isChoiceSelected(currentQuestionIndex, choice.text, choiceIndex)
-                        ? "border-purple-500 bg-purple-50 shadow-md"
-                        : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
+                      ? "border-purple-500 bg-purple-50 shadow-md"
+                      : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
                       }`}
                   >
                     <input
@@ -1341,8 +1341,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                   <label
                     key={option}
                     className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${answers[currentQuestionIndex] === option
-                        ? "border-purple-500 bg-purple-50 shadow-md"
-                        : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
+                      ? "border-purple-500 bg-purple-50 shadow-md"
+                      : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
                       }`}
                   >
                     <input
@@ -1411,8 +1411,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
               onClick={goToNextQuestion}
               disabled={!isCurrentQuestionAnswered()}
               className={`flex items-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-lg font-semibold text-sm md:text-base transition ${isCurrentQuestionAnswered()
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
             >
               Next

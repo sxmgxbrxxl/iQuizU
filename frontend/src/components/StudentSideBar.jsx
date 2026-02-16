@@ -1,25 +1,71 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import LOGO from "../assets/iQuizU.svg";
-import { Menu, FileText, BarChart3, LogOut, Home, Trophy, Bell, Mail } from "lucide-react";
-import { auth } from "../firebase/firebaseConfig";
+import { useState, useEffect, useRef } from "react";
+import { auth, db } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
+import LOGO from "../assets/iQuizU.svg";
+import {
+  Menu,
+  Home,
+  FileText,
+  BarChart3,
+  Trophy,
+  LogOut,
+  User,
+  Bell,
+} from "lucide-react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 export default function StudentSidebar({ user, userDoc }) {
-  // Use React state instead of localStorage
+  const sidebarRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0, name: '' });
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Update CSS variable when collapsed state changes
+  // FIXED: Simple logic - if collapsed, stay collapsed unless explicitly expanded
+  const shouldExpand = !isCollapsed;
+
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--sidebar-width",
-      isCollapsed ? "80px" : "288px"
+      shouldExpand ? "288px" : "80px"
     );
-  }, [isCollapsed]);
+  }, [shouldExpand]);
+
+  // Handle click outside sidebar on mobile
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      // Check if sidebar is open, click is outside sidebar, AND checked not on toggle button
+      if (
+        isMobileOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(e.target) &&
+        !e.target.closest('button[aria-label="Toggle sidebar"]')
+      ) {
+        setIsMobileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMobileOpen]);
+
+  // Close profile dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -31,6 +77,71 @@ export default function StudentSidebar({ user, userDoc }) {
     }
   };
 
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef(null);
+
+  // Close notification dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch notifications (assigned quizzes)
+  useEffect(() => {
+    if (!user || !user.uid) return;
+
+    const q = query(
+      collection(db, "assignedQuizzes"),
+      where("studentId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const quizzes = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Sort by assignedAt desc
+      quizzes.sort((a, b) => {
+        const dateA = a.assignedAt?.seconds || 0;
+        const dateB = b.assignedAt?.seconds || 0;
+        return dateB - dateA;
+      });
+
+      // Get read notifications from local storage
+      const readNotifs = JSON.parse(localStorage.getItem("readNotifications") || "[]");
+
+      // Calculate unread count
+      const unread = quizzes.filter(q => !readNotifs.includes(q.id) && !q.completed).length;
+
+      setNotifications(quizzes.slice(0, 10)); // Keep top 10
+      setUnreadCount(unread);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+
+    if (!showNotifications && notifications.length > 0) {
+      // Mark currently visible notifications as read in local storage
+      const readNotifs = JSON.parse(localStorage.getItem("readNotifications") || "[]");
+      const newReadIds = notifications.map(n => n.id);
+      const updatedReadNotifs = [...new Set([...readNotifs, ...newReadIds])];
+
+      localStorage.setItem("readNotifications", JSON.stringify(updatedReadNotifs));
+      setUnreadCount(0);
+    }
+  };
+
   const menuItems = [
     { to: "/student", icon: Home, label: "Dashboard" },
     { to: "/student/quizzes", icon: FileText, label: "Quizzes" },
@@ -38,7 +149,6 @@ export default function StudentSidebar({ user, userDoc }) {
     { to: "/student/leaderboards", icon: Trophy, label: "Leaderboards" },
   ];
 
-  // Function to check if link is active
   const isActive = (path) => {
     if (path === "/student") {
       return location.pathname === "/student";
@@ -46,18 +156,19 @@ export default function StudentSidebar({ user, userDoc }) {
     return location.pathname.includes(path);
   };
 
-  // Get user display name
   const userName = userDoc?.firstName || userDoc?.name || "Student";
   const userEmail = userDoc?.email || user?.email || "Learner";
   const userInitial = userName.charAt(0).toUpperCase();
+
+  // Staggered animation delay helper
+  const staggerDelay = (index) => ({ animationDelay: `${index * 0.05}s`, animationFillMode: 'both' });
 
   return (
     <>
       {/* Top Bar */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-green-600 via-green-700 to-green-800 shadow-lg z-50 flex items-center justify-between px-6">
-        {/* Left Section: Logo and Hamburger */}
+        {/* Left Section: Hamburger + Logo (desktop only) */}
         <div className="flex items-center gap-4">
-          {/* Hamburger Menu - Desktop: collapse sidebar, Mobile: open overlay */}
           <button
             onClick={() => {
               if (window.innerWidth < 1024) {
@@ -72,42 +183,197 @@ export default function StudentSidebar({ user, userDoc }) {
             <Menu size={24} />
           </button>
 
-          {/* Logo and Brand */}
-          <div className="flex items-center gap-3">
-            <img src={LOGO} alt="Logo" className="w-8 h-8" />
-            <div className="flex flex-col text-white">
-              <h1 className="text-lg font-bold font-Outfit leading-tight">iQuizU</h1>
-            </div>
+          {/* Logo next to hamburger - desktop only */}
+          <div className="hidden lg:flex items-center gap-3">
+            <img src={LOGO} alt="Logo" className="w-10 h-10" />
+            <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
           </div>
         </div>
 
-        {/* Right Section: Profile */}
+        {/* Center Section: Logo - mobile only */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex lg:hidden items-center gap-3">
+          <img src={LOGO} alt="Logo" className="w-10 h-10" />
+          <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
+        </div>
+
+        {/* Right Section: Notifications & Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* User Profile */}
-          <button
-            onClick={() => navigate('/student/profile')}
-            className="flex items-center gap-2 hover:bg-white/10 p-2 pr-3 rounded-lg transition-all duration-200 hover:scale-105"
-          >
-            <div className="w-8 h-8 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/20">
-              {userInitial}
-            </div>
-            <span className="text-white font-medium text-sm hidden md:block">{userName}</span>
-          </button>
+
+          {/* Notification Bell */}
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={handleNotificationClick}
+              className="p-2 text-white hover:bg-white/10 rounded-full transition-all relative"
+            >
+              <Bell size={24} />
+
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-green-700"></span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn origin-top-right overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                  <h3 className="font-Outfit font-semibold text-gray-800">Notifications</h3>
+                </div>
+
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-gray-400 flex flex-col items-center">
+                      <div className="bg-gray-100 p-3 rounded-full mb-3">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="lucide lucide-bell-off"
+                        >
+                          <path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5" />
+                          <path d="M17 17H3s3-2 3-9" />
+                          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                          <path d="m2 2 20 20" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium">No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        onClick={() => {
+                          if (!notif.completed) {
+                            navigate(notif.quizMode === "synchronous"
+                              ? `/student/take-sync-quiz/${notif.id}`
+                              : `/student/take-assigned-quiz/${notif.id}`
+                            );
+                            setShowNotifications(false);
+                          }
+                        }}
+                        className={`px-4 py-3 hover:bg-green-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0 relative group
+                                        ${!notif.completed ? "bg-white" : "bg-gray-50/50"}`}
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="bg-green-100 p-2 rounded-lg text-green-600 flex-shrink-0 mt-0.5">
+                            <FileText size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${notif.completed ? "text-gray-500" : "text-gray-800"}`}>
+                              {notif.quizTitle}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate mt-0.5">
+                              {notif.subject || notif.className} &bull; {notif.quizMode === "synchronous" ? "Live Quiz" : "Self-Paced"}
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-1">
+                              {notif.assignedAt?.seconds ? new Date(notif.assignedAt.seconds * 1000).toLocaleDateString() : "Just now"}
+                            </p>
+                          </div>
+                          {!notif.completed && (
+                            <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0 mt-2"></span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative" ref={profileDropdownRef}>
+            <button
+              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+              className={`flex items-center gap-2 p-2 pr-3 rounded-lg transition-all duration-200 hover:scale-105 ${profileDropdownOpen ? "bg-white/20" : "hover:bg-white/10"
+                }`}
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/20">
+                {userInitial}
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {profileDropdownOpen && (
+              <div
+                className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn"
+                style={{ animation: 'fadeIn 0.15s ease-out' }}
+              >
+                {/* User Info Header */}
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-base shadow-md">
+                      {userInitial}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-Outfit font-semibold text-sm text-gray-800 truncate">{userName}</span>
+                      <span className="font-Outfit text-xs text-gray-400 truncate">{userEmail}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu Items */}
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      navigate('/student/profile');
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-150 group"
+                  >
+                    <User size={18} className="text-gray-400 group-hover:text-green-500 transition-colors" />
+                    <span className="font-Outfit text-sm font-medium">My Profile</span>
+                  </button>
+                </div>
+
+                {/* Divider + Logout */}
+                <div className="border-t border-gray-100 pt-1">
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      setShowConfirm(true);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 group"
+                  >
+                    <LogOut size={18} className="text-red-400 group-hover:text-red-500 transition-colors" />
+                    <span className="font-Outfit text-sm font-medium">Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Mobile Overlay Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden animate-overlayFade"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <div
-        className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-gradient-to-br from-green-600 via-green-700 to-green-800 shadow-2xl transition-all duration-300 ease-in-out z-40
+        ref={sidebarRef}
+        className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white border-r border-gray-200 shadow-xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-40 flex flex-col
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${isCollapsed ? "lg:w-20" : "lg:w-72"}
         w-72`}
       >
-        {/* Navigation */}
-        <nav className={`flex flex-col py-6 space-y-3 overflow-y-auto h-full transition-all duration-300 ${isCollapsed ? "px-2" : "px-6"}`}>
-          {/* Menu Items */}
+        <nav
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+          className={`flex flex-col py-6 space-y-1 overflow-y-auto flex-1 transition-all duration-300 [&::-webkit-scrollbar]:hidden ${shouldExpand ? "px-6" : "px-2"
+            }`}
+        >
           <div className="flex flex-col space-y-3">
-            {menuItems.map((item) => (
+            {menuItems.map((item, index) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -117,72 +383,36 @@ export default function StudentSidebar({ user, userDoc }) {
                     window.dispatchEvent(new Event('refreshPage'));
                   }
                 }}
-                title={isCollapsed ? item.label : ""}
-                className={`flex items-center relative overflow-hidden rounded-xl text-white transition-all duration-300 group ${
-                  isCollapsed ? "justify-center py-3 hover:bg-white/10" : "gap-4 px-4 py-3 hover:bg-white/10"
-                } ${isActive(item.to) ? "bg-white/20 shadow-lg" : ""}`}
+                title={!shouldExpand ? item.label : ""}
+                style={staggerDelay(index)}
+                className={`flex items-center relative overflow-hidden rounded-xl text-gray-700 transition-all duration-300 group animate-sidebarSlideIn
+                ${shouldExpand
+                    ? "gap-4 px-3 py-3 hover:bg-green-50 hover:shadow-md"
+                    : "justify-center py-3 hover:bg-green-50"
+                  }
+                ${isActive(item.to) ? "bg-gradient-to-r from-green-50 to-green-100/60 text-green-700 shadow-md ring-1 ring-green-200/50" : ""}`}
               >
-                {/* Hover gradient effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
-
-                {/* Icon */}
-                <div className={`relative flex items-center justify-center w-6 h-6 group-hover:scale-110 transition-transform duration-300 ${isActive(item.to) ? "scale-110" : ""}`}>
-                  <item.icon size={22} className="text-white" />
+                <div className="absolute inset-0 bg-gradient-to-r from-green-50/0 to-green-50/50 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>
+                {isActive(item.to) && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-green-600 rounded-r-full transition-all duration-300" />
+                )}
+                <div className={`relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-all duration-300 ${isActive(item.to) ? "scale-110" : ""}`}>
+                  <item.icon size={22} className={`transition-colors duration-300 ${isActive(item.to) ? "text-green-600" : "text-gray-500 group-hover:text-green-600"}`} />
                 </div>
-
-                {/* Label */}
-                <span className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${
-                  isCollapsed ? "opacity-0 max-w-0 overflow-hidden" : "opacity-100 max-w-xs"
-                }`}>
+                <span
+                  className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${shouldExpand
+                    ? "opacity-100 max-w-xs"
+                    : "opacity-0 max-w-0 overflow-hidden"
+                    }`}
+                >
                   {item.label}
                 </span>
               </Link>
             ))}
           </div>
-
-          {/* Divider */}
-          <div className="pt-4 pb-2">
-            <div className="border-t border-white/20 rounded-full"></div>
-          </div>
-
-          {/* Logout Button */}
-          <button
-            onClick={() => {
-              setIsMobileOpen(false);
-              setShowConfirm(true);
-            }}
-            title={isCollapsed ? "Logout" : ""}
-            className={`flex items-center relative overflow-hidden rounded-xl text-white transition-all duration-300 group w-full ${
-              isCollapsed ? "justify-center py-3 hover:bg-red-500/30" : "gap-4 px-4 py-3.5 hover:bg-red-500/30"
-            }`}
-          >
-            {/* Hover gradient effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/20 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
-
-            {/* Icon */}
-            <div className="relative flex items-center justify-center w-6 h-6 group-hover:scale-110 transition-transform duration-300">
-              <LogOut size={22} className="text-white" />
-            </div>
-
-            {/* Label */}
-            <span className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${
-              isCollapsed ? "opacity-0 max-w-0 overflow-hidden" : "opacity-100 max-w-xs"
-            }`}>
-              Logout
-            </span>
-          </button>
         </nav>
       </div>
 
-      {/* Mobile Overlay */}
-      {isMobileOpen && (
-        <div
-          onClick={() => setIsMobileOpen(false)}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 lg:hidden transition-opacity top-16"
-        />
-      )}
-
-      {/* Logout Confirmation Modal */}
       {showConfirm && (
         <div className="font-Outfit fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-slideUp">
@@ -192,7 +422,9 @@ export default function StudentSidebar({ user, userDoc }) {
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-title">Confirm Logout</h3>
-                <p className="text-subtext">Are you sure you want to log out?</p>
+                <p className="text-subtext">
+                  Are you sure you want to log out?
+                </p>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
