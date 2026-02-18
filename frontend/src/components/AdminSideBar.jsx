@@ -2,33 +2,32 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import LOGO from "../assets/iQuizU.svg";
 import {
-    Menu,
-    X,
-    BarChart3,
-    UsersRound,
-    LogOut,
-    Home,
-    ChevronLeft,
-    ChevronRight,
-    NotebookTabs,
-    } from "lucide-react";
-    import { auth } from "../firebase/firebaseConfig";
-    import { signOut } from "firebase/auth";
+  Menu,
+  X,
+  BarChart3,
+  UsersRound,
+  LogOut,
+  Home,
+  ChevronLeft,
+  ChevronRight,
+  NotebookTabs,
+  ShieldCheck
+} from "lucide-react";
+import { auth } from "../firebase/firebaseConfig";
+import { signOut } from "firebase/auth";
 
 export default function AdminSidebar({ user, userDoc }) {
   const [isOpen, setIsOpen] = useState(false);
-  // 🔹 FIXED: Load collapsed state from localStorage
   const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem('studentSidebarCollapsed');
+    const saved = localStorage.getItem('adminSidebarCollapsed');
     return saved === 'true';
   });
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 🔹 FIXED: Save collapsed state to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('studentSidebarCollapsed', isCollapsed.toString());
+    localStorage.setItem('adminSidebarCollapsed', isCollapsed.toString());
     document.documentElement.style.setProperty(
       "--sidebar-width",
       isCollapsed ? "80px" : "288px"
@@ -46,212 +45,160 @@ export default function AdminSidebar({ user, userDoc }) {
   };
 
   const menuItems = [
-      { to: "/admin/dashboard", icon: Home, label: "Dashboard" },
-      { to: "/admin/teachers", icon: UsersRound, label: "Manage Teachers" },
-      { to: "/admin/students", icon: NotebookTabs, label: "Manage Students" },
-      { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
+    { to: "/admin/dashboard", icon: Home, label: "Dashboard" },
+    { to: "/admin/teachers", icon: UsersRound, label: "Manage Teachers" },
+    { to: "/admin/students", icon: NotebookTabs, label: "Manage Students" },
+    { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   ];
 
-
-  // Function to check if link is active
-    const isActive = (path) => {
-        if (path === "/admin/dashboard") {
-            return location.pathname === "/admin/dashboard";
-        }
-        return location.pathname.includes(path);
-    };
+  const isActive = (path) => {
+    if (path === "/admin/dashboard") {
+      return location.pathname === "/admin/dashboard";
+    }
+    return location.pathname.includes(path);
+  };
 
   return (
     <>
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-6 right-6 z-50 bg-components text-black p-3 rounded-full shadow-md hover:bg-gray-50 transition-all lg:hidden border border-gray-100 hover:scale-105"
+        className="fixed top-4 left-4 z-50 bg-slate-900 text-white p-2.5 rounded-lg shadow-lg hover:bg-slate-800 transition-all lg:hidden active:scale-95"
         aria-label="Toggle menu"
       >
-        {isOpen ? <X size={22} /> : <Menu size={22} />}
+        {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Sidebar */}
-      <div
-        className={`fixed top-0 left-0 h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 shadow-2xl transition-all duration-300 ease-in-out z-40
-        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-        lg:translate-x-0
+      {/* Sidebar Container */}
+      <aside
+        className={`fixed top-0 left-0 h-screen bg-slate-900 text-slate-100 shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] z-40 flex flex-col border-r border-slate-800
+        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${isCollapsed ? "lg:w-20" : "lg:w-72"}
         w-72`}
       >
-        {/* Header */}
-          <div className="relative bg-gradient-to-r from-blue-400/50 to-blue-800/50 backdrop-blur-sm font-Outfit cursor-default">
-            <div
-              className={`flex items-center ${
-                isCollapsed ? "justify-center py-6 ml-4" : "px-10 py-6 gap-3"
-              } transition-all duration-300`}
-            >
-              {/* Logo and Text Container */}
-              <div className="flex items-center gap-4 transform hover:scale-105 transition-transform duration-300">
-                {/* Logo */}
-                <img
-                  src={LOGO}
-                  alt="Logo"
-                  className={`transition-all duration-300 ${
-                    isCollapsed ? "w-10 h-10" : "w-12 h-12"
-                  }`}
-                />
-                
-                <div
-                  className={`flex flex-col text-white overflow-hidden transition-all duration-300 ${
-                    isCollapsed ? "opacity-0 max-w-0" : "opacity-100 max-w-xs"
-                  }`}
-                >
-                  <h1 className="text-2xl font-bold leading-tight">iQuizU</h1>
-                  <p className="text-sm -mt-1">Admin</p>
-                </div>
-              </div>
-            </div>  
+        {/* Header Section */}
+        <div className="relative h-20 flex items-center border-b border-slate-800/50 bg-slate-950/30">
+          <div className={`w-full flex items-center ${isCollapsed ? "justify-center px-0" : "px-6 gap-3"} transition-all duration-300`}>
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 rounded-full"></div>
+              <img src={LOGO} alt="iQuizU Logo" className="w-9 h-9 relative z-10" />
+            </div>
+
+            <div className={`flex flex-col transition-all duration-300 overflow-hidden ${isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"}`}>
+              <h1 className="font-Outfit font-bold text-xl tracking-tight text-white leading-none">iQuizU</h1>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mt-1 flex items-center gap-1">
+                <ShieldCheck size={10} /> Admin Panel
+              </span>
+            </div>
+          </div>
 
           {/* Desktop Collapse Toggle */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full items-center justify-center shadow-md hover:bg-blue-50 transition-all hover:scale-110 border-2 border-blue-600"
-            aria-label="Toggle sidebar"
+            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all hover:scale-110 shadow-sm z-50"
           >
-            {isCollapsed ? (
-              <ChevronRight size={14} className="text-blue-600" />
-            ) : (
-              <ChevronLeft size={14} className="text-blue-600" />
-            )}
+            {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav
-          className={`flex flex-col px-4 py-6 space-y-3 overflow-y-auto h-[calc(100vh-200px)] transition-all duration-300 ${
-            isCollapsed ? "px-2" : "px-6"
-          }`}
-        >
-          {/* --- Menu Items --- */}
-            <div className="flex flex-col space-y-3">
-                {menuItems.map((item) => (
-                <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={() => {
-                        setIsOpen(false);
-                        if (isActive(item.to)) {
-                            window.dispatchEvent(new Event('refreshPage'));
-                        }
-                    }}
-                    title={isCollapsed ? item.label : ""}
-                    className={`flex items-center relative overflow-hidden rounded-xl text-white transition-all duration-300 group
-                    ${
-                        isCollapsed
-                        ? "justify-center py-3 hover:bg-white/10"
-                        : "gap-4 px-3 py-3 hover:bg-white/10"
-                    }
-                    ${isActive(item.to) ? "bg-white/20 shadow-lg" : ""}`}
-                >
-                    {/* Hover gradient effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 to-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
+        {/* Navigation Section */}
+        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-2 custom-scrollbar">
+          {menuItems.map((item) => {
+            const active = isActive(item.to);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => {
+                  setIsOpen(false);
+                  if (active) window.dispatchEvent(new Event('refreshPage'));
+                }}
+                title={isCollapsed ? item.label : ""}
+                className={`group relative flex items-center rounded-xl transition-all duration-200 ease-out
+                        ${isCollapsed ? "justify-center p-3" : "px-4 py-3 gap-3"}
+                        ${active
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                  }`}
+              >
+                {/* Icon */}
+                <div className={`relative z-10 transition-transform duration-300 ${active ? "scale-100" : "group-hover:scale-110"}`}>
+                  <item.icon size={22} strokeWidth={active ? 2.5 : 2} />
+                </div>
 
-                    {/* Icon */}
-                    <div className={`relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-transform duration-300 ${isActive(item.to) ? "scale-110" : ""}`}>
-                        <item.icon size={22} className="text-white" />
-                    </div>
+                {/* Label */}
+                <span className={`font-Outfit font-medium text-sm whitespace-nowrap transition-all duration-300 ${isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"}`}>
+                  {item.label}
+                </span>
 
-                    {/* Label */}
-                    <span
-                    className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${
-                        isCollapsed
-                        ? "opacity-0 max-w-0 overflow-hidden"
-                        : "opacity-100 max-w-xs"
-                    }`}
-                    >
-                    {item.label}
-                    </span>
-                </Link>
-                ))}
-            </div>
+                {/* Active Indicator (Left Bar) - Only visible when NOT collapsed and active */}
+                {active && !isCollapsed && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white/20 rounded-r-full"></div>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
 
-          {/* --- Divider --- */}
-          <div className="pt-4 pb-2">
-            <div className="border-t border-white/20 rounded-full"></div>
-          </div>
-
-          {/* --- Logout Button --- */}
+        {/* Footer / User / Logout Section */}
+        <div className="p-4 border-t border-slate-800 bg-slate-950/30">
           <button
             onClick={() => {
               setIsOpen(false);
               setShowConfirm(true);
             }}
-            title={isCollapsed ? "Logout" : ""}
-            className={`flex items-center relative overflow-hidden rounded-xl text-white transition-all duration-300 group w-full
-              ${
-                isCollapsed
-                  ? "justify-center py-3 hover:bg-red-500/30"
-                  : "gap-4 px-3 py-3.5 hover:bg-red-500/30"
-              }`}
+            title={isCollapsed ? "Sign Out" : ""}
+            className={`w-full group flex items-center rounded-xl transition-all duration-200 
+                ${isCollapsed ? "justify-center p-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white" : "px-4 py-3 gap-3 hover:bg-red-950/30 text-slate-400 hover:text-red-400"}
+                `}
           >
-            {/* Hover gradient effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/20 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
+            <LogOut size={20} className={`transition-transform duration-300 ${isCollapsed ? "" : "group-hover:-translate-x-1"}`} />
 
-            {/* Icon */}
-            <div className="relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-transform duration-300">
-              <LogOut size={22} className="text-white" />
-            </div>
-
-            {/* Label */}
-            <span
-              className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${
-                isCollapsed
-                  ? "opacity-0 max-w-0 overflow-hidden"
-                  : "opacity-100 max-w-xs"
-              }`}
-            >
-              Logout
+            <span className={`font-Outfit font-medium text-sm whitespace-nowrap transition-all duration-300 ${isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"}`}>
+              Sign Out
             </span>
           </button>
-        </nav> 
         </div>
+      </aside>
 
       {/* Overlay for mobile */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 lg:hidden animate-in fade-in duration-200"
         />
       )}
 
       {/* Logout Confirmation Modal */}
       {showConfirm && (
-              <div className="font-Outfit fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-slideUp">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-red-100 p-4 rounded-full items-center justify-center flex">
-                      <LogOut className="text-red-500" size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-title">Confirm Logout</h3>
-                      <p className="text-subtext">
-                        Are you sure you want to log out?
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 mt-6">
-                    <button
-                      onClick={() => setShowConfirm(false)}
-                      className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 active:scale-95 hover:scale-105 duration-200 transition font-semibold"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 active:scale-95 hover:scale-105 duration-200 transition font-semibold"
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm font-Outfit animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut className="text-red-500" size={32} />
               </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Sign Out?</h3>
+              <p className="text-slate-500 text-sm mb-6">
+                Are you sure you want to sign out of the admin panel?
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl shadow-lg shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

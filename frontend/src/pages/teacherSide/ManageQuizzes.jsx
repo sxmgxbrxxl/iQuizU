@@ -95,6 +95,13 @@ export default function ManageQuizzes() {
   const [syncPage, setSyncPage] = useState(1);
   const [asyncPage, setAsyncPage] = useState(1);
 
+  const [activeTab, setActiveTab] = useState("multiple_choice");
+  const tabContent = [
+    { id: "multiple_choice", label: "Multiple Choice", icon: <Users className="w-4 h-4" /> },
+    { id: "true_false", label: "True/False", icon: <CheckCircle className="w-4 h-4" /> },
+    { id: "identification", label: "Identification", icon: <Pen className="w-4 h-4" /> },
+  ];
+
 
 
   useEffect(() => {
@@ -685,7 +692,9 @@ export default function ManageQuizzes() {
           ]
           : null,
       bloom_classification: "LOTS",
+      classification_confidence: 0,
     });
+    setActiveTab(type);
   };
 
   const handleDeleteQuestion = (idx) => {
@@ -2063,352 +2072,438 @@ export default function ManageQuizzes() {
                 </button>
               </div>
 
-              {/* Classification Filter Tabs */}
-              <div className="px-4 pt-4 pb-4 md:px-6 md:pt-6 bg-gray-50 border-b overflow-x-auto">
-                <div className="flex items-center gap-2 min-w-max">
-                  <span className="text-sm font-semibold text-gray-700 mr-2">Filter by:</span>
+
+
+              // ... (inside Preview Modal JSX)
+
+              {/* Classification Filter Tabs & Question Type Tabs */}
+              <div className="px-4 pt-4 pb-0 md:px-6 md:pt-6 bg-gray-50 border-b flex flex-col gap-4">
+                {/* Bloom's Classification Filter */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  <span className="text-sm font-semibold text-gray-700 mr-2 whitespace-nowrap">Filter by:</span>
                   <button
                     onClick={() => setClassificationFilter("ALL")}
-                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${classificationFilter === "ALL"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100"
+                    className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition whitespace-nowrap ${classificationFilter === "ALL"
+                      ? "bg-slate-700 text-white shadow-md"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
                       }`}
                   >
-                    All Questions ({generatedQuiz.questions.length})
+                    All ({generatedQuiz.questions.length})
                   </button>
                   <button
                     onClick={() => setClassificationFilter("HOTS")}
-                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2 ${classificationFilter === "HOTS"
+                    className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition flex items-center gap-1 whitespace-nowrap ${classificationFilter === "HOTS"
                       ? "bg-purple-600 text-white shadow-md"
-                      : "bg-white text-purple-700 border-2 border-purple-300 hover:bg-purple-50"
+                      : "bg-white text-purple-700 border border-purple-200 hover:bg-purple-50"
                       }`}
                   >
-                    <Brain className="w-4 h-4" />
+                    <Brain className="w-3 h-3" />
                     HOTS ({generatedQuiz.questions.filter(q => q.bloom_classification === "HOTS").length})
                   </button>
                   <button
                     onClick={() => setClassificationFilter("LOTS")}
-                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2 ${classificationFilter === "LOTS"
+                    className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition flex items-center gap-1 whitespace-nowrap ${classificationFilter === "LOTS"
                       ? "bg-blue-600 text-white shadow-md"
-                      : "bg-white text-blue-700 border-2 border-blue-300 hover:bg-blue-50"
+                      : "bg-white text-blue-700 border border-blue-200 hover:bg-blue-50"
                       }`}
                   >
-                    <Snowflake className="w-4 h-4" />
+                    <Snowflake className="w-3 h-3" />
                     LOTS ({generatedQuiz.questions.filter(q => q.bloom_classification === "LOTS").length})
                   </button>
                 </div>
+
+                {/* Question Type Tabs (Shadcn Style) */}
+                <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
+                  {tabContent.map((tab) => {
+                    const count = generatedQuiz.questions.filter(q => q.type === tab.id).length;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`
+                          flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg
+                          ${activeTab === tab.id
+                            ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                          }
+                        `}
+                      >
+                        <span className={`${activeTab === tab.id ? "text-blue-600" : "text-slate-400"}`}>
+                          {tab.icon}
+                        </span>
+                        {tab.label}
+                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-slate-200 text-slate-600"
+                          }`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Questions */}
-              <div className="flex-1 overflow-y-auto p-6">
+              {/* Questions Content */}
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
                 {(() => {
-                  const grouped = groupQuestionsByType(generatedQuiz.questions);
-                  const labels = {
-                    multiple_choice: "Multiple Choice",
-                    true_false: "True/False",
-                    identification: "Identification",
-                  };
+                  // Filter by Bloom's first
+                  const bloomFiltered = generatedQuiz.questions.filter(q =>
+                    classificationFilter === "ALL" || q.bloom_classification === classificationFilter
+                  );
 
-                  const totalFilteredQuestions = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
+                  // Then filter by active tab
+                  const currentTabQuestions = bloomFiltered.filter(q => q.type === activeTab);
 
-                  if (totalFilteredQuestions === 0) {
+                  // Group them just to maintain the map structure logic if needed, or just map directly
+                  // Since we are showing only one type, we can just map the list
+
+                  if (currentTabQuestions.length === 0) {
                     return (
-                      <div className="text-center py-12">
-                        <Brain className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                        <p className="text-gray-500 text-lg">
-                          No {classificationFilter} questions found
+                      <div className="text-center py-12 flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                          {tabContent.find(t => t.id === activeTab)?.icon}
+                        </div>
+                        <p className="text-gray-500 text-lg font-medium">
+                          No {tabContent.find(t => t.id === activeTab)?.label} questions
                         </p>
-                        <p className="text-gray-400 text-sm mt-2">
-                          Try selecting a different filter
+                        <p className="text-gray-400 text-sm mt-1 max-w-xs mx-auto">
+                          {classificationFilter !== "ALL"
+                            ? `No questions found with ${classificationFilter} classification in this category.`
+                            : "Add a question to get started with this category."}
                         </p>
+                        <button
+                          onClick={() => handleAddQuestion(activeTab)}
+                          className="mt-6 flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition shadow-sm font-medium"
+                        >
+                          <PlusCircle className="w-4 h-4 text-blue-600" />
+                          Add {tabContent.find(t => t.id === activeTab)?.label} Question
+                        </button>
                       </div>
                     );
                   }
 
                   return (
-                    <div className="space-y-8">
-                      {Object.entries(grouped).map(([type, qs]) => {
-                        if (qs.length === 0) return null;
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+                          Question List
+                        </h4>
+                        <button
+                          onClick={() => handleAddQuestion(activeTab)}
+                          className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition text-xs font-bold shadow-sm"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" /> Add Question
+                        </button>
+                      </div>
+
+                      {currentTabQuestions.map((q) => {
+                        // Find the original index in the main array to ensure updates work correctly
+                        const originalIndex = generatedQuiz.questions.indexOf(q);
+                        const editing = editingQuestion === originalIndex;
+
                         return (
-                          <div key={type} className="space-y-4">
-                            <div className="flex items-center justify-between border-b-2 border-blue-600 pb-2">
-                              <h4 className="text-xl font-bold text-blue-700 flex items-center gap-2">
-                                {labels[type]}
-                                <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                                  {qs.length}{" "}
-                                  {qs.length === 1 ? "question" : "questions"}
-                                </span>
-                              </h4>
-                              <button
-                                onClick={() => handleAddQuestion(type)}
-                                className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition text-sm"
-                              >
-                                <PlusCircle className="w-4 h-4" /> Add Question
-                              </button>
-                            </div>
+                          <div
+                            key={originalIndex}
+                            className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-200 group relative"
+                          >
+                            {editing ? (
+                              // ... EDITING FORM (Same as existing) ...
+                              /* EDIT FORM - keeping logic same but ensuring context */
+                              <div className="space-y-4">
+                                {/* ... (Copy existing edit form JSX here or reference internal block) ... */}
+                                {/* Since I can't easily reference "internal block", I will rewrite the edit form logic here briefly or just rely on the fact that I'm inside the map function. 
+                                            Wait, I need to provide the FULL content for the replacement.
+                                            I will copy the edit form JSX from the previous file content. 
+                                        */}
+                                <div>
+                                  <label className="block text-sm font-bold mb-1.5 text-gray-700">
+                                    Question
+                                  </label>
+                                  <textarea
+                                    value={editForm.question}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        question: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                                  />
+                                </div>
 
-                            <div className="space-y-4">
-                              {qs.map((q) => {
-                                const editing =
-                                  editingQuestion === q.originalIndex;
-                                return (
-                                  <div
-                                    key={q.originalIndex}
-                                    className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200 hover:border-blue-300 transition"
-                                  >
-                                    {editing ? (
-                                      /* EDIT FORM */
-                                      <div className="space-y-4">
-                                        <div>
-                                          <label className="block text-sm font-semibold mb-2">
-                                            Question
-                                          </label>
-                                          <textarea
-                                            value={editForm.question}
-                                            onChange={(e) =>
-                                              setEditForm({
-                                                ...editForm,
-                                                question: e.target.value,
-                                              })
-                                            }
-                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            rows="3"
-                                          />
-                                        </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-sm font-bold mb-1.5 text-gray-700">
+                                      Points
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={editForm.points}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          points:
+                                            parseInt(e.target.value) || 1,
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 border rounded-lg"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold mb-1.5 text-gray-700">
+                                      Classification
+                                    </label>
+                                    <select
+                                      value={editForm.bloom_classification}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          bloom_classification: e.target.value,
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 border rounded-lg"
+                                    >
+                                      <option value="HOTS">HOTS</option>
+                                      <option value="LOTS">LOTS</option>
+                                    </select>
+                                  </div>
+                                  {/* COGNITIVE LEVEL */}
+                                  <div>
+                                    <label className="block text-sm font-bold mb-1.5 text-gray-700">
+                                      Cognitive Level
+                                    </label>
+                                    <select
+                                      value={editForm.cognitive_level || "remembering"}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          cognitive_level: e.target.value,
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 border rounded-lg capitalize"
+                                    >
+                                      {["remembering", "understanding", "application", "analysis", "evaluation", "creating"].map(level => (
+                                        <option key={level} value={level}>{level}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  {/* DIFFICULTY */}
+                                  <div>
+                                    <label className="block text-sm font-bold mb-1.5 text-gray-700">
+                                      Difficulty
+                                    </label>
+                                    <select
+                                      value={editForm.difficulty || "easy"}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          difficulty: e.target.value,
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 border rounded-lg capitalize"
+                                    >
+                                      {["easy", "average", "difficult"].map(diff => (
+                                        <option key={diff} value={diff}>{diff}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div>
-                                            <label className="block text-sm font-semibold mb-2">
-                                              Points
-                                            </label>
+                                {editForm.type === "multiple_choice" && (
+                                  <div>
+                                    <label className="block text-sm font-bold mb-2 text-gray-700">
+                                      Choices
+                                    </label>
+                                    <div className="space-y-2">
+                                      {editForm.choices?.map(
+                                        (choice, i) => (
+                                          <div
+                                            key={i}
+                                            className="flex items-center gap-2"
+                                          >
                                             <input
-                                              type="number"
-                                              min="1"
-                                              value={editForm.points}
-                                              onChange={(e) =>
+                                              type="checkbox"
+                                              checked={choice.is_correct}
+                                              onChange={(e) => {
+                                                const updated = [
+                                                  ...editForm.choices,
+                                                ];
+                                                // For multiple choice single answer, usually we uncheck others, but let's stick to current logic
+                                                // Assuming single answer for now based on radio button behavior in manual creation
+                                                updated.forEach((c, idx) => c.is_correct = idx === i);
+
+                                                // Toggle currently selected
+                                                updated[i].is_correct = e.target.checked;
+
                                                 setEditForm({
                                                   ...editForm,
-                                                  points:
-                                                    parseInt(e.target.value) || 1,
-                                                })
-                                              }
-                                              className="w-full px-3 py-2 border rounded-lg"
+                                                  choices: updated,
+                                                });
+                                              }}
+                                              className="w-4 h-4 accent-blue-600"
                                             />
-                                          </div>
-                                          <div>
-                                            <label className="block text-sm font-semibold mb-2">
-                                              Classification
-                                            </label>
-                                            <select
-                                              value={
-                                                editForm.bloom_classification
-                                              }
-                                              onChange={(e) =>
-                                                setEditForm({
-                                                  ...editForm,
-                                                  bloom_classification:
-                                                    e.target.value,
-                                                })
-                                              }
-                                              className="w-full px-3 py-2 border rounded-lg"
-                                            >
-                                              <option value="HOTS">HOTS</option>
-                                              <option value="LOTS">LOTS</option>
-                                            </select>
-                                          </div>
-                                        </div>
-
-                                        {editForm.type === "multiple_choice" && (
-                                          <div>
-                                            <label className="block text-sm font-semibold mb-2">
-                                              Choices
-                                            </label>
-                                            <div className="space-y-2">
-                                              {editForm.choices?.map(
-                                                (choice, i) => (
-                                                  <div
-                                                    key={i}
-                                                    className="flex items-center gap-2"
-                                                  >
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={choice.is_correct}
-                                                      onChange={(e) => {
-                                                        const updated = [
-                                                          ...editForm.choices,
-                                                        ];
-                                                        updated[i].is_correct =
-                                                          e.target.checked;
-                                                        setEditForm({
-                                                          ...editForm,
-                                                          choices: updated,
-                                                        });
-                                                      }}
-                                                      className="w-4 h-4"
-                                                    />
-                                                    <input
-                                                      type="text"
-                                                      value={choice.text}
-                                                      onChange={(e) => {
-                                                        const updated = [
-                                                          ...editForm.choices,
-                                                        ];
-                                                        updated[i].text =
-                                                          e.target.value;
-                                                        setEditForm({
-                                                          ...editForm,
-                                                          choices: updated,
-                                                        });
-                                                      }}
-                                                      placeholder="Choice text"
-                                                      className="flex-1 px-3 py-2 border rounded-lg text-sm"
-                                                    />
-                                                  </div>
-                                                )
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {editForm.type !== "multiple_choice" && (
-                                          <div>
-                                            <label className="block text-sm font-semibold mb-2">
-                                              Correct Answer
-                                            </label>
                                             <input
                                               type="text"
-                                              value={editForm.correct_answer}
-                                              onChange={(e) =>
+                                              value={choice.text}
+                                              onChange={(e) => {
+                                                const updated = [
+                                                  ...editForm.choices,
+                                                ];
+                                                updated[i].text =
+                                                  e.target.value;
                                                 setEditForm({
                                                   ...editForm,
-                                                  correct_answer: e.target.value,
-                                                })
-                                              }
-                                              className="w-full px-3 py-2 border rounded-lg"
+                                                  choices: updated,
+                                                });
+                                              }}
+                                              placeholder={`Choice ${i + 1}`}
+                                              className="flex-1 px-3 py-2 border rounded-lg text-sm"
                                             />
                                           </div>
-                                        )}
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
 
-                                        <div className="flex gap-2">
+                                {editForm.type !== "multiple_choice" && (
+                                  <div>
+                                    <label className="block text-sm font-bold mb-2 text-gray-700">
+                                      Correct Answer
+                                    </label>
+                                    {editForm.type === "true_false" ? (
+                                      <div className="flex gap-2">
+                                        {["True", "False"].map(val => (
                                           <button
-                                            onClick={() =>
-                                              handleQuestionSave(q.originalIndex)
-                                            }
-                                            className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 text-sm font-semibold"
+                                            key={val}
+                                            onClick={() => setEditForm({ ...editForm, correct_answer: val })}
+                                            className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition ${editForm.correct_answer === val ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"}`}
                                           >
-                                            Save
+                                            {val}
                                           </button>
-                                          <button
-                                            onClick={() =>
-                                              setEditingQuestion(null)
-                                            }
-                                            className="flex-1 bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 text-sm font-semibold"
-                                          >
-                                            Cancel
-                                          </button>
-                                          <button
-                                            onClick={() =>
-                                              handleDeleteQuestion(
-                                                q.originalIndex
-                                              )
-                                            }
-                                            className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 text-sm font-semibold flex items-center justify-center gap-1"
-                                          >
-                                            <Trash2 className="w-4 h-4" /> Delete
-                                          </button>
-                                        </div>
+                                        ))}
                                       </div>
                                     ) : (
-                                      /* DISPLAY */
-                                      <>
-                                        <div className="flex items-start gap-3 mb-4">
-                                          <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
-                                            {q.originalIndex + 1}
-                                          </span>
-                                          <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                              <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                                                {q.type
-                                                  .replace("_", " ")
-                                                  .toUpperCase()}
-                                              </span>
-                                              <span className="text-sm text-gray-600">
-                                                {q.points}{" "}
-                                                {q.points === 1
-                                                  ? "point"
-                                                  : "points"}
-                                              </span>
-                                              {getClassificationBadge(
-                                                q.bloom_classification,
-                                                q.classification_confidence,
-                                                q.cognitive_level,      // ADD THIS
-                                                q.difficulty            // ADD THIS
-                                              )}
-                                              <button
-                                                onClick={() =>
-                                                  handleQuestionEdit(
-                                                    q.originalIndex,
-                                                    q
-                                                  )
-                                                }
-                                                className="ml-auto text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm"
-                                              >
-                                                <Pen className="w-4 h-4" /> Edit
-                                              </button>
-                                            </div>
-                                            <p className="text-lg font-semibold text-gray-800">
-                                              {q.question}
-                                            </p>
-                                          </div>
-                                        </div>
-
-                                        {q.choices && (
-                                          <div className="ml-11 space-y-2">
-                                            {q.choices.map((c, i) => (
-                                              <div
-                                                key={i}
-                                                className={`p-3 rounded-lg border-2 ${c.is_correct
-                                                  ? "bg-green-50 border-green-400"
-                                                  : "bg-white border-gray-200"
-                                                  }`}
-                                              >
-                                                <div className="flex items-center gap-2">
-                                                  <span
-                                                    className={
-                                                      c.is_correct
-                                                        ? "text-green-700 font-semibold"
-                                                        : "text-gray-700"
-                                                    }
-                                                  >
-                                                    {c.text}
-                                                  </span>
-                                                  {c.is_correct && (
-                                                    <CheckCircle className="w-5 h-5 text-green-600 ml-auto" />
-                                                  )}
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-
-                                        {!q.choices && (
-                                          <div className="ml-11 mt-3">
-                                            <div className="bg-green-50 border-2 border-green-400 rounded-lg p-3">
-                                              <span className="text-sm text-gray-600 font-semibold">
-                                                Correct Answer:{" "}
-                                              </span>
-                                              <span className="text-green-700 font-bold">
-                                                {q.correct_answer}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        )}
-                                      </>
+                                      <input
+                                        type="text"
+                                        value={editForm.correct_answer}
+                                        onChange={(e) =>
+                                          setEditForm({
+                                            ...editForm,
+                                            correct_answer: e.target.value,
+                                          })
+                                        }
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                      />
                                     )}
                                   </div>
-                                );
-                              })}
-                            </div>
+                                )}
+
+                                <div className="flex gap-2 pt-2">
+                                  <button
+                                    onClick={() =>
+                                      handleQuestionSave(originalIndex)
+                                    }
+                                    className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 text-sm font-bold"
+                                  >
+                                    Save Changes
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setEditingQuestion(null)
+                                    }
+                                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm font-bold"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* DISPLAY CARD */
+                              <>
+                                <div className="flex items-start gap-4 mb-3">
+                                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-sm border border-slate-200">
+                                    {originalIndex + 1}
+                                  </div>
+
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${q.type === 'multiple_choice' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                        q.type === 'true_false' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                          'bg-teal-50 text-teal-600 border-teal-100'
+                                        }`}>
+                                        {q.type.replace("_", " ")}
+                                      </span>
+                                      <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                        {q.points} pts
+                                      </span>
+                                      {getClassificationBadge(
+                                        q.bloom_classification,
+                                        q.classification_confidence,
+                                        q.cognitive_level,
+                                        q.difficulty
+                                      )}
+                                    </div>
+
+                                    <p className="text-base font-medium text-gray-800 leading-relaxed">
+                                      {q.question}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => handleQuestionEdit(originalIndex, q)}
+                                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                      title="Edit Question"
+                                    >
+                                      <Pen className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteQuestion(originalIndex)}
+                                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                      title="Delete Question"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* ANSWERS DISPLAY */}
+                                <div className="pl-12">
+                                  {q.type === "multiple_choice" && q.choices && (
+                                    <div className="grid gap-2">
+                                      {q.choices.map((c, i) => (
+                                        <div
+                                          key={i}
+                                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm border ${c.is_correct
+                                            ? "bg-green-50 border-green-200 text-green-800"
+                                            : "bg-white border-gray-100 text-gray-600"
+                                            }`}
+                                        >
+                                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${c.is_correct ? "border-green-500 bg-green-500" : "border-gray-300"
+                                            }`}>
+                                            {c.is_correct && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                                          </div>
+                                          <span className={c.is_correct ? "font-medium" : ""}>{c.text}</span>
+                                          {c.is_correct && <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {(q.type === "true_false" || q.type === "identification") && (
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-xs font-bold text-gray-500 uppercase">Correct Answer:</span>
+                                      <span className="text-sm font-bold text-green-600 bg-green-50 px-3 py-1 rounded-md border border-green-100">
+                                        {q.correct_answer}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            )}
                           </div>
                         );
                       })}

@@ -25,6 +25,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { QuizControlPanelSkeleton } from "../../components/SkeletonLoaders";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function QuizControlPanel() {
   const { quizId, classId } = useParams();
@@ -45,6 +47,52 @@ export default function QuizControlPanel() {
   const [exportLoading, setExportLoading] = useState(false);
   const [showAntiCheatModal, setShowAntiCheatModal] = useState(false);
   const [selectedAntiCheatData, setSelectedAntiCheatData] = useState(null);
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    cancelLabel: "Cancel",
+    onConfirm: null,
+    onCancel: () => setConfirmDialog((prev) => ({ ...prev, isOpen: false })),
+    color: "blue",
+    icon: null,
+    showCancel: true,
+  });
+
+  const showConfirm = (title, message, onConfirm, color = "blue", confirmLabel = "Confirm", icon = null) => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+      },
+      onCancel: () => setConfirmDialog((prev) => ({ ...prev, isOpen: false })),
+      color,
+      confirmLabel,
+      cancelLabel: "Cancel",
+      showCancel: true,
+      icon,
+    });
+  };
+
+  const showAlert = (title, message, color = "blue", icon = null) => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: () => setConfirmDialog((prev) => ({ ...prev, isOpen: false })),
+      onCancel: () => setConfirmDialog((prev) => ({ ...prev, isOpen: false })),
+      color,
+      confirmLabel: "OK",
+      cancelLabel: "",
+      showCancel: false,
+      icon,
+    });
+  };
 
   useEffect(() => {
     let unsubscribers = [];
@@ -67,7 +115,7 @@ export default function QuizControlPanel() {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        alert("Please login first");
+        showAlert("Error", "Please login first", "red");
         navigate("/login");
         return;
       }
@@ -76,7 +124,7 @@ export default function QuizControlPanel() {
       const quizSnap = await getDoc(quizRef);
 
       if (!quizSnap.exists()) {
-        alert("Quiz not found!");
+        showAlert("Error", "Quiz not found!", "red");
         navigate("/teacher/quizzes");
         return;
       }
@@ -84,7 +132,7 @@ export default function QuizControlPanel() {
       const quizData = { id: quizSnap.id, ...quizSnap.data() };
 
       if (quizData.teacherId !== currentUser.uid) {
-        alert("❌ You don't have permission to control this quiz!");
+        showAlert("Error", "❌ You don't have permission to control this quiz!", "red");
         navigate("/teacher/quizzes");
         return;
       }
@@ -177,7 +225,7 @@ export default function QuizControlPanel() {
       setStudents(studentsList);
     } catch (error) {
       console.error("Error fetching quiz data:", error);
-      alert("Error loading quiz data");
+      showAlert("Error", "Error loading quiz data", "red");
     } finally {
       setLoading(false);
     }
@@ -276,121 +324,125 @@ export default function QuizControlPanel() {
   };
 
   const handleStartQuiz = async () => {
-    const confirm = window.confirm(
-      "Are you sure you want to START this live quiz? Students will be able to access it."
+    showConfirm(
+      "Start Quiz?",
+      "Are you sure you want to START this live quiz? Students will be able to access it.",
+      async () => {
+        setActionLoading(true);
+        try {
+          const assignmentsRef = collection(db, "assignedQuizzes");
+          const q = query(
+            assignmentsRef,
+            where("quizId", "==", quizId),
+            where("classId", "==", classId)
+          );
+          const assignmentsSnap = await getDocs(q);
+
+          const updatePromises = assignmentsSnap.docs.map((docSnap) =>
+            updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
+              sessionStatus: "active",
+              sessionStartedAt: new Date(),
+              sessionEndedAt: null,
+            })
+          );
+
+          await Promise.all(updatePromises);
+
+          showAlert("Success", "✅ Quiz started! Students can now access the quiz.", "green");
+        } catch (error) {
+          console.error("Error starting quiz:", error);
+          showAlert("Error", "❌ Error starting quiz. Please try again.", "red");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      "green",
+      "Start Quiz"
     );
-    if (!confirm) return;
-
-    setActionLoading(true);
-    try {
-      const assignmentsRef = collection(db, "assignedQuizzes");
-      const q = query(
-        assignmentsRef,
-        where("quizId", "==", quizId),
-        where("classId", "==", classId)
-      );
-      const assignmentsSnap = await getDocs(q);
-
-      const updatePromises = assignmentsSnap.docs.map((docSnap) =>
-        updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
-          sessionStatus: "active",
-          sessionStartedAt: new Date(),
-          sessionEndedAt: null,
-        })
-      );
-
-      await Promise.all(updatePromises);
-
-      alert("✅ Quiz started! Students can now access the quiz.");
-    } catch (error) {
-      console.error("Error starting quiz:", error);
-      alert("❌ Error starting quiz. Please try again.");
-    } finally {
-      setActionLoading(false);
-    }
   };
 
   const handleEndQuiz = async () => {
-    const confirm = window.confirm(
-      "Are you sure you want to END this quiz? This action cannot be undone. Students will no longer be able to submit."
+    showConfirm(
+      "End Quiz?",
+      "Are you sure you want to END this quiz? This action cannot be undone. Students will no longer be able to submit.",
+      async () => {
+        setActionLoading(true);
+        try {
+          const assignmentsRef = collection(db, "assignedQuizzes");
+          const q = query(
+            assignmentsRef,
+            where("quizId", "==", quizId),
+            where("classId", "==", classId)
+          );
+          const assignmentsSnap = await getDocs(q);
+
+          const updatePromises = assignmentsSnap.docs.map((docSnap) =>
+            updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
+              sessionStatus: "ended",
+              sessionEndedAt: new Date(),
+            })
+          );
+
+          await Promise.all(updatePromises);
+
+          showAlert("Quiz Ended", "🛑 Quiz ended. Students can no longer submit.", "orange");
+        } catch (error) {
+          console.error("Error ending quiz:", error);
+          showAlert("Error", "❌ Error ending quiz. Please try again.", "red");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      "red",
+      "End Quiz"
     );
-    if (!confirm) return;
-
-    setActionLoading(true);
-    try {
-      const assignmentsRef = collection(db, "assignedQuizzes");
-      const q = query(
-        assignmentsRef,
-        where("quizId", "==", quizId),
-        where("classId", "==", classId)
-      );
-      const assignmentsSnap = await getDocs(q);
-
-      const updatePromises = assignmentsSnap.docs.map((docSnap) =>
-        updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
-          sessionStatus: "ended",
-          sessionEndedAt: new Date(),
-        })
-      );
-
-      await Promise.all(updatePromises);
-
-      alert("🛑 Quiz ended. Students can no longer submit.");
-    } catch (error) {
-      console.error("Error ending quiz:", error);
-      alert("❌ Error ending quiz. Please try again.");
-    } finally {
-      setActionLoading(false);
-    }
   };
 
   const handleRestartQuiz = async () => {
-    const confirm = window.confirm(
-      "⚠️ RESTART QUIZ SESSION?\n\n" +
-      "This will:\n" +
-      "• Reset the session to 'Not Started' status\n" +
-      "• Clear all student scores and progress\n" +
-      "• Allow students to retake the quiz\n\n" +
-      "Are you sure you want to continue?"
+    showConfirm(
+      "Restart Quiz Session?",
+      "This will reset the session to 'Not Started', clear all student scores, and allow them to retake the quiz. Are you sure?",
+      async () => {
+        setActionLoading(true);
+        try {
+          const assignmentsRef = collection(db, "assignedQuizzes");
+          const q = query(
+            assignmentsRef,
+            where("quizId", "==", quizId),
+            where("classId", "==", classId)
+          );
+          const assignmentsSnap = await getDocs(q);
+
+          const updatePromises = assignmentsSnap.docs.map((docSnap) =>
+            updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
+              sessionStatus: "not_started",
+              sessionStartedAt: null,
+              sessionEndedAt: null,
+              status: "not_started",
+              completed: false,
+              score: null,
+              rawScorePercentage: null,
+              base50ScorePercentage: null,
+              attempts: 0,
+              startedAt: null,
+              submittedAt: null,
+              answers: null,
+            })
+          );
+
+          await Promise.all(updatePromises);
+
+          showAlert("Success", "✅ Quiz session restarted successfully! Students can now retake the quiz.", "green");
+        } catch (error) {
+          console.error("Error restarting quiz:", error);
+          showAlert("Error", "❌ Error restarting quiz. Please try again.", "red");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      "yellow",
+      "Restart Quiz"
     );
-    if (!confirm) return;
-
-    setActionLoading(true);
-    try {
-      const assignmentsRef = collection(db, "assignedQuizzes");
-      const q = query(
-        assignmentsRef,
-        where("quizId", "==", quizId),
-        where("classId", "==", classId)
-      );
-      const assignmentsSnap = await getDocs(q);
-
-      const updatePromises = assignmentsSnap.docs.map((docSnap) =>
-        updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
-          sessionStatus: "not_started",
-          sessionStartedAt: null,
-          sessionEndedAt: null,
-          status: "not_started",
-          completed: false,
-          score: null,
-          rawScorePercentage: null,
-          base50ScorePercentage: null,
-          attempts: 0,
-          startedAt: null,
-          submittedAt: null,
-          answers: null,
-        })
-      );
-
-      await Promise.all(updatePromises);
-
-      alert("✅ Quiz session restarted successfully! Students can now retake the quiz.");
-    } catch (error) {
-      console.error("Error restarting quiz:", error);
-      alert("❌ Error restarting quiz. Please try again.");
-    } finally {
-      setActionLoading(false);
-    }
   };
 
   const handleCopyCode = () => {
@@ -404,7 +456,7 @@ export default function QuizControlPanel() {
   const handleViewAntiCheat = (e, student) => {
     e.stopPropagation();
     if (!student.antiCheatData) {
-      alert("No anti-cheat data available for this student");
+      showAlert("Info", "No anti-cheat data available for this student", "blue");
       return;
     }
     setSelectedAntiCheatData({ ...student.antiCheatData, studentName: student.name });
@@ -564,24 +616,17 @@ export default function QuizControlPanel() {
       const fileName = `${quiz.title}_${classData.name}_Sync_Results_${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(wb, fileName);
 
-      alert("✅ Excel file downloaded successfully!");
+      showAlert("Success", "✅ Excel file downloaded successfully!", "green");
     } catch (error) {
       console.error("Error exporting to Excel:", error);
-      alert("❌ Error exporting to Excel. Please try again.");
+      showAlert("Error", "❌ Error exporting to Excel. Please try again.", "red");
     } finally {
       setExportLoading(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin h-8 w-8 text-yellow-500"></Loader2>
-          <span className="ml-3 text-gray-600">Loading Control Panel...</span>
-        </div>
-      </div>
-    );
+    return <QuizControlPanelSkeleton />;
   }
 
   if (!quiz || !classData) return null;
@@ -622,12 +667,12 @@ export default function QuizControlPanel() {
         </button>
 
         <div className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-button" />
-          <span className="font-semibold text-button">Live Control Panel</span>
+          <Zap className="w-5 h-5 text-blue-600" />
+          <span className="font-semibold text-blue-600">Live Control Panel</span>
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-button to-accent text-white p-4 md:p-6 rounded-xl mb-6">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 md:p-6 rounded-xl mb-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div>
             <h2 className="text-xl md:text-2xl font-bold">{quiz.title}</h2>
@@ -660,14 +705,14 @@ export default function QuizControlPanel() {
             <div>
               <p className="text-sm font-semibold text-title mb-2">Live Quiz Code</p>
               <div className="flex items-center gap-3">
-                <div className="bg-white border-2 border-button rounded-lg px-4 md:px-6 py-3">
-                  <span className="text-2xl md:text-3xl font-bold text-button tracking-wider">
+                <div className="bg-white border-2 border-blue-600 rounded-lg px-4 md:px-6 py-3">
+                  <span className="text-2xl md:text-3xl font-bold text-blue-600 tracking-wider">
                     {quizSession.quizCode}
                   </span>
                 </div>
                 <button
                   onClick={handleCopyCode}
-                  className="flex items-center gap-2 px-4 py-3 bg-button hover:bg-buttonHover text-white font-semibold rounded-lg transition"
+                  className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
                 >
                   {codeCopied ? (
                     <>
@@ -742,7 +787,7 @@ export default function QuizControlPanel() {
             <button
               onClick={handleRestartQuiz}
               disabled={actionLoading}
-              className="w-full bg-button hover:bg-buttonHover text-white p-4 rounded-xl font-bold text-base md:text-xl flex items-center justify-center gap-3 disabled:bg-gray-400 transition transform hover:scale-[1.01]"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold text-base md:text-xl flex items-center justify-center gap-3 disabled:bg-gray-400 transition transform hover:scale-[1.01]"
             >
               {actionLoading ? (
                 <>
@@ -763,7 +808,7 @@ export default function QuizControlPanel() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
         <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
           <div className="flex items-center justify-between">
-            <Users className="w-6 h-6 md:w-8 md:h-8 text-button" />
+            <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
             <div className="text-right">
               <div className="text-2xl md:text-3xl font-bold text-title">{totalStudents}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Total</div>
@@ -815,7 +860,7 @@ export default function QuizControlPanel() {
       <div className="border border-gray-200 rounded-xl p-4 md:p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
           <h3 className="text-lg md:text-xl font-bold flex items-center gap-2">
-            <Eye className="w-5 h-5 md:w-6 md:h-6 text-button" />
+            <Eye className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
             Live Student Monitoring
           </h3>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
@@ -826,7 +871,7 @@ export default function QuizControlPanel() {
             <button
               onClick={handleExportToExcel}
               disabled={exportLoading || students.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-button hover:bg-buttonHover text-white font-semibold rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm w-full sm:w-auto justify-center"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm w-full sm:w-auto justify-center"
             >
               {exportLoading ? (
                 <>
@@ -853,7 +898,7 @@ export default function QuizControlPanel() {
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto max-h-[500px] overflow-y-auto">
               <table className="w-full min-w-[1000px]">
-                <thead className="bg-button text-white">
+                <thead className="bg-blue-600 text-white">
                   <tr>
                     <th className="px-6 py-3 text-left font-bold text-sm">Student Name</th>
                     <th className="px-6 py-3 text-left font-bold text-sm">Student #</th>
@@ -896,7 +941,7 @@ export default function QuizControlPanel() {
                         <td className="px-6 py-3 text-center">
                           {student.score !== null && student.score !== undefined ? (
                             <div className="flex items-center justify-center gap-1">
-                              <Award className="w-4 h-4 text-button" />
+                              <Award className="w-4 h-4 text-blue-600" />
                               <span className="font-bold text-lg text-title">
                                 {student.score}/{totalQuestions}
                               </span>
@@ -1192,7 +1237,7 @@ export default function QuizControlPanel() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowAntiCheatModal(false)}
-                  className="flex-1 px-4 py-2 bg-button hover:bg-buttonHover text-white font-semibold rounded-lg transition"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
                 >
                   Close
                 </button>
@@ -1201,6 +1246,18 @@ export default function QuizControlPanel() {
           </div>
         )
       }
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={confirmDialog.onCancel}
+        confirmLabel={confirmDialog.confirmLabel}
+        cancelLabel={confirmDialog.cancelLabel}
+        color={confirmDialog.color}
+        icon={confirmDialog.icon}
+        showCancel={confirmDialog.showCancel}
+      />
     </div >
   );
 }

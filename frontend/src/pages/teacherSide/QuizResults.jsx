@@ -29,6 +29,7 @@ import {
 import { db } from "../../firebase/firebaseConfig";
 import * as XLSX from "xlsx";
 import Toast from "../../components/Toast";
+import { QuizResultsSkeleton } from "../../components/SkeletonLoaders";
 
 export default function QuizResults() {
   const navigate = useNavigate();
@@ -345,12 +346,7 @@ export default function QuizResults() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-3 text-gray-600">Loading results...</span>
-      </div>
-    );
+    return <QuizResultsSkeleton />;
   }
 
   if (error) {
@@ -758,8 +754,8 @@ export default function QuizResults() {
       {/* Anti-Cheat Modal */}
       {
         showAntiCheatModal && selectedAntiCheatData && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-overlayFade">
+            <div className="bg-white rounded-2xl max-w-2xl w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all animate-popIn">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <Shield className={`w-6 h-6 ${selectedAntiCheatData?.flaggedForReview ? "text-red-600" : "text-green-600"}`} />
@@ -901,8 +897,8 @@ export default function QuizResults() {
       {/* Detail Modal */}
       {
         showDetailModal && studentAnswers && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-overlayFade">
+            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all animate-popIn">
               <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-700 text-white p-6 border-b">
                 <div className="flex justify-between items-start">
                   <div>
@@ -1001,11 +997,11 @@ export default function QuizResults() {
       {/* Retake Modal */}
       {
         showRetakeModal && selectedStudentForAction && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-overlayFade">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all animate-popIn">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-bold text-gray-800">Grant Quiz Access</h3>
-                <button onClick={() => setShowRetakeModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowRetakeModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -1020,21 +1016,21 @@ export default function QuizResults() {
                   type="datetime-local"
                   value={retakeDeadline}
                   onChange={(e) => setRetakeDeadline(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-600"
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
                 />
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowRetakeModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition"
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition"
                   disabled={actionLoading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleGrantRetake}
-                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   disabled={actionLoading}
                 >
                   {actionLoading ? (
@@ -1058,11 +1054,11 @@ export default function QuizResults() {
       {/* Reschedule Modal */}
       {
         showReschedModal && selectedStudentForAction && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-overlayFade">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all animate-popIn">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-bold text-gray-800">Extend Deadline</h3>
-                <button onClick={() => setShowReschedModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowReschedModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -1077,21 +1073,21 @@ export default function QuizResults() {
                   type="datetime-local"
                   value={reschedDeadline}
                   onChange={(e) => setReschedDeadline(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-600"
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
                 />
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowReschedModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition"
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition"
                   disabled={actionLoading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReschedule}
-                  className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   disabled={actionLoading}
                 >
                   {actionLoading ? (

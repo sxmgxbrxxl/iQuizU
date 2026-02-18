@@ -460,3 +460,209 @@ export function QuizListSkeleton({ count = 3 }) {
         </div>
     );
 }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// QuizControlPanelSkeleton — used in QuizControlPanel.jsx
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export function QuizControlPanelSkeleton() {
+    return (
+        <div className="p-4 md:p-8 font-Outfit animate-pulse">
+            <SkeletonKeyframes />
+
+            {/* Header: Back Button & Title */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2">
+                <SkeletonBlock width="200px" height="24px" />
+                <div className="flex items-center gap-2">
+                    <SkeletonBlock width="24px" height="24px" rounded="6px" />
+                    <SkeletonBlock width="150px" height="24px" />
+                </div>
+            </div>
+
+            {/* Quiz Info Banner */}
+            <div className="rounded-xl mb-6 p-4 md:p-6 overflow-hidden"
+                style={{
+                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                    backgroundSize: "200% 100%",
+                    animation: "skeletonShimmer 1.5s ease-in-out infinite",
+                    height: "100px"
+                }}
+            >
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 h-full">
+                    <div className="flex flex-col justify-center space-y-2 w-full md:w-1/2">
+                        <SkeletonBlock width="60%" height="28px" className="bg-white/50" />
+                        <SkeletonBlock width="40%" height="16px" className="bg-white/50" />
+                    </div>
+                    <SkeletonBlock width="120px" height="40px" rounded="8px" className="bg-white/50" />
+                </div>
+            </div>
+
+            {/* Quiz Code Section Placeholder */}
+            <div className="mb-6 bg-white border-2 border-gray-100 rounded-xl p-4 md:p-6">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <SkeletonBlock width="120px" height="16px" className="mb-2" />
+                        <div className="flex items-center gap-3">
+                            <SkeletonBlock width="180px" height="60px" rounded="8px" />
+                            <SkeletonBlock width="140px" height="50px" rounded="8px" />
+                        </div>
+                    </div>
+                    <div className="md:text-right">
+                        <SkeletonBlock width="180px" height="14px" className="mb-1 ml-auto" />
+                        <SkeletonBlock width="220px" height="12px" className="ml-auto" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="mb-6">
+                <SkeletonBlock width="100%" height="60px" rounded="12px" />
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
+                {[0, 1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white border border-gray-100 p-3 md:p-4 rounded-xl">
+                        <div className="flex items-center justify-between">
+                            <SkeletonBlock width="32px" height="32px" rounded="8px" />
+                            <div className="flex flex-col items-end gap-1">
+                                <SkeletonBlock width="40px" height="28px" />
+                                <SkeletonBlock width="60px" height="12px" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Student List Section */}
+            <div className="border border-gray-200 rounded-xl p-4 md:p-6 bg-white">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
+                    <SkeletonBlock width="220px" height="24px" />
+                    <div className="flex gap-3">
+                        <SkeletonBlock width="140px" height="20px" />
+                        <SkeletonBlock width="140px" height="40px" rounded="8px" />
+                    </div>
+                </div>
+
+                {/* Table Header */}
+                <div className="hidden md:flex gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 mb-2">
+                    {[150, 100, 100, 80, 80, 100, 100, 100].map((w, i) => (
+                        <SkeletonBlock key={i} width={`${w}px`} height="16px" />
+                    ))}
+                </div>
+
+                {/* Table Rows */}
+                <div className="space-y-4">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex flex-col md:flex-row gap-4 px-4 md:px-6 py-3 border-b border-gray-50">
+                            {/* Mobile View */}
+                            <div className="md:hidden space-y-2 w-full">
+                                <div className="flex justify-between">
+                                    <SkeletonBlock width="120px" height="16px" />
+                                    <SkeletonBlock width="80px" height="20px" rounded="12px" />
+                                </div>
+                                <div className="flex justify-between">
+                                    <SkeletonBlock width="80px" height="12px" />
+                                    <SkeletonBlock width="60px" height="12px" />
+                                </div>
+                            </div>
+
+                            {/* Desktop View */}
+                            <div className="hidden md:flex gap-4 w-full items-center">
+                                {[150, 100, 100, 80, 80, 100, 100, 100].map((w, j) => (
+                                    <SkeletonBlock key={j} width={`${w}px`} height="14px" />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// QuizResultsSkeleton — used in QuizResults.jsx
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export function QuizResultsSkeleton() {
+    return (
+        <div className="p-4 md:p-8 font-Outfit animate-pulse max-w-7xl mx-auto">
+            <SkeletonKeyframes />
+
+            {/* Header: Back Button */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2">
+                <SkeletonBlock width="180px" height="24px" />
+            </div>
+
+            {/* Title Banner */}
+            <div className="rounded-xl mb-6 p-4 md:p-6 overflow-hidden"
+                style={{
+                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                    backgroundSize: "200% 100%",
+                    animation: "skeletonShimmer 1.5s ease-in-out infinite",
+                    height: "100px"
+                }}
+            >
+                <div className="flex flex-col justify-center space-y-2 h-full">
+                    <SkeletonBlock width="40%" height="28px" className="bg-white/50" />
+                    <SkeletonBlock width="25%" height="16px" className="bg-white/50" />
+                </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+                {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="bg-white border border-gray-100 p-3 md:p-4 rounded-xl">
+                        <div className="flex items-center justify-between">
+                            <SkeletonBlock width="32px" height="32px" rounded="8px" />
+                            <div className="flex flex-col items-end gap-1">
+                                <SkeletonBlock width="40px" height="28px" />
+                                <SkeletonBlock width="60px" height="12px" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Student Results Section */}
+            <div className="border border-gray-200 rounded-xl p-4 md:p-6 bg-white">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+                    <SkeletonBlock width="200px" height="24px" />
+                    <SkeletonBlock width="160px" height="40px" rounded="8px" />
+                </div>
+
+                {/* Table Header */}
+                <div className="hidden md:flex gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 mb-2 rounded-t-lg">
+                    {[150, 200, 80, 80, 100, 100, 100, 100].map((w, i) => (
+                        <SkeletonBlock key={i} width={`${w}px`} height="16px" />
+                    ))}
+                </div>
+
+                {/* Table Rows */}
+                <div className="space-y-4">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex flex-col md:flex-row gap-4 px-4 md:px-6 py-3 border-b border-gray-50 last:border-0">
+                            {/* Mobile View */}
+                            <div className="md:hidden space-y-2 w-full">
+                                <div className="flex justify-between">
+                                    <SkeletonBlock width="140px" height="18px" />
+                                    <SkeletonBlock width="80px" height="20px" rounded="12px" />
+                                </div>
+                                <div className="flex justify-between">
+                                    <SkeletonBlock width="100px" height="12px" />
+                                    <SkeletonBlock width="60px" height="12px" />
+                                </div>
+                            </div>
+
+                            {/* Desktop View */}
+                            <div className="hidden md:flex gap-4 w-full items-center">
+                                {[150, 200, 80, 80, 100, 100, 100, 100].map((w, j) => (
+                                    <SkeletonBlock key={j} width={`${w}px`} height="14px" />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
