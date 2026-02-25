@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import LOGO from "../assets/iQuizU.svg";
 import {
   Menu,
@@ -8,31 +8,36 @@ import {
   UsersRound,
   LogOut,
   Home,
-  ChevronLeft,
-  ChevronRight,
   NotebookTabs,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
 } from "lucide-react";
 import { auth } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
 
-export default function AdminSidebar({ user, userDoc }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem('adminSidebarCollapsed');
-    return saved === 'true';
-  });
+export default function AdminTopbar({ user, userDoc }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const userMenuRef = useRef(null);
 
+  // Close user dropdown when clicking outside
   useEffect(() => {
-    localStorage.setItem('adminSidebarCollapsed', isCollapsed.toString());
-    document.documentElement.style.setProperty(
-      "--sidebar-width",
-      isCollapsed ? "80px" : "288px"
-    );
-  }, [isCollapsed]);
+    const handleClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -52,57 +57,132 @@ export default function AdminSidebar({ user, userDoc }) {
   ];
 
   const isActive = (path) => {
-    if (path === "/admin/dashboard") {
-      return location.pathname === "/admin/dashboard";
-    }
+    if (path === "/admin/dashboard") return location.pathname === "/admin/dashboard";
     return location.pathname.includes(path);
   };
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 bg-slate-900 text-white p-2.5 rounded-lg shadow-lg hover:bg-slate-800 transition-all lg:hidden active:scale-95"
-        aria-label="Toggle menu"
-      >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+      {/* ── Top Navbar ── */}
+      <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 border-b border-slate-800 shadow-lg shadow-slate-950/30">
+        <div className="h-full flex items-center px-4 lg:px-6 gap-4">
 
-      {/* Sidebar Container */}
-      <aside
-        className={`fixed top-0 left-0 h-screen bg-slate-900 text-slate-100 shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] z-40 flex flex-col border-r border-slate-800
-        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-        ${isCollapsed ? "lg:w-20" : "lg:w-72"}
-        w-72`}
-      >
-        {/* Header Section */}
-        <div className="relative h-20 flex items-center border-b border-slate-800/50 bg-slate-950/30">
-          <div className={`w-full flex items-center ${isCollapsed ? "justify-center px-0" : "px-6 gap-3"} transition-all duration-300`}>
+          {/* Logo */}
             <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 rounded-full"></div>
-              <img src={LOGO} alt="iQuizU Logo" className="w-9 h-9 relative z-10" />
+              <div className="absolute inset-0 bg-blue-500 blur-lg opacity-30 rounded-full" />
+              <img src={LOGO} alt="iQuizU Logo" className="w-8 h-8 relative z-10" />
             </div>
-
-            <div className={`flex flex-col transition-all duration-300 overflow-hidden ${isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"}`}>
-              <h1 className="font-Outfit font-bold text-xl tracking-tight text-white leading-none">iQuizU</h1>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mt-1 flex items-center gap-1">
-                <ShieldCheck size={10} /> Admin Panel
+            <div className="hidden sm:flex flex-col leading-none">
+              <span className="font-Outfit font-bold text-lg text-white tracking-tight">iQuizU</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-0.5 mt-0.5">
+                <ShieldCheck size={9} /> Admin Panel
               </span>
             </div>
+
+          {/* Desktop Nav Links */}
+          <nav className="hidden lg:flex items-center gap-1 ml-6 flex-1">
+            {menuItems.map((item) => {
+              const active = isActive(item.to);
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => {
+                    if (active) window.dispatchEvent(new Event("refreshPage"));
+                  }}
+                  className={`group relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium font-Outfit transition-all duration-200
+                    ${active
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-900/30"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    }`}
+                >
+                  <item.icon size={17} strokeWidth={active ? 2.5 : 2} className="shrink-0" />
+                  <span>{item.label}</span>
+                  {active && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-blue-300 rounded-full opacity-60" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Spacer on mobile */}
+          <div className="flex-1 lg:hidden" />
+
+          {/* Desktop: User Dropdown */}
+          <div className="hidden lg:block relative" ref={userMenuRef}>
+            <button
+              onClick={() => setUserMenuOpen((v) => !v)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-700 text-slate-300 hover:text-white transition-all duration-200 text-sm font-Outfit"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-900 to-blue-300 rounded-full flex items-center justify-center text-sm shadow-lg ring-2 ring-white/20">
+                {user?.displayName?.[0] || user?.email?.[0] || "A"}
+              </div>
+            </button>
+
+            {userMenuOpen && (
+              <div className="font-Outfit absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-3 border-b border-slate-700">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs uppercase shrink-0">
+                    {user?.displayName?.[0] || user?.email?.[0] || "A"}
+                  </div>
+                  <span className="max-w-[120px] truncate">{user?.displayName || user?.email || "Admin"}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    setShowConfirm(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors font-Outfit"
+                >
+                  <LogOut size={16} />
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Desktop Collapse Toggle */}
+          {/* Mobile: Hamburger */}
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all hover:scale-110 shadow-sm z-50"
+            onClick={() => setMobileOpen((v) => !v)}
+            className="lg:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all active:scale-95"
+            aria-label="Toggle menu"
           >
-            {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
+      </header>
 
-        {/* Navigation Section */}
-        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-2 custom-scrollbar">
+      {/* ── Mobile Drawer ── */}
+      {/* Backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-200"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Slide-down panel */}
+      <div
+        className={`fixed top-16 left-0 right-0 z-35 lg:hidden bg-slate-900 border-b border-slate-800 shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]
+          ${mobileOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"}`}
+        style={{ zIndex: 35 }}
+      >
+        {/* User info strip */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-800 bg-slate-950/40">
+          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm uppercase shrink-0">
+            {user?.displayName?.[0] || user?.email?.[0] || "A"}
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-sm font-medium text-white font-Outfit truncate">
+              {user?.displayName || "Admin"}
+            </p>
+            <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+          </div>
+        </div>
+
+        {/* Nav items */}
+        <nav className="px-3 py-3 space-y-1">
           {menuItems.map((item) => {
             const active = isActive(item.to);
             return (
@@ -110,69 +190,45 @@ export default function AdminSidebar({ user, userDoc }) {
                 key={item.to}
                 to={item.to}
                 onClick={() => {
-                  setIsOpen(false);
-                  if (active) window.dispatchEvent(new Event('refreshPage'));
+                  setMobileOpen(false);
+                  if (active) window.dispatchEvent(new Event("refreshPage"));
                 }}
-                title={isCollapsed ? item.label : ""}
-                className={`group relative flex items-center rounded-xl transition-all duration-200 ease-out
-                        ${isCollapsed ? "justify-center p-3" : "px-4 py-3 gap-3"}
-                        ${active
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium font-Outfit transition-all duration-150
+                  ${active
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/30"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
               >
-                {/* Icon */}
-                <div className={`relative z-10 transition-transform duration-300 ${active ? "scale-100" : "group-hover:scale-110"}`}>
-                  <item.icon size={22} strokeWidth={active ? 2.5 : 2} />
-                </div>
-
-                {/* Label */}
-                <span className={`font-Outfit font-medium text-sm whitespace-nowrap transition-all duration-300 ${isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"}`}>
-                  {item.label}
-                </span>
-
-                {/* Active Indicator (Left Bar) - Only visible when NOT collapsed and active */}
-                {active && !isCollapsed && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white/20 rounded-r-full"></div>
-                )}
+                <item.icon size={19} strokeWidth={active ? 2.5 : 2} />
+                {item.label}
+                {active && <span className="ml-auto w-2 h-2 rounded-full bg-blue-300 opacity-70" />}
               </Link>
             );
           })}
         </nav>
 
-        {/* Footer / User / Logout Section */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/30">
+        {/* Sign out */}
+        <div className="px-3 pb-4 pt-1 border-t border-slate-800 mt-1">
           <button
             onClick={() => {
-              setIsOpen(false);
+              setMobileOpen(false);
               setShowConfirm(true);
             }}
-            title={isCollapsed ? "Sign Out" : ""}
-            className={`w-full group flex items-center rounded-xl transition-all duration-200 
-                ${isCollapsed ? "justify-center p-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white" : "px-4 py-3 gap-3 hover:bg-red-950/30 text-slate-400 hover:text-red-400"}
-                `}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-colors font-Outfit"
           >
-            <LogOut size={20} className={`transition-transform duration-300 ${isCollapsed ? "" : "group-hover:-translate-x-1"}`} />
-
-            <span className={`font-Outfit font-medium text-sm whitespace-nowrap transition-all duration-300 ${isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"}`}>
-              Sign Out
-            </span>
+            <LogOut size={19} />
+            Sign Out
           </button>
         </div>
-      </aside>
+      </div>
 
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div
-          onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 lg:hidden animate-in fade-in duration-200"
-        />
-      )}
+      {/* ── Page offset helper ── */}
+      {/* Add pt-16 to your page layout wrapper to offset the fixed navbar */}
 
-      {/* Logout Confirmation Modal */}
+      {/* ── Logout Confirmation Modal ── */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm font-Outfit animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 animate-popIn">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <LogOut className="text-red-500" size={32} />
@@ -181,11 +237,10 @@ export default function AdminSidebar({ user, userDoc }) {
               <p className="text-slate-500 text-sm mb-6">
                 Are you sure you want to sign out of the admin panel?
               </p>
-
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowConfirm(false)}
-                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors"
+                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Cancel
                 </button>
