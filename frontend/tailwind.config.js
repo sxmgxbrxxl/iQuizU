@@ -40,6 +40,31 @@ module.exports = {
           "50%": { transform: "scale(1.05)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
+        sidebarSlideIn: {
+          from: { opacity: "0", transform: "translateX(-12px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        activePulse: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        expandDown: {
+          from: { opacity: "0", maxHeight: "0", transform: "translateY(-8px)" },
+          to: { opacity: "1", maxHeight: "500px", transform: "translateY(0)" },
+        },
+        overlayFade: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        popIn: {
+          "0%": { opacity: "0", transform: "scale(0.9) translateY(4px)" },
+          "60%": { transform: "scale(1.02) translateY(-1px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
       },
       animation: {
         slideDown: "slideDown 0.3s ease-out",
@@ -47,6 +72,12 @@ module.exports = {
         fadeIn: "fadeIn 0.5s ease-out forwards",
         slideIn: "slideIn 0.4s ease-out forwards",
         bounceIn: "bounceIn 0.6s ease-out forwards",
+        sidebarSlideIn: "sidebarSlideIn 0.3s ease-out forwards",
+        activePulse: "activePulse 2s ease-in-out infinite",
+        shimmer: "shimmer 2s linear infinite",
+        expandDown: "expandDown 0.3s ease-out forwards",
+        overlayFade: "overlayFade 0.2s ease-out forwards",
+        popIn: "popIn 0.35s ease-out forwards",
       },
       animationDelay: {
         100: "0.1s",

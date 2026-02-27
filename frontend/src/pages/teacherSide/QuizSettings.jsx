@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { doc,
+import {
+  doc,
   getDoc,
   updateDoc,
   deleteDoc,
@@ -8,7 +9,7 @@ import { doc,
   query,
   where,
   getDocs,
- } from "firebase/firestore";
+} from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import {
   ArrowLeft,
@@ -20,6 +21,8 @@ import {
   Zap,
   Calendar,
 } from "lucide-react";
+import Toast from "../../components/Toast";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function QuizSettings() {
   const { quizId } = useParams();
@@ -30,6 +33,13 @@ export default function QuizSettings() {
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Custom Toast & Confirm Dialog state
+  const [toast, setToast] = useState({ show: false, type: "", title: "", message: "" });
+  const showToast = useCallback((type, title, message) => {
+    setToast({ show: true, type, title, message });
+  }, []);
+  const [confirmDialogState, setConfirmDialogState] = useState({ isOpen: false });
 
   const [settings, setSettings] = useState({
     mode: "asynchronous",
@@ -76,12 +86,12 @@ export default function QuizSettings() {
           }
         }
       } else {
-        alert("Quiz not found!");
+        showToast("error", "Not Found", "Quiz not found!");
         navigate("/teacher/quizzes");
       }
     } catch (error) {
       console.error("Error fetching quiz:", error);
-      alert("Error loading quiz.");
+      showToast("error", "Error", "Error loading quiz.");
       navigate("/teacher/quizzes");
     } finally {
       setLoading(false);
@@ -100,7 +110,7 @@ export default function QuizSettings() {
           where("classId", "==", assignmentData.classId)
         );
         const snapshot = await getDocs(q);
-        
+
         const updatePromises = snapshot.docs.map((docSnap) =>
           updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
             dueDate: settings.deadline || settings.dueDate,
@@ -109,9 +119,9 @@ export default function QuizSettings() {
             updatedAt: new Date(),
           })
         );
-        
+
         await Promise.all(updatePromises);
-        alert(`✅ Assignment settings updated for ${assignmentData.className}!`);
+        showToast("success", "Updated!", `Assignment settings updated for ${assignmentData.className}!`);
       } else {
         // Original quiz settings update
         const docRef = doc(db, "quizzes", quizId);
@@ -119,33 +129,39 @@ export default function QuizSettings() {
           settings: settings,
           updatedAt: new Date(),
         });
-        alert("✅ Settings saved successfully!");
+        showToast("success", "Saved!", "Settings saved successfully!");
       }
-      
+
       navigate("/teacher/quizzes");
     } catch (error) {
       console.error("Error saving settings:", error);
-      alert("❌ Error saving settings. Please try again.");
+      showToast("error", "Error", "Error saving settings. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteQuiz = async () => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${quiz.title}"? This action cannot be undone.`
-    );
-    if (!confirmDelete) return;
-
-    try {
-      const docRef = doc(db, "quizzes", quizId);
-      await deleteDoc(docRef);
-      alert("✅ Quiz deleted successfully!");
-      navigate("/teacher/quizzes");
-    } catch (error) {
-      console.error("Error deleting quiz:", error);
-      alert("❌ Error deleting quiz. Please try again.");
-    }
+  const handleDeleteQuiz = () => {
+    setConfirmDialogState({
+      isOpen: true,
+      title: "Delete Quiz?",
+      message: `Are you sure you want to delete "${quiz.title}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      color: "red",
+      onConfirm: async () => {
+        setConfirmDialogState({ isOpen: false });
+        try {
+          const docRef = doc(db, "quizzes", quizId);
+          await deleteDoc(docRef);
+          showToast("success", "Deleted!", "Quiz deleted successfully!");
+          navigate("/teacher/quizzes");
+        } catch (error) {
+          console.error("Error deleting quiz:", error);
+          showToast("error", "Error", "Error deleting quiz. Please try again.");
+        }
+      },
+      onCancel: () => setConfirmDialogState({ isOpen: false }),
+    });
   };
 
   if (loading) {
@@ -205,11 +221,10 @@ export default function QuizSettings() {
 
           <div className="grid md:grid-cols-2 gap-4 mb-4">
             <label
-              className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition ${
-                settings.mode === "asynchronous"
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:border-blue-300"
-              }`}
+              className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition ${settings.mode === "asynchronous"
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-blue-300"
+                }`}
             >
               <input
                 type="radio"
@@ -231,11 +246,10 @@ export default function QuizSettings() {
             </label>
 
             <label
-              className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition ${
-                settings.mode === "synchronous"
-                  ? "border-purple-500 bg-purple-50"
-                  : "border-gray-300 hover:border-purple-300"
-              }`}
+              className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition ${settings.mode === "synchronous"
+                ? "border-purple-500 bg-purple-50"
+                : "border-gray-300 hover:border-purple-300"
+                }`}
             >
               <input
                 type="radio"
@@ -270,7 +284,7 @@ export default function QuizSettings() {
                   </p>
                 </div>
               </div>
-              
+
               <label className="block text-sm font-semibold mb-2 text-gray-700">
                 Due Date & Time
               </label>
@@ -336,9 +350,9 @@ export default function QuizSettings() {
             <Clock className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-bold">Time Settings</h3>
           </div>
-          
+
           <p className="text-sm text-gray-600 mb-4">
-            {settings.mode === "asynchronous" 
+            {settings.mode === "asynchronous"
               ? "Set a time limit for students to complete the quiz once they start"
               : "Control how long students have during the live session"
             }
@@ -521,7 +535,7 @@ export default function QuizSettings() {
                   Editing Assignment for {assignmentData.className}
                 </h4>
                 <p className="text-sm text-yellow-800">
-                  Changes here will only affect this specific assignment. 
+                  Changes here will only affect this specific assignment.
                   The original quiz template remains unchanged.
                 </p>
               </div>
@@ -614,6 +628,8 @@ export default function QuizSettings() {
           )}
         </button>
       </div>
+      <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
+      <ConfirmDialog {...confirmDialogState} />
     </div>
   );
 }

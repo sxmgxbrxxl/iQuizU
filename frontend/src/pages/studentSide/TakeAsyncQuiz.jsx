@@ -28,6 +28,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import QuizResults from "../studentSide/QuizResults";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function TakeAsyncQuiz({ user, userDoc }) {
   const { quizCode, assignmentId } = useParams();
@@ -45,6 +46,15 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
+  const [selectedAnswerIndices, setSelectedAnswerIndices] = useState({});
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    showCancel: true,
+    confirmLabel: "Confirm"
+  });
 
   // Anti-cheating state
   const [suspiciousActivities, setSuspiciousActivities] = useState([]);
@@ -77,7 +87,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         // Student switched BACK to tab
         const now = new Date();
         const durationAway = Math.floor((now - tabSwitchOutTime) / 1000); // in seconds
-        
+
         const activity = {
           type: "tab_switch",
           timestamp: now.toISOString(),
@@ -112,7 +122,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       } else if (document.fullscreenElement && fullscreenExitTime && isQuizStarted) {
         const now = new Date();
         const durationOutOfFullscreen = Math.floor((now - fullscreenExitTime) / 1000);
-        
+
         const activity = {
           type: "fullscreen_exit",
           timestamp: now.toISOString(),
@@ -374,14 +384,14 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       }
 
       const quizDeadline = assignmentData.dueDate || assignmentData.deadline;
-if (quizDeadline) {
-  const deadline = new Date(quizDeadline);
-  const now = new Date();
-  if (now > deadline) {
-    setError("This quiz is past its due date");
-    return;
-  }
-}
+      if (quizDeadline) {
+        const deadline = new Date(quizDeadline);
+        const now = new Date();
+        if (now > deadline) {
+          setError("This quiz is past its due date");
+          return;
+        }
+      }
       setAssignment({ id: assignmentSnap.id, ...assignmentData });
 
       const quizRef = doc(db, "quizzes", assignmentData.quizId);
@@ -463,11 +473,34 @@ if (quizDeadline) {
     }
   };
 
-  const handleAnswerChange = (questionIndex, answer) => {
+  const handleAnswerChange = (questionIndex, answer, choiceIndex = null) => {
     setAnswers({
       ...answers,
       [questionIndex]: answer,
     });
+
+    if (choiceIndex !== null) {
+      setSelectedAnswerIndices((prev) => ({
+        ...prev,
+        [questionIndex]: choiceIndex,
+      }));
+    }
+  };
+
+  const isChoiceSelected = (questionIndex, choiceText, choiceIndex) => {
+    if (answers[questionIndex] !== choiceText) return false;
+
+    // For multiple choice with potential duplicate options
+    if (questions[questionIndex]?.type === "multiple_choice") {
+      if (selectedAnswerIndices[questionIndex] !== undefined) {
+        return selectedAnswerIndices[questionIndex] === choiceIndex;
+      }
+      // Fallback: only select the first occurrence of this text
+      const choices = questions[questionIndex].choices;
+      return choices?.findIndex((c) => c.text === choiceText) === choiceIndex;
+    }
+
+    return true;
   };
 
   const calculateScore = () => {
@@ -518,17 +551,39 @@ if (quizDeadline) {
 
     const unanswered = questions.filter((_, index) => !answers[index]);
     if (unanswered.length > 0) {
-      alert(`Please answer all questions before submitting. You have ${unanswered.length} unanswered question(s).`);
+      setConfirmDialog({
+        isOpen: true,
+        title: "Unanswered Questions",
+        message: `Please answer all questions before submitting. You have ${unanswered.length} unanswered question(s).`,
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
       return;
     }
 
-    if (window.confirm("Are you sure you want to submit your quiz? You cannot change your answers after submission.")) {
-      await submitQuiz();
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Submit Quiz?",
+      message: "Are you sure you want to submit your quiz? You cannot change your answers after submission.",
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        await submitQuiz();
+      },
+      showCancel: true,
+      confirmLabel: "Submit Quiz"
+    });
   };
 
   const handleAutoSubmit = async () => {
-    alert("Time's up! Your quiz will be submitted automatically.");
+    setConfirmDialog({
+      isOpen: true,
+      title: "Time's Up!",
+      message: "Your quiz time has ended. Your answers will be submitted automatically.",
+      onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+      showCancel: false,
+      confirmLabel: "Okay"
+    });
     await submitQuiz();
   };
 
@@ -553,26 +608,26 @@ if (quizDeadline) {
         assignmentId: assignmentId,
         quizId: quiz.id,
         quizTitle: quiz.title || "Untitled Quiz",
-        
+
         studentId: currentUser.uid,
         studentName: userDoc?.name || userDoc?.firstName + " " + (userDoc?.lastName || "") || currentUser.email || "Unknown",
         studentNo: userDoc?.studentNo || assignment.studentNo || "",
         studentDocId: assignment.studentDocId || null,
-        
+
         teacherEmail: assignment.teacherEmail || null,
         teacherName: assignment.teacherName || null,
-        
+
         classId: assignment.classId || null,
         className: assignment.className || "Unknown Class",
         subject: assignment.subject || quiz.subject || "",
-        
+
         answers: answers,
         rawScorePercentage: rawScorePercentage,
         base50ScorePercentage: base50ScorePercentage,
         correctPoints: correctPoints,
         totalPoints: totalPoints,
         totalQuestions: questions.length,
-        
+
         submittedAt: serverTimestamp(),
         quizMode: "asynchronous",
 
@@ -600,9 +655,17 @@ if (quizDeadline) {
         totalQuestions: questions.length,
       });
       setShowResults(true);
+      setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);
-      alert("Failed to submit quiz. Please try again.");
+      setConfirmDialog({
+        isOpen: true,
+        title: "Submission Error",
+        message: "Failed to submit quiz. Please try again.",
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
     } finally {
       setSubmitting(false);
     }
@@ -620,7 +683,14 @@ if (quizDeadline) {
 
   const goToNextQuestion = () => {
     if (!isCurrentQuestionAnswered()) {
-      alert("Please answer the current question before proceeding to the next one.");
+      setConfirmDialog({
+        isOpen: true,
+        title: "Answer Required",
+        message: "Please answer the current question before proceeding to the next one.",
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
       return;
     }
 
@@ -692,7 +762,7 @@ if (quizDeadline) {
 
   if (showResults && quizResults) {
     return (
-      <QuizResults 
+      <QuizResults
         quiz={quiz}
         assignment={assignment}
         quizResults={quizResults}
@@ -723,11 +793,10 @@ if (quizDeadline) {
 
               {timeLeft !== null && (
                 <div
-                  className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-sm sm:text-base ${
-                    timeLeft <= 300
-                      ? "bg-red-100 text-red-700"
-                      : "bg-blue-100 text-blue-700"
-                  }`}
+                  className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-sm sm:text-base ${timeLeft <= 300
+                    ? "bg-red-100 text-red-700"
+                    : "bg-blue-100 text-blue-700"
+                    }`}
                 >
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                   {formatTime(timeLeft)}
@@ -767,7 +836,7 @@ if (quizDeadline) {
           </h1>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
             <span className="font-semibold text-blue-700 flex flex-row gap-2 items-center justify-center">
-              <BookOpen className="w-4 h-4"/> {assignment.className}
+              <BookOpen className="w-4 h-4" /> {assignment.className}
             </span>
             {assignment.subject && <span>• {assignment.subject}</span>}
             <span>• {questions.length} Questions</span>
@@ -834,19 +903,18 @@ if (quizDeadline) {
                 {currentQuestion.choices?.map((choice, choiceIndex) => (
                   <label
                     key={choiceIndex}
-                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${
-                      answers[currentQuestionIndex] === choice.text
-                        ? "border-blue-500 bg-blue-50 shadow-md"
-                        : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-sm"
-                    }`}
+                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${isChoiceSelected(currentQuestionIndex, choice.text, choiceIndex)
+                      ? "border-blue-500 bg-blue-50 shadow-md"
+                      : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-sm"
+                      }`}
                   >
                     <input
                       type="radio"
                       name={`question-${currentQuestionIndex}`}
                       value={choice.text}
-                      checked={answers[currentQuestionIndex] === choice.text}
+                      checked={isChoiceSelected(currentQuestionIndex, choice.text, choiceIndex)}
                       onChange={(e) =>
-                        handleAnswerChange(currentQuestionIndex, e.target.value)
+                        handleAnswerChange(currentQuestionIndex, e.target.value, choiceIndex)
                       }
                       className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"
                     />
@@ -863,11 +931,10 @@ if (quizDeadline) {
                 {["True", "False"].map((option) => (
                   <label
                     key={option}
-                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${
-                      answers[currentQuestionIndex] === option
-                        ? "border-blue-500 bg-blue-50 shadow-md"
-                        : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-sm"
-                    }`}
+                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${answers[currentQuestionIndex] === option
+                      ? "border-blue-500 bg-blue-50 shadow-md"
+                      : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-sm"
+                      }`}
                   >
                     <input
                       type="radio"
@@ -932,11 +999,10 @@ if (quizDeadline) {
             <button
               onClick={goToNextQuestion}
               disabled={!isCurrentQuestionAnswered()}
-              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${
-                isCurrentQuestionAnswered()
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${isCurrentQuestionAnswered()
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
             >
               Next
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -944,6 +1010,17 @@ if (quizDeadline) {
           )}
         </div>
       </main>
-    </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        confirmLabel={confirmDialog.confirmLabel}
+        showCancel={confirmDialog.showCancel}
+        color="blue"
+      />
+    </div >
   );
 }

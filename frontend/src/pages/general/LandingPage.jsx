@@ -25,7 +25,7 @@ const SnowParticle = ({ delay, duration, left }) => (
 );
 
 export default function LandingPage() {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
@@ -118,7 +118,7 @@ export default function LandingPage() {
 
                 <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-14">
                     <button
-                        onClick={() => navigate('/login')} 
+                        onClick={() => navigate('/login')}
                         className="bg-button border-2 font-semibold text-lg text-white border-white px-6 py-3 rounded-full w-full sm:w-auto hover:scale-105 hover:shadow-lg transition">
                         Get Started
                     </button>
@@ -226,7 +226,7 @@ export default function LandingPage() {
                 />
 
                 <div className="flex justify-center">
-                    <button 
+                    <button
                         onClick={() => navigate('/login')}
                         className="bg-button text-white border-2 font-semibold text-lg border-white px-6 py-3 rounded-full mt-6 w-full sm:w-auto hover:scale-105 transition">
                         Create Quiz
@@ -234,7 +234,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            <Footer/>
+            <Footer />
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Upload, Loader2, CircleCheck, AlertCircle, X } from "lucide-react";
+import { Upload, Loader2, CircleCheck, AlertCircle, X, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 
 // Class Confirmation Modal Component
 function ClassConfirmationModal({ isOpen, classInfo, students, onConfirm, onCancel }) {
@@ -133,7 +133,26 @@ export default function ManageClasses() {
   const [classCount, setClassCount] = useState(2); // Demo value
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
+
+  // Custom Alert Dialog state
+  const [alertDialog, setAlertDialog] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onClose: null,
+  });
+
+  const showAlert = (type, title, message, onClose = null) => {
+    setAlertDialog({ isOpen: true, type, title, message, onClose });
+  };
+
+  const closeAlert = () => {
+    const cb = alertDialog.onClose;
+    setAlertDialog({ isOpen: false, type: "info", title: "", message: "", onClose: null });
+    if (cb) cb();
+  };
+
   const MAX_CLASSES = 8;
 
   useEffect(() => {
@@ -152,30 +171,30 @@ export default function ManageClasses() {
 
       // Convert row to string for searching
       const rowStr = Array.isArray(row) ? row.join('|').toLowerCase() : '';
-      
+
       // Look for Class No
       if (rowStr.includes('class no')) {
-        const classNoIndex = row.findIndex(cell => 
+        const classNoIndex = row.findIndex(cell =>
           cell && cell.toString().toLowerCase().includes('class no')
         );
         if (classNoIndex !== -1 && row[classNoIndex + 1]) {
           classNo = row[classNoIndex + 1].toString().trim();
         }
       }
-      
+
       // Look for Code
       if (rowStr.includes('code:') || (rowStr.includes('code') && !rowStr.includes('postal'))) {
-        const codeIndex = row.findIndex(cell => 
+        const codeIndex = row.findIndex(cell =>
           cell && cell.toString().toLowerCase() === 'code:'
         );
         if (codeIndex !== -1 && row[codeIndex + 1]) {
           code = row[codeIndex + 1].toString().trim();
         }
       }
-      
+
       // Look for Description
       if (rowStr.includes('description')) {
-        const descIndex = row.findIndex(cell => 
+        const descIndex = row.findIndex(cell =>
           cell && cell.toString().toLowerCase().includes('description')
         );
         if (descIndex !== -1 && row[descIndex + 1]) {
@@ -235,27 +254,27 @@ export default function ManageClasses() {
 
     try {
       const { validStudents, classInfo } = pendingUploadData;
-      
+
       // Simulate upload process
       await new Promise(resolve => setTimeout(resolve, 1000));
       setUploadProgress(`Creating class: ${classInfo.description}`);
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       setUploadProgress(`Processing students...`);
-      
+
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       setUploadCount(validStudents.length);
-      
-      alert(`✅ Upload Complete!\n\n✨ Class created successfully!\n📚 Class No: ${classInfo.classNo}\n📝 Code: ${classInfo.code}\n👥 Students: ${validStudents.length}`);
-      
+
+      showAlert("success", "Upload Complete!", `Class created successfully!\nClass No: ${classInfo.classNo}\nCode: ${classInfo.code}\nStudents: ${validStudents.length}`);
+
       setFileName("");
       setUploadProgress("");
       setPendingUploadData(null);
     } catch (error) {
       console.error("Error:", error);
       setErrorMessage(error.message);
-      alert("❌ Failed to upload data: " + error.message);
+      showAlert("error", "Upload Failed", "Failed to upload data: " + error.message);
     } finally {
       setUploading(false);
       setUploadProgress("");
@@ -307,11 +326,10 @@ export default function ManageClasses() {
           <button
             onClick={handleDemoUpload}
             disabled={uploading}
-            className={`px-6 py-3 font-semibold rounded-lg transition ${
-              uploading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700 hover:scale-105 active:scale-95'
-            }`}
+            className={`px-6 py-3 font-semibold rounded-lg transition ${uploading
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700 hover:scale-105 active:scale-95'
+              }`}
           >
             {uploading ? (
               <span className="flex items-center gap-2">
@@ -341,7 +359,7 @@ export default function ManageClasses() {
         {uploadCount > 0 && !uploading && !errorMessage && (
           <div className="flex items-center justify-center mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <p className="flex flex-row gap-2 text-base items-center text-green-600 font-semibold text-center">
-              <CircleCheck className="w-4 h-4 text-green-600"/> Successfully processed {uploadCount} student(s)!
+              <CircleCheck className="w-4 h-4 text-green-600" /> Successfully processed {uploadCount} student(s)!
             </p>
           </div>
         )}
@@ -356,6 +374,42 @@ export default function ManageClasses() {
           onCancel={cancelConfirmation}
         />,
         document.body
+      )}
+
+      {/* Custom Alert Dialog */}
+      {alertDialog.isOpen && (
+        <div className="font-Outfit fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-slideUp">
+            <div className="flex flex-col items-center text-center">
+              <div className={`p-4 rounded-full flex items-center justify-center mb-4 ${alertDialog.type === "success" ? "bg-green-100" :
+                alertDialog.type === "error" ? "bg-red-100" :
+                  alertDialog.type === "warning" ? "bg-orange-100" :
+                    "bg-blue-100"
+                }`}>
+                {alertDialog.type === "success" && <CheckCircle2 className="text-green-600" size={32} />}
+                {alertDialog.type === "error" && <XCircle className="text-red-600" size={32} />}
+                {alertDialog.type === "warning" && <AlertTriangle className="text-orange-600" size={32} />}
+                {alertDialog.type === "info" && <Info className="text-blue-600" size={32} />}
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-800 mb-2">{alertDialog.title}</h3>
+              <p className="text-gray-500 text-sm whitespace-pre-line leading-relaxed px-2">
+                {alertDialog.message}
+              </p>
+
+              <button
+                onClick={closeAlert}
+                className={`w-full mt-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wide active:scale-95 hover:scale-105 duration-200 transition shadow-lg ${alertDialog.type === "success" ? "bg-green-600 text-white hover:bg-green-700 shadow-green-200" :
+                  alertDialog.type === "error" ? "bg-red-600 text-white hover:bg-red-700 shadow-red-200" :
+                    alertDialog.type === "warning" ? "bg-orange-500 text-white hover:bg-orange-600 shadow-orange-200" :
+                      "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200"
+                  }`}
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

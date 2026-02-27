@@ -1,8 +1,8 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { collection, query, where, getDocs, doc, deleteDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
-import { Archive, RefreshCw, Trash2, Calendar, FileText, Award, Loader2 } from "lucide-react";
+import { Archive, RefreshCw, Trash2, Calendar, FileText, Award, Loader2, CheckCircle, XCircle, X } from "lucide-react";
 
 export default function ArchivedQuizzes({ user }) {
   const [archivedQuizzes, setArchivedQuizzes] = useState([]);
@@ -11,10 +11,34 @@ export default function ArchivedQuizzes({ user }) {
   const [deleting, setDeleting] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [notification, setNotification] = useState({ show: false, type: "", title: "", message: "" });
+
+  const showNotification = useCallback((type, title, message) => {
+    setNotification({ show: true, type, title, message });
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 4000);
+  }, []);
+
+  const closeNotification = useCallback(() => {
+    setNotification(prev => ({ ...prev, show: false }));
+  }, []);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Lock scroll when delete confirm modal is open
+  useEffect(() => {
+    if (!showDeleteConfirm) return;
+    const scrollableParent = document.querySelector('.overflow-y-auto');
+    document.body.style.overflow = 'hidden';
+    if (scrollableParent) scrollableParent.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+      if (scrollableParent) scrollableParent.style.overflow = '';
+    };
+  }, [showDeleteConfirm]);
 
   useEffect(() => {
     fetchArchivedQuizzes();
@@ -22,7 +46,7 @@ export default function ArchivedQuizzes({ user }) {
 
   const fetchArchivedQuizzes = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const q = query(
@@ -30,7 +54,7 @@ export default function ArchivedQuizzes({ user }) {
         where("teacherId", "==", user.uid)
       );
       const querySnapshot = await getDocs(q);
-      
+
       const quizList = [];
       querySnapshot.forEach((docSnapshot) => {
         quizList.push({ id: docSnapshot.id, ...docSnapshot.data() });
@@ -45,7 +69,7 @@ export default function ArchivedQuizzes({ user }) {
       setArchivedQuizzes(quizList);
     } catch (error) {
       console.error("Error fetching archived quizzes:", error);
-      alert("Failed to load archived quizzes.");
+      showNotification("error", "Load Failed", "Failed to load archived quizzes.");
     } finally {
       setLoading(false);
     }
@@ -55,7 +79,7 @@ export default function ArchivedQuizzes({ user }) {
     setRestoring(quiz.id);
     try {
       const originalQuizId = quiz.originalQuizId || quiz.id;
-      
+
       // Prepare quiz data for restoration
       const quizData = { ...quiz };
       delete quizData.id;
@@ -63,26 +87,26 @@ export default function ArchivedQuizzes({ user }) {
       delete quizData.archivedBy;
       delete quizData.originalQuizId;
       delete quizData.status;
-      
+
       quizData.mode = "Published";
       quizData.status = "published";
       quizData.createdAt = new Date();
       quizData.updatedAt = new Date();
-      
+
       // Restore to quizzes collection using setDoc
       const quizRef = doc(db, "quizzes", originalQuizId);
       await setDoc(quizRef, quizData);
-      
+
       // Delete from archivedQuizzes
       await deleteDoc(doc(db, "archivedQuizzes", quiz.id));
-      
+
       // Refresh list
       await fetchArchivedQuizzes();
-      
-      alert("✅ Quiz restored successfully!");
+
+      showNotification("success", "Quiz Restored!", `"${quiz.title}" has been restored successfully.`);
     } catch (error) {
       console.error("Error restoring quiz:", error);
-      alert("❌ Failed to restore quiz. Please try again.");
+      showNotification("error", "Restore Failed", "Failed to restore quiz. Please try again.");
     } finally {
       setRestoring(null);
     }
@@ -93,10 +117,10 @@ export default function ArchivedQuizzes({ user }) {
     try {
       await deleteDoc(doc(db, "archivedQuizzes", quizId));
       await fetchArchivedQuizzes();
-      alert("🗑️ Quiz permanently deleted!");
+      showNotification("success", "Quiz Deleted", "The quiz has been permanently deleted.");
     } catch (error) {
       console.error("Error deleting quiz:", error);
-      alert("❌ Failed to delete quiz. Please try again.");
+      showNotification("error", "Delete Failed", "Failed to delete quiz. Please try again.");
     } finally {
       setDeleting(null);
       setShowDeleteConfirm(null);
@@ -105,7 +129,7 @@ export default function ArchivedQuizzes({ user }) {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
-    
+
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       return date.toLocaleDateString("en-US", {
@@ -131,10 +155,60 @@ export default function ArchivedQuizzes({ user }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-row items-center justify-center gap-3">
-          <Loader2 className="text-blue-600 animate-spin mx-auto " />
-          <p className="text-subtext">Loading archived quizzes...</p>
+      <div className="py-6 px-2 md:p-8 font-Outfit animate-fadeIn">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <Archive className="w-8 h-8 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-800">Archived Quizzes</h1>
+            </div>
+            <p className="text-gray-600">
+              Manage your archived quizzes. You can restore or permanently delete them.
+            </p>
+          </div>
+
+          {/* Skeleton Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
+                {/* Skeleton gradient header */}
+                <div className="bg-gradient-to-r from-gray-200 to-gray-300 p-4 animate-pulse">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 bg-white/30 rounded" />
+                    <div className="h-5 bg-white/30 rounded-lg flex-1" />
+                  </div>
+                  <div className="h-6 bg-white/30 rounded-lg w-20" />
+                </div>
+                {/* Skeleton body */}
+                <div className="p-4 space-y-3 animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-200 rounded" />
+                    <div className="h-4 bg-gray-200 rounded-lg w-20" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-200 rounded" />
+                    <div className="h-4 bg-gray-200 rounded-lg w-24" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-200 rounded" />
+                    <div className="h-4 bg-gray-200 rounded-lg w-36" />
+                  </div>
+                  <div className="pt-2 border-t border-gray-100">
+                    <div className="h-3 bg-gray-200 rounded-lg w-24 mb-2" />
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 rounded w-16" />
+                      <div className="h-6 bg-gray-200 rounded w-16" />
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-gray-100 flex gap-2">
+                    <div className="flex-1 h-10 bg-gray-200 rounded-xl" />
+                    <div className="w-12 h-10 bg-gray-200 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -259,17 +333,17 @@ export default function ArchivedQuizzes({ user }) {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {mounted && showDeleteConfirm && createPortal (
+      {mounted && showDeleteConfirm && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn font-Outfit">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md text-center animate-slideUp">
             <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
               <Trash2 className="w-6 h-6 text-red-600" />
             </div>
-            
+
             <h2 className="text-xl font-bold text-gray-800 mb-2">
               Permanently Delete Quiz?
             </h2>
-            
+
             <p className="text-gray-600 mb-4">
               This action cannot be undone. All quiz data will be permanently deleted from the system.
             </p>
@@ -280,7 +354,7 @@ export default function ArchivedQuizzes({ user }) {
                 <strong>Quiz:</strong> {archivedQuizzes.find(q => q.id === showDeleteConfirm)?.title}
               </p>
             )}
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
@@ -289,7 +363,7 @@ export default function ArchivedQuizzes({ user }) {
               >
                 Cancel
               </button>
-              
+
               <button
                 onClick={() => handleDelete(showDeleteConfirm)}
                 disabled={deleting === showDeleteConfirm}
@@ -306,6 +380,77 @@ export default function ArchivedQuizzes({ user }) {
               </button>
             </div>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Custom Notification Toast */}
+      {mounted && notification.show && createPortal(
+        <div
+          className="fixed top-6 right-6 z-[60] animate-slideIn font-Outfit"
+          style={{ maxWidth: '420px', minWidth: '320px' }}
+        >
+          <div
+            className="rounded-2xl shadow-2xl overflow-hidden border"
+            style={{
+              background: 'white',
+              borderColor: notification.type === 'success' ? '#bbf7d0' : '#fecaca',
+            }}
+          >
+            <div className="px-5 py-4 flex items-start gap-4">
+              <div
+                className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-0.5"
+                style={{
+                  background: notification.type === 'success'
+                    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                    : 'linear-gradient(135deg, #ef4444, #dc2626)',
+                }}
+              >
+                {notification.type === 'success' ? (
+                  <CheckCircle className="w-5 h-5 text-white" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-white" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3
+                  className="font-bold text-base mb-0.5"
+                  style={{
+                    color: notification.type === 'success' ? '#15803d' : '#dc2626',
+                  }}
+                >
+                  {notification.title}
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {notification.message}
+                </p>
+              </div>
+              <button
+                onClick={closeNotification}
+                className="flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            {/* Progress bar */}
+            <div className="h-1 w-full" style={{ background: '#f3f4f6' }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  background: notification.type === 'success'
+                    ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                    : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                  animation: 'shrinkWidth 4s linear forwards',
+                }}
+              />
+            </div>
+          </div>
+          <style>{`
+            @keyframes shrinkWidth {
+              from { width: 100%; }
+              to { width: 0%; }
+            }
+          `}</style>
         </div>,
         document.body
       )}

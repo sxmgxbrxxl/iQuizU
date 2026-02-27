@@ -23,6 +23,7 @@ import {
     Video,
     Hash,
 } from "lucide-react";
+import { QuizListSkeleton } from "../../components/SkeletonLoaders";
 
 export default function StudentQuizzes({ user, userDoc }) {
     const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function StudentQuizzes({ user, userDoc }) {
     const loadQuizProgress = () => {
         const progressMap = {};
         const keys = Object.keys(localStorage);
-        
+
         keys.forEach(key => {
             if (key.startsWith('quiz_progress_')) {
                 const assignmentId = key.replace('quiz_progress_', '');
@@ -79,7 +80,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                 }
             }
         });
-        
+
         setQuizProgress(progressMap);
     };
 
@@ -339,7 +340,7 @@ export default function StudentQuizzes({ user, userDoc }) {
         if (quiz.completed) {
             return (
                 <span className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full whitespace-nowrap">
-                    <CheckCircle className="w-3 h-3" /> 
+                    <CheckCircle className="w-3 h-3" />
                     <span className="hidden sm:inline">Completed</span>
                     <span className="sm:hidden">Done</span>
                 </span>
@@ -363,7 +364,7 @@ export default function StudentQuizzes({ user, userDoc }) {
             if (daysLeft <= 3) {
                 return (
                     <span className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full whitespace-nowrap">
-                        <Clock className="w-3 h-3" /> 
+                        <Clock className="w-3 h-3" />
                         <span className="hidden sm:inline">Due Soon</span>
                         <span className="sm:hidden">Soon</span>
                     </span>
@@ -434,13 +435,12 @@ export default function StudentQuizzes({ user, userDoc }) {
         return (
             <div
                 key={quiz.id}
-                className={`border-2 rounded-lg sm:rounded-xl p-4 sm:p-5 transition-all ${
-                    quiz.completed
-                        ? "border-gray-200 bg-gray-50"
-                        : isSynchronous
+                className={`border-2 rounded-lg sm:rounded-xl p-4 sm:p-5 transition-all ${quiz.completed
+                    ? "border-gray-200 bg-gray-50"
+                    : isSynchronous
                         ? "border-green-200 bg-white hover:shadow-md"
                         : "border-green-200 bg-white hover:shadow-md"
-                }`}
+                    }`}
             >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
@@ -457,7 +457,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                         {/* Info Section */}
                         <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600 mb-3">
                             <p className="flex flex-row items-center gap-1.5 font-semibold text-green-700 break-words">
-                                <GraduationCap className="w-4 h-4 text-green-700"/>
+                                <GraduationCap className="w-4 h-4 text-green-700" />
                                 {quiz.className}
                                 {quiz.subject && ` • ${quiz.subject}`}
                             </p>
@@ -528,13 +528,12 @@ export default function StudentQuizzes({ user, userDoc }) {
                         {canTakeQuiz(quiz) ? (
                             <button
                                 onClick={() => isSynchronous ? handleTakeSyncQuiz(quiz.id) : handleTakeQuiz(quiz.id)}
-                                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition ${
-                                    hasProgress && !isSynchronous
-                                        ? "bg-yellow-600 text-white hover:bg-yellow-700 active:bg-yellow-800"
-                                        : isSynchronous
+                                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition ${hasProgress && !isSynchronous
+                                    ? "bg-yellow-600 text-white hover:bg-yellow-700 active:bg-yellow-800"
+                                    : isSynchronous
                                         ? "bg-green-600 text-white hover:bg-green-700 active:bg-green-800"
                                         : "bg-green-600 text-white hover:bg-green-700 active:bg-green-800"
-                                }`}
+                                    }`}
                             >
                                 {hasProgress && !isSynchronous ? (
                                     <>
@@ -578,7 +577,7 @@ export default function StudentQuizzes({ user, userDoc }) {
 
     return (
         <div className="px-3 py-4 sm:px-4 sm:py-6 md:p-8 font-Outfit min-h-screen animate-fadeIn">
-            
+
             {/* Header - Responsive */}
             <div className="flex flex-row items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <FileText className="text-green-500 w-6 h-6 sm:w-8 sm:h-8" />
@@ -596,7 +595,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-green-600 flex-shrink-0" />
                         <span className="leading-tight">
-                            Asynchronous Quizzes 
+                            Asynchronous Quizzes
                             <span className="block sm:inline sm:ml-1 text-sm sm:text-base md:text-lg text-gray-600">(Self-Paced)</span>
                         </span>
                     </h3>
@@ -608,10 +607,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                 </div>
 
                 {loading ? (
-                    <div className="flex flex-col sm:flex-row items-center justify-center py-8 sm:py-12 gap-2">
-                        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-green-600" />
-                        <span className="text-sm sm:text-base text-gray-600">Loading your quizzes...</span>
-                    </div>
+                    <QuizListSkeleton count={3} />
                 ) : assignedQuizzes.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
                         <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
@@ -633,7 +629,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <Video className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-green-600 flex-shrink-0" />
                         <span className="leading-tight">
-                            Synchronous Quizzes 
+                            Synchronous Quizzes
                             <span className="block sm:inline sm:ml-1 text-sm sm:text-base md:text-lg text-gray-600">(Real-Time)</span>
                         </span>
                     </h3>
@@ -645,10 +641,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                 </div>
 
                 {loading ? (
-                    <div className="flex flex-col sm:flex-row items-center justify-center py-8 sm:py-12 gap-2">
-                        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-green-600" />
-                        <span className="text-sm sm:text-base text-gray-600">Loading live quizzes...</span>
-                    </div>
+                    <QuizListSkeleton count={2} />
                 ) : synchronousQuizzes.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
                         <Video className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />

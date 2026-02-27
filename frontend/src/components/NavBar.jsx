@@ -52,8 +52,8 @@ export default function Navbar() {
     <nav className="bg-components h-20 mx-5 md:mx-20 flex items-center justify-between font-Outfit shadow-md rounded-full px-6 relative z-50">
       {/* Logo Section */}
       <div className="flex items-center gap-3">
-        <img src={LOGO} alt="Logo" className="h-10 w-10" />
-        <h1 className="font-bold text-2xl">iQuizU</h1>
+        <img src={LOGO} alt="Logo" className="h-12 w-12" />
+        <h1 className="font-bold text-3xl">iQuizU</h1>
       </div>
 
       {/* Desktop Nav Links */}
@@ -110,28 +110,26 @@ export default function Navbar() {
           Log In
         </button>
       </div>
-      
+
       {/* Mobile Menu Button */}
       <button
         onClick={() => setMenuOpen(!menuOpen)}
         className="md:hidden text-subtext focus:outline-none transition-transform duration-300"
-        >
+      >
         <div
-            className={`transition-all duration-300 transform ${
-            menuOpen ? "rotate-90 opacity-0" : "rotate-0 opacity-100"
+          className={`transition-all duration-300 transform ${menuOpen ? "rotate-90 opacity-0" : "rotate-0 opacity-100"
             } absolute`}
         >
-            <Menu size={28} />
+          <Menu size={28} />
         </div>
 
         <div
-            className={`transition-all duration-300 transform ${
-            menuOpen ? "rotate-0 opacity-100" : "-rotate-90 opacity-0"
+          className={`transition-all duration-300 transform ${menuOpen ? "rotate-0 opacity-100" : "-rotate-90 opacity-0"
             }`}
         >
-            <X size={28} />
+          <X size={28} />
         </div>
-    </button>
+      </button>
 
       {/* Mobile Nav Links */}
       {menuOpen && (

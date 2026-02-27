@@ -27,6 +27,8 @@ import {
   AlertCircle,
   Loader2,
   School,
+  X,
+  ChevronRight,
 } from "lucide-react";
 
 export default function AssignQuizToClass() {
@@ -41,6 +43,7 @@ export default function AssignQuizToClass() {
   const [assigning, setAssigning] = useState(false);
   const [existingAssignment, setExistingAssignment] = useState(null);
   const [generatedQuizCode, setGeneratedQuizCode] = useState(null);
+  const [showStudentModal, setShowStudentModal] = useState(false);
 
   const [assignmentSettings, setAssignmentSettings] = useState({
     dueDate: "",
@@ -127,7 +130,7 @@ export default function AssignQuizToClass() {
 
       if (existingCheck.exists) {
         setExistingAssignment(existingCheck);
-        
+
         setAssignmentSettings((prev) => ({
           ...prev,
           mode: existingCheck.mode,
@@ -246,13 +249,13 @@ export default function AssignQuizToClass() {
     const modeChanged = oldMode !== newMode;
 
     let confirmMessage = `This quiz is already assigned to this class.\n\n`;
-    
+
     if (modeChanged) {
       confirmMessage += `⚠️ MODE CHANGE DETECTED:\n`;
       confirmMessage += `From: ${oldMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"}\n`;
       confirmMessage += `To: ${newMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"}\n\n`;
     }
-    
+
     confirmMessage += `Do you want to REPLACE the existing assignment with the new settings?`;
 
     if (!window.confirm(confirmMessage)) return;
@@ -325,7 +328,7 @@ export default function AssignQuizToClass() {
 
     const assignmentPromises = selectedStudents.map((studentDocId) => {
       const student = students.find(s => s.id === studentDocId);
-      
+
       if (!student) {
         console.error(`⚠️ Student not found: ${studentDocId}`);
         return null;
@@ -355,7 +358,7 @@ export default function AssignQuizToClass() {
     });
 
     const validPromises = assignmentPromises.filter(p => p !== null);
-    
+
     if (validPromises.length === 0) {
       alert("❌ No students with accounts selected! Please create accounts first.");
       return;
@@ -436,7 +439,7 @@ export default function AssignQuizToClass() {
   }
 
   return (
-    <div className="p-8 font-Outfit">
+    <div className="p-4 md:p-8 font-Outfit">
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={handleBack}
@@ -457,11 +460,11 @@ export default function AssignQuizToClass() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-xl mb-6">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 md:p-6 rounded-xl mb-6">
         <div className="flex items-center gap-3">
           <School className="w-8 h-8" />
           <div>
-            <h2 className="text-2xl font-bold">Assign Quiz to {classData.name}</h2>
+            <h2 className="text-xl md:text-2xl font-bold">Assign Quiz to {classData.name}</h2>
             <p className="text-white text-sm mt-1">{quiz.title}</p>
             <div className="flex items-center gap-4 mt-2">
               <p className="text-white text-xs">
@@ -507,9 +510,9 @@ export default function AssignQuizToClass() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-6">
-          <div className="border-2 border-blue-200 rounded-xl p-6 bg-blue-50">
+      <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="lg:col-span-1 space-y-4 md:space-y-6">
+          <div className="border-2 border-blue-200 rounded-xl p-4 md:p-6 bg-blue-50">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <SettingsIcon className="w-5 h-5 text-blue-600" />
               Quiz Settings
@@ -579,31 +582,31 @@ export default function AssignQuizToClass() {
               )}
 
               <div>
-              <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                <Timer className="w-4 h-4 text-blue-600" />
-                Time Limit (minutes)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={assignmentSettings.timeLimit || ""}
-                onChange={(e) =>
-                  setAssignmentSettings({
-                    ...assignmentSettings,
-                    timeLimit: e.target.value
-                      ? parseInt(e.target.value)
-                      : null,
-                  })
-                }
-                placeholder="No Time Limit"
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-xs text-gray-600 mt-1">
-              {assignmentSettings.timeLimit === null || assignmentSettings.timeLimit === 0
+                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <Timer className="w-4 h-4 text-blue-600" />
+                  Time Limit (minutes)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={assignmentSettings.timeLimit || ""}
+                  onChange={(e) =>
+                    setAssignmentSettings({
+                      ...assignmentSettings,
+                      timeLimit: e.target.value
+                        ? parseInt(e.target.value)
+                        : null,
+                    })
+                  }
+                  placeholder="No Time Limit"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-600 mt-1">
+                  {assignmentSettings.timeLimit === null || assignmentSettings.timeLimit === 0
                     ? "No time limit"
-                     : `${assignmentSettings.timeLimit} minute${assignmentSettings.timeLimit > 1 ? 's' : ''} limit`}
-              </p>
-            </div>
+                    : `${assignmentSettings.timeLimit} minute${assignmentSettings.timeLimit > 1 ? 's' : ''} limit`}
+                </p>
+              </div>
 
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm font-semibold">
@@ -740,14 +743,14 @@ export default function AssignQuizToClass() {
             </div>
           </div>
 
-          <div className="border-2 border-gray-200 rounded-xl p-6">
+          <div className="border-2 border-gray-200 rounded-xl p-4 md:p-6">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-blue-600" />
               Assignment Details
             </h3>
 
             <div className="space-y-4">
-               {!isSynchronous ? (
+              {!isSynchronous ? (
                 <div>
                   <label className="block text-sm font-semibold mb-2">
                     Due Date & Time *
@@ -812,16 +815,14 @@ export default function AssignQuizToClass() {
           </div>
 
           <div
-            className={`border-2 rounded-xl p-6 ${
-              isSynchronous
-                ? "border-purple-200 bg-purple-50"
-                : "border-blue-200 bg-blue-50"
-            }`}
+            className={`border-2 rounded-xl p-4 md:p-6 ${isSynchronous
+              ? "border-purple-200 bg-purple-50"
+              : "border-blue-200 bg-blue-50"
+              }`}
           >
             <h3
-              className={`text-lg font-bold mb-2 ${
-                isSynchronous ? "text-purple-800" : "text-blue-800"
-              }`}
+              className={`text-lg font-bold mb-2 ${isSynchronous ? "text-purple-800" : "text-blue-800"
+                }`}
             >
               Selected: {selectedStudents.length} student
               {selectedStudents.length !== 1 ? "s" : ""}
@@ -841,69 +842,122 @@ export default function AssignQuizToClass() {
           </div>
         </div>
 
-        <div className="lg:col-span-2 border-2 border-gray-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold">Select Students</h3>
-            <button
-              onClick={handleSelectAll}
-              className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
-            >
-              {selectedStudents.length === students.length
-                ? "Deselect All"
-                : "Select All"}
-            </button>
+        <div className="lg:col-span-2 space-y-4">
+          {/* Student Selection Summary Card */}
+          <div className="border-2 border-gray-200 rounded-xl p-4 md:p-6 bg-white hover:border-blue-300 transition cursor-pointer group" onClick={() => setShowStudentModal(true)}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-100 p-3 rounded-full text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Select Students</h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedStudents.length === 0
+                      ? "No students selected"
+                      : `${selectedStudents.length} of ${students.length} student${students.length !== 1 ? 's' : ''} selected`}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition" />
+            </div>
           </div>
 
-          {students.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p>No students found in this class</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-[1150px] overflow-y-auto">
-              {students.map((student) => (
-                <label
-                  key={student.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${
-                    selectedStudents.includes(student.id)
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-blue-300"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedStudents.includes(student.id)}
-                    onChange={() => handleStudentToggle(student.id)}
-                    className="w-5 h-5 text-blue-600"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-800">
-                      {student.name}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Student #: {student.studentNo}
-                    </div>
-                    {student.program && (
-                      <div className="text-xs text-gray-500">
-                        {student.program}{" "}
-                        {student.year && `- Year ${student.year}`}
-                      </div>
-                    )}
-                  </div>
-                  {selectedStudents.includes(student.id) && (
-                    <CheckCircle className="w-5 h-5 text-blue-600" />
-                  )}
-                </label>
-              ))}
-            </div>
-          )}
+          {/* Additional Info / Tips can go here if needed */}
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end gap-3">
+      {/* Student Selection Modal */}
+      {showStudentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-slideUp">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Select Students</h3>
+                <p className="text-sm text-gray-500">{students.length} students in class</p>
+              </div>
+              <button
+                onClick={() => setShowStudentModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition text-gray-500"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Select All Bar */}
+            <div className="flex items-center justify-between px-4 md:px-6 py-3 bg-gray-50 border-b border-gray-100">
+              <span className="text-sm font-semibold text-gray-700">
+                {selectedStudents.length} selected
+              </span>
+              <button
+                onClick={handleSelectAll}
+                className="text-sm text-blue-600 hover:text-blue-700 font-bold"
+              >
+                {selectedStudents.length === students.length
+                  ? "Deselect All"
+                  : "Select All"}
+              </button>
+            </div>
+
+            {/* Student List */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-2">
+              {students.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No students found in this class</p>
+                </div>
+              ) : (
+                students.map((student) => (
+                  <label
+                    key={student.id}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${selectedStudents.includes(student.id)
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-blue-300"
+                      }`}
+                  >
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition ${selectedStudents.includes(student.id) ? "bg-blue-600 border-blue-600" : "border-gray-300 bg-white"
+                      }`}>
+                      {selectedStudents.includes(student.id) && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    {/* Native checkbox hidden but functional */}
+                    <input
+                      type="checkbox"
+                      checked={selectedStudents.includes(student.id)}
+                      onChange={() => handleStudentToggle(student.id)}
+                      className="hidden"
+                    />
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-800">
+                        {student.name}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span className="bg-gray-100 px-1.5 py-0.5 rounded">ID: {student.studentNo}</span>
+                        {student.program && <span>{student.program}</span>}
+                      </div>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setShowStudentModal(false)}
+                className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+              >
+                Done Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6 md:mt-8 flex flex-col-reverse md:flex-row md:justify-end gap-3">
         <button
           onClick={handleBack}
-          className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100"
+          className="w-full md:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100"
         >
           Back to {classData.name}
         </button>
@@ -916,11 +970,10 @@ export default function AssignQuizToClass() {
             (isSynchronous && !assignmentSettings.deadline) ||
             (isSynchronous && !generatedQuizCode)
           }
-          className={`px-6 py-3 font-semibold rounded-lg flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${
-            isSynchronous
-              ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-              : "bg-purple-600 hover:bg-purple-700 text-white"
-          }`}
+          className={`w-full md:w-auto px-6 py-3 font-semibold rounded-lg flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${isSynchronous
+            ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+            : "bg-purple-600 hover:bg-purple-700 text-white"
+            }`}
         >
           {assigning ? (
             <>
@@ -935,12 +988,10 @@ export default function AssignQuizToClass() {
                 <Send className="w-5 h-5" />
               )}
               {existingAssignment?.exists ? (
-                `Reassign Quiz to ${selectedStudents.length} Student${
-                  selectedStudents.length !== 1 ? "s" : ""
+                `Reassign Quiz to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? "s" : ""
                 }`
               ) : (
-                `Assign Quiz to ${selectedStudents.length} Student${
-                  selectedStudents.length !== 1 ? "s" : ""
+                `Assign Quiz to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? "s" : ""
                 }`
               )}
             </>

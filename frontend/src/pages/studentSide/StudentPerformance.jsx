@@ -8,6 +8,7 @@ import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import {
     BookOpen, Clock, CheckCircle, AlertCircle, Loader2, BarChart3, TrendingUp, Zap, NotebookPen, Lightbulb, X, ChevronRight, Brain, Award
 } from "lucide-react";
+import { AnalyticsSkeleton } from "../../components/SkeletonLoaders";
 
 export default function StudentPerformance({ user, userDoc }) {
     const navigate = useNavigate();
@@ -311,17 +312,6 @@ export default function StudentPerformance({ user, userDoc }) {
         return "Needs Improvement";
     };
 
-    if (loading) {
-        return (
-          <div className="min-h-screen flex items-center justify-center p-4">
-            <div className=" p-6 md:p-8 flex flex-row items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-green-500" />
-              <p className="text-subtext text-sm md:text-base">Loading student performance...</p>
-            </div>
-          </div>
-        );
-      }
-
     return (
         <div className="px-2 py-6 md:p-8 font-Outfit animate-fadeIn">
             <div className="flex flex-row items-center gap-4">
@@ -332,133 +322,137 @@ export default function StudentPerformance({ user, userDoc }) {
                 </div>
             </div>
 
-            {/* Quiz Analytics Section */}
-            <section className="bg-components rounded-2xl shadow-md p-6 animate-slideIn" >
-                {analytics.totalQuizzes === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-                        <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p className="text-gray-500">
-                            Complete quizzes to see your performance
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-4 animate-slideIn">
-                        {/* Summary Card */}
-                        <div className="bg-gradient-to-r from-green-600 to-green-400 rounded-xl p-5 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-white text-sm font-semibold">Overall Average</p>
-                                    <p className="text-4xl font-bold mt-1">{analytics.overallAvgScore}%</p>
-                                    <p className="text-white text-xs mt-2">
-                                        {analytics.totalQuizzes} quiz{analytics.totalQuizzes !== 1 ? "zes" : ""} taken
-                                    </p>
+            {loading ? (
+                <AnalyticsSkeleton />
+            ) : (
+                /* Quiz Analytics Section */
+                <section className="bg-components rounded-2xl shadow-md p-6 animate-slideIn" >
+                    {analytics.totalQuizzes === 0 ? (
+                        <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                            <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p className="text-gray-500">
+                                Complete quizzes to see your performance
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 animate-slideIn">
+                            {/* Summary Card */}
+                            <div className="bg-gradient-to-r from-green-600 to-green-400 rounded-xl p-5 text-white">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-white text-sm font-semibold">Overall Average</p>
+                                        <p className="text-4xl font-bold mt-1">{analytics.overallAvgScore}%</p>
+                                        <p className="text-white text-xs mt-2">
+                                            {analytics.totalQuizzes} quiz{analytics.totalQuizzes !== 1 ? "zes" : ""} taken
+                                        </p>
+                                    </div>
+                                    <TrendingUp className="w-16 h-16 opacity-50 mr-4 animate-bounceIn" />
                                 </div>
-                                <TrendingUp className="w-16 h-16 opacity-50 mr-4 animate-bounceIn" />
                             </div>
-                        </div>
 
-                        {/* Quiz Breakdown */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {analytics.asyncQuizzes.completed > 0 && (
-                                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <Lightbulb className="w-5 h-5 text-green-600" />
-                                            <span className="font-semibold text-gray-800 text-sm">Asynchronous Quiz</span>
+                            {/* Quiz Breakdown */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {analytics.asyncQuizzes.completed > 0 && (
+                                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Lightbulb className="w-5 h-5 text-green-600" />
+                                                <span className="font-semibold text-gray-800 text-sm">Asynchronous Quiz</span>
+                                            </div>
+                                            <span className="text-2xl font-bold text-green-700">{analytics.asyncQuizzes.avgScore}%</span>
                                         </div>
-                                        <span className="text-2xl font-bold text-green-700">{analytics.asyncQuizzes.avgScore}%</span>
+                                        <p className="text-xs text-gray-600">{analytics.asyncQuizzes.completed} quiz{analytics.asyncQuizzes.completed !== 1 ? "zes" : ""}</p>
                                     </div>
-                                    <p className="text-xs text-gray-600">{analytics.asyncQuizzes.completed} quiz{analytics.asyncQuizzes.completed !== 1 ? "zes" : ""}</p>
-                                </div>
-                            )}
+                                )}
 
-                            {analytics.syncQuizzes.completed > 0 && (
-                                <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <Zap className="w-5 h-5 text-yellow-600" />
-                                            <span className="font-semibold text-gray-800 text-sm">Synchronous Quiz</span>
+                                {analytics.syncQuizzes.completed > 0 && (
+                                    <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Zap className="w-5 h-5 text-yellow-600" />
+                                                <span className="font-semibold text-gray-800 text-sm">Synchronous Quiz</span>
+                                            </div>
+                                            <span className="text-2xl font-bold text-yellow-700">{analytics.syncQuizzes.avgScore}%</span>
                                         </div>
-                                        <span className="text-2xl font-bold text-yellow-700">{analytics.syncQuizzes.avgScore}%</span>
+                                        <p className="text-xs text-gray-600">{analytics.syncQuizzes.completed} quiz{analytics.syncQuizzes.completed !== 1 ? "zes" : ""}</p>
                                     </div>
-                                    <p className="text-xs text-gray-600">{analytics.syncQuizzes.completed} quiz{analytics.syncQuizzes.completed !== 1 ? "zes" : ""}</p>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
 
-                        {/* Individual Quiz Scores - CLICKABLE */}
-                        {quizSubmissions.length > 0 && (
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-800 mb-3">Quiz History</h4>
-                                <div className="space-y-2 max-h-96 overflow-y-auto">
-                                    {quizSubmissions
-                                        .sort((a, b) => {
-                                            const dateA = a.submittedAt?.seconds || 0;
-                                            const dateB = b.submittedAt?.seconds || 0;
-                                            return dateB - dateA;
-                                        })
-                                        .map((submission, index) => (
-                                            <div
-                                                key={submission.id}
-                                                onClick={() => openQuizDetail(submission)}
-                                                className={`flex items-center justify-between p-4 rounded-lg border-2 transition cursor-pointer hover:shadow-lg hover:border-green-300 ${getScoreBgColor(submission.base50ScorePercentage || 0)} border-gray-200`}
-                                            >
-                                                <div className="flex-1 min-w-0 pr-4">
-                                                    <p className="text-sm font-bold text-gray-900 mb-1">
-                                                        {submission.quizTitle || `Quiz #${index + 1}`}
-                                                    </p>
-                                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                                                        <div className="flex items-center gap-1">
-                                                            {submission.quizMode === "asynchronous" ? (
-                                                                <Lightbulb className="w-3 h-3 text-green-600" />
-                                                            ) : (
-                                                                <Zap className="w-3 h-3 text-yellow-600" />
-                                                            )}
-                                                            <span className="font-medium">
-                                                                {submission.quizMode === "asynchronous" ? "Asynchronous" : "Synchronous"}
-                                                            </span>
-                                                        </div>
-                                                        {submission.className && (
-                                                            <>
-                                                                <span className="text-gray-400">•</span>
-                                                                <span>{submission.className}</span>
-                                                            </>
-                                                        )}
-                                                        {submission.submittedAt && (
-                                                            <>
-                                                                <span className="text-gray-400">•</span>
-                                                                <span className="text-gray-500">
-                                                                    {new Date(submission.submittedAt.seconds * 1000).toLocaleDateString("en-PH", {
-                                                                        month: "short",
-                                                                        day: "numeric",
-                                                                        year: "numeric"
-                                                                    })}
+                            {/* Individual Quiz Scores - CLICKABLE */}
+                            {quizSubmissions.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-800 mb-3">Quiz History</h4>
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {quizSubmissions
+                                            .sort((a, b) => {
+                                                const dateA = a.submittedAt?.seconds || 0;
+                                                const dateB = b.submittedAt?.seconds || 0;
+                                                return dateB - dateA;
+                                            })
+                                            .map((submission, index) => (
+                                                <div
+                                                    key={submission.id}
+                                                    onClick={() => openQuizDetail(submission)}
+                                                    className={`flex items-center justify-between p-4 rounded-lg border-2 transition cursor-pointer hover:shadow-lg hover:border-green-300 ${getScoreBgColor(submission.base50ScorePercentage || 0)} border-gray-200`}
+                                                >
+                                                    <div className="flex-1 min-w-0 pr-4">
+                                                        <p className="text-sm font-bold text-gray-900 mb-1">
+                                                            {submission.quizTitle || `Quiz #${index + 1}`}
+                                                        </p>
+                                                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                                            <div className="flex items-center gap-1">
+                                                                {submission.quizMode === "asynchronous" ? (
+                                                                    <Lightbulb className="w-3 h-3 text-green-600" />
+                                                                ) : (
+                                                                    <Zap className="w-3 h-3 text-yellow-600" />
+                                                                )}
+                                                                <span className="font-medium">
+                                                                    {submission.quizMode === "asynchronous" ? "Asynchronous" : "Synchronous"}
                                                                 </span>
-                                                            </>
-                                                        )}
+                                                            </div>
+                                                            {submission.className && (
+                                                                <>
+                                                                    <span className="text-gray-400">•</span>
+                                                                    <span>{submission.className}</span>
+                                                                </>
+                                                            )}
+                                                            {submission.submittedAt && (
+                                                                <>
+                                                                    <span className="text-gray-400">•</span>
+                                                                    <span className="text-gray-500">
+                                                                        {new Date(submission.submittedAt.seconds * 1000).toLocaleDateString("en-PH", {
+                                                                            month: "short",
+                                                                            day: "numeric",
+                                                                            year: "numeric"
+                                                                        })}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <p className={`text-2xl font-bold ${getScoreColor(submission.base50ScorePercentage || 0)}`}>
+                                                            {submission.base50ScorePercentage || 0}%
+                                                        </p>
+                                                        <p className="text-xs text-gray-600 font-medium mt-1">
+                                                            {submission.correctPoints || 0}/{submission.totalPoints || 0} pts
+                                                        </p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right flex-shrink-0">
-                                                    <p className={`text-2xl font-bold ${getScoreColor(submission.base50ScorePercentage || 0)}`}>
-                                                        {submission.base50ScorePercentage || 0}%
-                                                    </p>
-                                                    <p className="text-xs text-gray-600 font-medium mt-1">
-                                                        {submission.correctPoints || 0}/{submission.totalPoints || 0} pts
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </section>
+                            )}
+                        </div>
+                    )}
+                </section>
+            )}
 
             {/* Detailed Quiz Modal */}
-            {mounted && showDetailModal && selectedQuiz && createPortal (
+            {mounted && showDetailModal && selectedQuiz && createPortal(
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm animate-fadeIn font-Outfit">
-                    <div 
+                    <div
                         style={{
                             scrollbarWidth: 'none',
                             msOverflowStyle: 'none'
@@ -532,7 +526,7 @@ export default function StudentPerformance({ user, userDoc }) {
                                         <Brain className="w-5 h-5 text-purple-500" />
                                         <h3 className="font-bold text-title">AI Study Recommendations</h3>
                                         <span className="ml-auto text-xs bg-purple-400 text-white px-2 py-1 rounded-full">
-                                          {selectedQuiz.recommendations.length} Tips
+                                            {selectedQuiz.recommendations.length} Tips
                                         </span>
                                     </div>
                                     <p className="text-xs text-subtext mb-3">Personalized based on your performance</p>

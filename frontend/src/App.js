@@ -8,7 +8,6 @@ import { useEffect, useState, useRef } from "react";
 import { auth, db } from "./firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { Loader2 } from "lucide-react";
 
 // GENERAL PAGES
 import LandingPage from "./pages/general/LandingPage";
@@ -95,7 +94,7 @@ function StudentLayout({ user, userDoc, children }) {
       <StudentSidebar user={user} userDoc={userDoc} />
 
       <div
-        className="flex-1 overflow-y-auto transition-all duration-300"
+        className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
         {children}
@@ -216,61 +215,250 @@ function App() {
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
           height: "100vh",
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          fontFamily: "Outfit, 'Segoe UI', sans-serif",
           margin: 0,
           padding: 0,
+          background: "#f8f9fb",
+          overflow: "hidden",
         }}
       >
-        {/* Animated spinner */}
+        {/* Skeleton Sidebar */}
         <div
           style={{
-            width: "50px",
-            height: "50px",
-            border: "2px solid rgba(255, 255, 255, 0.3)",
-            borderTop: "4px solid black",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-            marginBottom: "30px",
-          }}
-        />
-
-        {/* Loading text */}
-        <h1
-          style={{
-            color: "black",
-            fontSize: "20px",
-            fontFamily: "Outfit",
-            fontWeight: "600",
-            margin: "0 0 6px 0",
-            letterSpacing: "0.5px",
+            width: "260px",
+            height: "100vh",
+            background: "#ffffff",
+            borderRight: "1px solid #e8eaed",
+            padding: "24px 16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            flexShrink: 0,
           }}
         >
-          Loading ...
-        </h1>
+          {/* Logo skeleton */}
+          <div
+            style={{
+              width: "120px",
+              height: "32px",
+              borderRadius: "8px",
+              background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+              backgroundSize: "200% 100%",
+              animation: "skeletonPulse 1.5s ease-in-out infinite",
+              marginBottom: "16px",
+            }}
+          />
 
-        {/* Subtitle */}
-        <p
+          {/* Avatar + name skeleton */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 0" }}>
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                backgroundSize: "200% 100%",
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  width: "100px",
+                  height: "12px",
+                  borderRadius: "6px",
+                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                  backgroundSize: "200% 100%",
+                  animation: "skeletonPulse 1.5s ease-in-out infinite",
+                  marginBottom: "6px",
+                }}
+              />
+              <div
+                style={{
+                  width: "70px",
+                  height: "10px",
+                  borderRadius: "6px",
+                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                  backgroundSize: "200% 100%",
+                  animation: "skeletonPulse 1.5s ease-in-out infinite",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Nav items skeleton */}
+          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
+            {[140, 120, 100, 130, 90].map((w, i) => (
+              <div
+                key={i}
+                style={{
+                  width: `${w}px`,
+                  height: "36px",
+                  borderRadius: "10px",
+                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                  backgroundSize: "200% 100%",
+                  animation: `skeletonPulse 1.5s ease-in-out ${i * 0.1}s infinite`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Skeleton Main Content */}
+        <div
           style={{
-            color: "black",
-            fontSize: "14px",
-            fontFamily: "Outfit",
-            margin: "0",
-            letterSpacing: "1px",
+            flex: 1,
+            padding: "32px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px",
+            overflow: "hidden",
           }}
         >
-          Please check your internet connection. uwu
-        </p>
+          {/* Header skeleton */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div
+                style={{
+                  width: "220px",
+                  height: "24px",
+                  borderRadius: "8px",
+                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                  backgroundSize: "200% 100%",
+                  animation: "skeletonPulse 1.5s ease-in-out infinite",
+                  marginBottom: "10px",
+                }}
+              />
+              <div
+                style={{
+                  width: "160px",
+                  height: "14px",
+                  borderRadius: "6px",
+                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                  backgroundSize: "200% 100%",
+                  animation: "skeletonPulse 1.5s ease-in-out 0.1s infinite",
+                }}
+              />
+            </div>
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                backgroundSize: "200% 100%",
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+              }}
+            />
+          </div>
 
-        {/* CSS Animation */}
+          {/* Stat cards skeleton */}
+          <div style={{ display: "flex", gap: "16px" }}>
+            {[1, 2, 3, 4].map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: "100px",
+                  borderRadius: "16px",
+                  background: "#ffffff",
+                  border: "1px solid #e8eaed",
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div
+                  style={{
+                    width: "60%",
+                    height: "12px",
+                    borderRadius: "6px",
+                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                    backgroundSize: "200% 100%",
+                    animation: `skeletonPulse 1.5s ease-in-out ${i * 0.15}s infinite`,
+                  }}
+                />
+                <div
+                  style={{
+                    width: "40%",
+                    height: "22px",
+                    borderRadius: "8px",
+                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                    backgroundSize: "200% 100%",
+                    animation: `skeletonPulse 1.5s ease-in-out ${i * 0.15 + 0.1}s infinite`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Content area skeleton */}
+          <div
+            style={{
+              flex: 1,
+              borderRadius: "16px",
+              background: "#ffffff",
+              border: "1px solid #e8eaed",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            {/* Table header */}
+            <div style={{ display: "flex", gap: "16px" }}>
+              {[30, 25, 20, 25].map((w, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: `${w}%`,
+                    height: "14px",
+                    borderRadius: "6px",
+                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                    backgroundSize: "200% 100%",
+                    animation: `skeletonPulse 1.5s ease-in-out ${i * 0.1}s infinite`,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Table rows */}
+            {[1, 2, 3, 4, 5].map((_, rowIdx) => (
+              <div
+                key={rowIdx}
+                style={{
+                  display: "flex",
+                  gap: "16px",
+                  padding: "12px 0",
+                  borderTop: "1px solid #f3f4f6",
+                }}
+              >
+                {[30, 25, 20, 25].map((w, colIdx) => (
+                  <div
+                    key={colIdx}
+                    style={{
+                      width: `${w}%`,
+                      height: "12px",
+                      borderRadius: "6px",
+                      background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
+                      backgroundSize: "200% 100%",
+                      animation: `skeletonPulse 1.5s ease-in-out ${(rowIdx * 0.08) + (colIdx * 0.05)}s infinite`,
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Skeleton CSS Animation */}
         <style>{`
-          @keyframes spin {
-            to {
-              transform: rotate(360deg);
-            }
+          @keyframes skeletonPulse {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
           }
         `}</style>
       </div>
@@ -346,11 +534,7 @@ function App() {
           element={
             authUser && role === "student" ? (
               <StudentLayout user={authUser} userDoc={userDoc}>
-                <div className="max-w-7xl mx-auto p-6">
-                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
-                    <StudentQuizzes user={authUser} userDoc={userDoc} />
-                  </div>
-                </div>
+                <StudentQuizzes user={authUser} userDoc={userDoc} />
               </StudentLayout>
             ) : (
               <Navigate to="/login" replace />
@@ -364,11 +548,7 @@ function App() {
           element={
             authUser && role === "student" ? (
               <StudentLayout user={authUser} userDoc={userDoc}>
-                <div className="max-w-7xl mx-auto p-6">
-                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
-                    <StudentPerformance user={authUser} userDoc={userDoc} />
-                  </div>
-                </div>
+                <StudentPerformance user={authUser} userDoc={userDoc} />
               </StudentLayout>
             ) : (
               <Navigate to="/login" replace />
@@ -382,11 +562,7 @@ function App() {
           element={
             authUser && role === "student" ? (
               <StudentLayout user={authUser} userDoc={userDoc}>
-                <div className="max-w-7xl mx-auto p-6">
-                  <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit">
-                    <Leaderboards user={authUser} userDoc={userDoc} />
-                  </div>
-                </div>
+                <Leaderboards user={authUser} userDoc={userDoc} />
               </StudentLayout>
             ) : (
               <Navigate to="/login" replace />
@@ -486,7 +662,7 @@ function App() {
           />
 
           {/* TEACHER PROFILE ROUTE */}
-          <Route path="profile" element={<TeacherProfile />} />
+          <Route path="profile" element={<TeacherProfile user={authUser} userDoc={userDoc} />} />
         </Route>
 
         {/* ============================

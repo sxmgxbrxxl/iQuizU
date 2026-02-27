@@ -33,30 +33,31 @@ import {
 } from "lucide-react";
 import WaitingRoom from "../studentSide/WaitingRoom";
 import QuizResults from "../studentSide/QuizResults";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 // ============================================================================
 // ADAPTIVE TIME ALLOCATION ALGORITHM (FIXED FOR TRUE/FALSE)
 // ============================================================================
 const calculateQuestionTime = (question) => {
   let baseTime = 10;
-  
+
   if (question.type === "true_false") {
     baseTime = 8;
   }
-  
+
   const questionText = question.question || "";
   const lengthFactor = Math.round(questionText.length / 25);
-  
+
   let choiceReadingTime = 0;
   if (question.type === "multiple_choice" && question.choices) {
-    const totalChoiceLength = question.choices.reduce((sum, choice) => 
+    const totalChoiceLength = question.choices.reduce((sum, choice) =>
       sum + (choice.text?.length || 0), 0);
     choiceReadingTime = Math.round(totalChoiceLength / 20);
   }
-  
+
   const bloomClassification = question.bloom_classification;
   let difficultyFactor = 0;
-  
+
   if (bloomClassification === "LOTS") {
     difficultyFactor = 5;
   } else if (bloomClassification === "HOTS") {
@@ -64,28 +65,28 @@ const calculateQuestionTime = (question) => {
   } else {
     difficultyFactor = 5;
   }
-  
+
   const questionLower = questionText.toLowerCase();
   let computationFactor = 0;
-  
+
   const computationKeywords = [
-    'calculate', 'compute', 'solve', 'solve for', 'find the value', 
+    'calculate', 'compute', 'solve', 'solve for', 'find the value',
     'what is the sum', 'what is the total', 'what is the product',
     'equation', 'formula'
   ];
-  
-  const hasComputationKeyword = computationKeywords.some(keyword => 
+
+  const hasComputationKeyword = computationKeywords.some(keyword =>
     questionLower.includes(keyword)
   );
-  
+
   const hasNumbers = /\d+/.test(questionText);
   const hasMathSymbols = /[+\-×÷=]/.test(questionText);
-  
+
   if (hasComputationKeyword && (hasNumbers || hasMathSymbols)) {
     const hasMultipleNumbers = (questionText.match(/\d+/g) || []).length >= 3;
     const hasPercentage = /percent|%/.test(questionLower);
     const hasMultipleSteps = /then|and then|after|next|first|second/.test(questionLower);
-    
+
     if (hasMultipleSteps || (hasMultipleNumbers && hasPercentage)) {
       computationFactor = 30;
     } else if (hasMultipleNumbers || hasPercentage) {
@@ -96,17 +97,17 @@ const calculateQuestionTime = (question) => {
   } else {
     computationFactor = 0;
   }
-  
+
   let trueFalsePenalty = 0;
   if (question.type === "true_false" && lengthFactor > 20) {
     trueFalsePenalty = -5;
   }
-  
+
   const totalTime = baseTime + lengthFactor + choiceReadingTime + difficultyFactor + computationFactor + trueFalsePenalty;
-  
+
   const minTime = question.type === "true_false" ? 12 : 15;
   const finalTime = Math.max(minTime, Math.min(120, totalTime));
-  
+
   return {
     time: finalTime,
     breakdown: {
@@ -115,16 +116,16 @@ const calculateQuestionTime = (question) => {
       questionLength: questionText.length,
       choiceReadingTime,
       numChoices: question.type === "multiple_choice" ? question.choices?.length : 0,
-      totalChoiceLength: question.type === "multiple_choice" 
-        ? question.choices?.reduce((sum, c) => sum + (c.text?.length || 0), 0) 
+      totalChoiceLength: question.type === "multiple_choice"
+        ? question.choices?.reduce((sum, c) => sum + (c.text?.length || 0), 0)
         : 0,
       difficultyFactor,
       cognitiveLevel: bloomClassification || 'UNKNOWN',
       computationFactor,
-      computationLevel: computationFactor === 0 ? 'None' 
+      computationLevel: computationFactor === 0 ? 'None'
         : computationFactor === 10 ? 'Easy'
-        : computationFactor === 20 ? 'Moderate'
-        : 'Hard',
+          : computationFactor === 20 ? 'Moderate'
+            : 'Hard',
       hasComputation: computationFactor > 0,
       trueFalsePenalty: question.type === "true_false" ? trueFalsePenalty : null,
       questionType: question.type,
@@ -154,6 +155,15 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   const [startingQuiz, setStartingQuiz] = useState(false);
   const [showTimeBreakdown, setShowTimeBreakdown] = useState(false);
   const [questionTimes, setQuestionTimes] = useState([]);
+  const [selectedAnswerIndices, setSelectedAnswerIndices] = useState({});
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    showCancel: true,
+    confirmLabel: "Confirm"
+  });
 
   // Anti-cheating state
   const [suspiciousActivities, setSuspiciousActivities] = useState([]);
@@ -178,7 +188,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setSessionStatus(data.sessionStatus || "not_started");
-        
+
         if (data.sessionStatus === "ended" && quizStarted && !submitting && !hasAutoSubmitted && !showResults) {
           setHasAutoSubmitted(true);
           handleAutoSubmit();
@@ -224,7 +234,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
       } else if (!document.hidden && tabSwitchOutTime && quizStarted) {
         const now = new Date();
         const durationAway = Math.floor((now - tabSwitchOutTime) / 1000);
-        
+
         const activity = {
           type: "tab_switch",
           timestamp: now.toISOString(),
@@ -233,14 +243,14 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           returnedAt: now.toISOString()
         };
         setSuspiciousActivities(prev => [...prev, activity]);
-        
+
         // Force save progress when returning to tab
         if (pendingSaveTimeout) {
           clearTimeout(pendingSaveTimeout);
           setPendingSaveTimeout(null);
         }
         saveQuizProgress(answers, currentQuestionIndex);
-        
+
         tabSwitchOutTime = null;
       }
     };
@@ -267,7 +277,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
       } else if (document.fullscreenElement && fullscreenExitTime && quizStarted) {
         const now = new Date();
         const durationOutOfFullscreen = Math.floor((now - fullscreenExitTime) / 1000);
-        
+
         const activity = {
           type: "fullscreen_exit",
           timestamp: now.toISOString(),
@@ -405,18 +415,18 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     try {
       const quizRef = doc(db, "quizzes", quizId);
       const quizSnap = await getDoc(quizRef);
-      
+
       if (quizSnap.exists()) {
         const quizData = quizSnap.data();
         const allQuestions = quizData.questions || [];
-        
+
         const identificationAnswers = allQuestions
           .filter(q => q.type === "identification")
           .map(q => q.correct_answer)
           .filter(answer => answer && answer.trim() !== "");
-        
+
         const uniqueAnswers = [...new Set(identificationAnswers)];
-        
+
         const choicesMap = {};
         allQuestions.forEach((question, index) => {
           if (question.type === "identification") {
@@ -424,7 +434,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
             choicesMap[index] = shuffledChoices;
           }
         });
-        
+
         setIdentificationChoices(choicesMap);
       }
     } catch (error) {
@@ -521,11 +531,11 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
       if (assignmentData.inProgress) {
         setQuizStarted(true);
-        
+
         if (assignmentData.currentAnswers) {
           setAnswers(assignmentData.currentAnswers);
         }
-        
+
         if (assignmentData.currentQuestionIndex !== undefined) {
           setCurrentQuestionIndex(assignmentData.currentQuestionIndex);
           const timeData = times[assignmentData.currentQuestionIndex];
@@ -542,7 +552,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   const handleStartQuiz = async () => {
     if (startingQuiz) return;
-    
+
     try {
       setStartingQuiz(true);
       const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
@@ -562,30 +572,60 @@ export default function TakeSyncQuiz({ user, userDoc }) {
       }
     } catch (error) {
       console.error("Error starting quiz:", error);
-      alert("Error starting quiz. Please try again.");
+      setConfirmDialog({
+        isOpen: true,
+        title: "Error",
+        message: "Error starting quiz. Please try again.",
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
       setStartingQuiz(false);
     }
   };
 
-  const handleAnswerChange = (questionIndex, answer) => {
+  const handleAnswerChange = (questionIndex, answer, choiceIndex = null) => {
     const updatedAnswers = {
       ...answers,
       [questionIndex]: answer,
     };
     setAnswers(updatedAnswers);
-    
+
+    if (choiceIndex !== null) {
+      setSelectedAnswerIndices((prev) => ({
+        ...prev,
+        [questionIndex]: choiceIndex,
+      }));
+    }
+
     // Clear any pending save and queue a new one
     if (pendingSaveTimeout) {
       clearTimeout(pendingSaveTimeout);
     }
-    
+
     // Debounce save with 1 second delay
     const timeoutId = setTimeout(() => {
       saveQuizProgress(updatedAnswers, currentQuestionIndex);
       setPendingSaveTimeout(null);
     }, 1000);
-    
+
     setPendingSaveTimeout(timeoutId);
+  };
+
+  const isChoiceSelected = (questionIndex, choiceText, choiceIndex) => {
+    if (answers[questionIndex] !== choiceText) return false;
+
+    // For multiple choice with potential duplicate options
+    if (questions[questionIndex]?.type === "multiple_choice") {
+      if (selectedAnswerIndices[questionIndex] !== undefined) {
+        return selectedAnswerIndices[questionIndex] === choiceIndex;
+      }
+      // Fallback: only select the first occurrence of this text
+      const choices = questions[questionIndex].choices;
+      return choices?.findIndex((c) => c.text === choiceText) === choiceIndex;
+    }
+
+    return true;
   };
 
   const saveQuizProgress = async (currentAnswers, currentIndex) => {
@@ -606,17 +646,17 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     const updatedAnswers = {
       ...answers,
     };
-    
+
     // Only add empty answer if the question was not answered yet
     if (answers[currentQuestionIndex] === undefined) {
       updatedAnswers[currentQuestionIndex] = "";
     }
-    
+
     setAnswers(updatedAnswers);
-    
+
     // Save before moving to next question
     await saveQuizProgress(updatedAnswers, currentQuestionIndex);
-    
+
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
@@ -674,17 +714,34 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   const handleSubmit = async () => {
     if (submitting) return;
 
-    if (window.confirm("Are you sure you want to submit your quiz? You cannot change your answers after submission.")) {
-      await submitQuiz();
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Submit Quiz?",
+      message: "Are you sure you want to submit your quiz? You cannot change your answers after submission.",
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        await submitQuiz();
+      },
+      showCancel: true,
+      confirmLabel: "Submit Quiz"
+    });
   };
 
   const handleAutoSubmit = async () => {
     if (submitting || hasAutoSubmitted) return;
-    
+
     setHasAutoSubmitted(true);
     setSubmitting(true);
-    alert("Time's up! Your quiz will be submitted automatically.");
+
+    setConfirmDialog({
+      isOpen: true,
+      title: "Time's Up!",
+      message: "Time's up! Your quiz will be submitted automatically.",
+      onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+      showCancel: false,
+      confirmLabel: "Okay"
+    });
+
     await submitQuiz();
   };
 
@@ -712,26 +769,26 @@ export default function TakeSyncQuiz({ user, userDoc }) {
         assignmentId: assignmentId,
         quizId: quiz.id,
         quizTitle: quiz.title || "Untitled Quiz",
-        
+
         studentId: currentUser.uid,
         studentName: userDoc?.name || currentUser.email || "Unknown",
         studentNo: userDoc?.studentNo || assignment.studentNo || null,
         studentDocId: assignment.studentDocId || null,
-        
+
         teacherEmail: assignment.teacherEmail || null,
         teacherName: assignment.teacherName || null,
-        
+
         classId: assignment.classId || null,
         className: assignment.className || "Unknown Class",
         subject: assignment.subject || "",
-        
+
         answers: answers,
         rawScorePercentage: rawScorePercentage,
         base50ScorePercentage: base50ScorePercentage,
         correctPoints: correctPoints,
         totalPoints: totalPoints,
         totalQuestions: questions.length,
-        
+
         submittedAt: serverTimestamp(),
         quizMode: "synchronous",
         sessionStatus: sessionStatus,
@@ -759,7 +816,14 @@ export default function TakeSyncQuiz({ user, userDoc }) {
       setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);
-      alert("Failed to submit quiz. Please try again.");
+      setConfirmDialog({
+        isOpen: true,
+        title: "Submission Error",
+        message: "Failed to submit quiz. Please try again.",
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
       setHasAutoSubmitted(false);
     } finally {
       setSubmitting(false);
@@ -778,7 +842,14 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   const goToNextQuestion = () => {
     if (!isCurrentQuestionAnswered()) {
-      alert("Please answer the current question before proceeding to the next one.");
+      setConfirmDialog({
+        isOpen: true,
+        title: "Answer Required",
+        message: "Please answer the current question before proceeding to the next one.",
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
       return;
     }
 
@@ -786,7 +857,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
       setQuestionTimeLeft(questionTimes[nextIndex].time);
-      
+
       // Clear pending save and save immediately
       if (pendingSaveTimeout) {
         clearTimeout(pendingSaveTimeout);
@@ -861,7 +932,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   if (sessionStatus === "not_started" && !quizStarted) {
     return (
-      <WaitingRoom 
+      <WaitingRoom
         quiz={quiz}
         assignment={assignment}
         questions={questions}
@@ -982,7 +1053,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   if (showResults && quizResults) {
     return (
-      <QuizResults 
+      <QuizResults
         quiz={quiz}
         assignment={assignment}
         quizResults={quizResults}
@@ -1018,11 +1089,10 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
               {questionTimeLeft !== null && (
                 <div
-                  className={`flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 rounded-lg font-bold text-sm md:text-base ${
-                    questionTimeLeft <= 10
-                      ? "bg-red-500 text-white animate-pulse"
-                      : "bg-white text-purple-700"
-                  }`}
+                  className={`flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 rounded-lg font-bold text-sm md:text-base ${questionTimeLeft <= 10
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "bg-white text-purple-700"
+                    }`}
                 >
                   <Clock className="w-4 h-4 md:w-5 md:h-5" />
                   {formatTime(questionTimeLeft)}
@@ -1107,9 +1177,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                     ⏱️ Time Allocated: {currentTimeData.time}s
                   </span>
                   {currentTimeData.breakdown.cognitiveLevel && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold border ${
-                      getCognitiveColor(currentTimeData.breakdown.cognitiveLevel)
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold border ${getCognitiveColor(currentTimeData.breakdown.cognitiveLevel)
+                      }`}>
                       {currentTimeData.breakdown.cognitiveLevel}
                     </span>
                   )}
@@ -1120,9 +1189,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                     </span>
                   )}
                 </div>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${
-                  showTimeBreakdown ? 'rotate-180' : ''
-                }`} />
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showTimeBreakdown ? 'rotate-180' : ''
+                  }`} />
               </button>
 
               {showTimeBreakdown && (
@@ -1134,7 +1202,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                   <div className="flex justify-between">
                     <span className="text-gray-600">✏️ Length Factor:</span>
                     <span className="font-semibold">
-                      +{currentTimeData.breakdown.lengthFactor}s 
+                      +{currentTimeData.breakdown.lengthFactor}s
                       <span className="text-xs text-gray-500 ml-1">
                         ({currentTimeData.breakdown.questionLength} chars ÷ 25)
                       </span>
@@ -1155,9 +1223,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                     <span className="text-gray-600">🎯 Difficulty Factor:</span>
                     <span className="font-semibold">
                       +{currentTimeData.breakdown.difficultyFactor}s
-                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
-                        getCognitiveColor(currentTimeData.breakdown.cognitiveLevel)
-                      }`}>
+                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${getCognitiveColor(currentTimeData.breakdown.cognitiveLevel)
+                        }`}>
                         {currentTimeData.breakdown.cognitiveLevel}
                       </span>
                     </span>
@@ -1186,7 +1253,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                     <div className="flex justify-between font-bold text-purple-700">
                       <span>🧮 TOTAL TIME:</span>
                       <span>
-                        {currentTimeData.breakdown.baseTime} + 
+                        {currentTimeData.breakdown.baseTime} +
                         {currentTimeData.breakdown.lengthFactor}
                         {currentTimeData.breakdown.choiceReadingTime > 0 && ` + ${currentTimeData.breakdown.choiceReadingTime}`}
                         {' '}+ {currentTimeData.breakdown.difficultyFactor}
@@ -1245,19 +1312,18 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                 {currentQuestion.choices?.map((choice, choiceIndex) => (
                   <label
                     key={choiceIndex}
-                    className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${
-                      answers[currentQuestionIndex] === choice.text
-                        ? "border-purple-500 bg-purple-50 shadow-md"
-                        : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
-                    }`}
+                    className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${isChoiceSelected(currentQuestionIndex, choice.text, choiceIndex)
+                      ? "border-purple-500 bg-purple-50 shadow-md"
+                      : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
+                      }`}
                   >
                     <input
                       type="radio"
                       name={`question-${currentQuestionIndex}`}
                       value={choice.text}
-                      checked={answers[currentQuestionIndex] === choice.text}
+                      checked={isChoiceSelected(currentQuestionIndex, choice.text, choiceIndex)}
                       onChange={(e) =>
-                        handleAnswerChange(currentQuestionIndex, e.target.value)
+                        handleAnswerChange(currentQuestionIndex, e.target.value, choiceIndex)
                       }
                       className="w-5 h-5 md:w-6 md:h-6 text-purple-600 flex-shrink-0"
                     />
@@ -1274,11 +1340,10 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                 {["True", "False"].map((option) => (
                   <label
                     key={option}
-                    className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${
-                      answers[currentQuestionIndex] === option
-                        ? "border-purple-500 bg-purple-50 shadow-md"
-                        : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
-                    }`}
+                    className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${answers[currentQuestionIndex] === option
+                      ? "border-purple-500 bg-purple-50 shadow-md"
+                      : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
+                      }`}
                   >
                     <input
                       type="radio"
@@ -1345,11 +1410,10 @@ export default function TakeSyncQuiz({ user, userDoc }) {
             <button
               onClick={goToNextQuestion}
               disabled={!isCurrentQuestionAnswered()}
-              className={`flex items-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-lg font-semibold text-sm md:text-base transition ${
-                isCurrentQuestionAnswered()
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+              className={`flex items-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-lg font-semibold text-sm md:text-base transition ${isCurrentQuestionAnswered()
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
             >
               Next
               <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -1357,6 +1421,17 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           )}
         </div>
       </main>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        confirmLabel={confirmDialog.confirmLabel}
+        showCancel={confirmDialog.showCancel}
+        color="purple"
+      />
     </div>
   );
 }

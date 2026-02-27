@@ -176,7 +176,7 @@ export default function AssignQuizToClass() {
       });
 
       studentsList.sort((a, b) => a.name.localeCompare(b.name));
-      
+
       setClassStudents((prev) => ({
         ...prev,
         [classId]: studentsList,
@@ -245,12 +245,12 @@ export default function AssignQuizToClass() {
   const handleRemoveClass = (classId) => {
     setSelectedClasses(selectedClasses.filter((id) => id !== classId));
     setExpandedClasses({ ...expandedClasses, [classId]: false });
-    
+
     // Clean up students data
     const newClassStudents = { ...classStudents };
     delete newClassStudents[classId];
     setClassStudents(newClassStudents);
-    
+
     const newSelectedStudents = { ...selectedStudentsByClass };
     delete newSelectedStudents[classId];
     setSelectedStudentsByClass(newSelectedStudents);
@@ -259,7 +259,7 @@ export default function AssignQuizToClass() {
   const handleSelectAllStudents = (classId) => {
     const students = classStudents[classId] || [];
     const currentSelected = selectedStudentsByClass[classId] || [];
-    
+
     if (currentSelected.length === students.length) {
       setSelectedStudentsByClass({
         ...selectedStudentsByClass,
@@ -275,7 +275,7 @@ export default function AssignQuizToClass() {
 
   const handleStudentToggle = (classId, studentId) => {
     const currentSelected = selectedStudentsByClass[classId] || [];
-    
+
     if (currentSelected.includes(studentId)) {
       setSelectedStudentsByClass({
         ...selectedStudentsByClass,
@@ -428,7 +428,7 @@ export default function AssignQuizToClass() {
       const classNames = classesWithExisting
         .map((id) => allClasses.find((c) => c.id === id)?.name)
         .join(", ");
-      
+
       if (!window.confirm(
         `The following classes already have this quiz assigned:\n${classNames}\n\nDo you want to REPLACE the existing assignments?`
       )) {
@@ -447,11 +447,48 @@ export default function AssignQuizToClass() {
       }
     }
 
+    // Check for students without accounts
+    let totalSkipped = 0;
+    let totalValid = 0;
+    const skippedDetails = [];
+
+    selectedClasses.forEach(classId => {
+      const students = classStudents[classId] || [];
+      const selected = selectedStudentsByClass[classId] || [];
+      const classItem = allClasses.find(c => c.id === classId);
+
+      let classSkipped = 0;
+      selected.forEach(studentId => {
+        const student = students.find(s => s.id === studentId);
+        if (student && !student.authUID) {
+          classSkipped++;
+          totalSkipped++;
+        } else {
+          totalValid++;
+        }
+      });
+
+      if (classSkipped > 0) {
+        skippedDetails.push(`${classItem.name}: ${classSkipped} student(s)`);
+      }
+    });
+
+    if (totalSkipped > 0) {
+      const message = `⚠️ WARNING: ${totalSkipped} student(s) do not have registered accounts yet and WILL BE SKIPPED.\n\n` +
+        `Details:\n${skippedDetails.join('\n')}\n\n` +
+        `Only ${totalValid} student(s) will receive the assignment.\n\n` +
+        `Continue anyway?`;
+
+      if (!window.confirm(message)) {
+        return;
+      }
+    }
+
     setAssigning(true);
 
     try {
       const results = [];
-      
+
       for (const classId of selectedClasses) {
         const result = await createAssignmentsForClass(classId);
         const classItem = allClasses.find((c) => c.id === classId);
@@ -634,11 +671,10 @@ export default function AssignQuizToClass() {
                 />
                 <p className="text-xs text-gray-600 mt-1">
                   {assignmentSettings.timeLimit === null ||
-                  assignmentSettings.timeLimit === 0
+                    assignmentSettings.timeLimit === 0
                     ? "No time limit"
-                    : `${assignmentSettings.timeLimit} minute${
-                        assignmentSettings.timeLimit > 1 ? "s" : ""
-                      } limit`}
+                    : `${assignmentSettings.timeLimit} minute${assignmentSettings.timeLimit > 1 ? "s" : ""
+                    } limit`}
                 </p>
               </div>
 
@@ -850,16 +886,14 @@ export default function AssignQuizToClass() {
           </div>
 
           <div
-            className={`border-2 rounded-xl p-6 ${
-              isSynchronous
+            className={`border-2 rounded-xl p-6 ${isSynchronous
                 ? "border-purple-200 bg-purple-50"
                 : "border-blue-200 bg-blue-50"
-            }`}
+              }`}
           >
             <h3
-              className={`text-lg font-bold mb-2 ${
-                isSynchronous ? "text-purple-800" : "text-blue-800"
-              }`}
+              className={`text-lg font-bold mb-2 ${isSynchronous ? "text-purple-800" : "text-blue-800"
+                }`}
             >
               Summary
             </h3>
@@ -980,11 +1014,10 @@ export default function AssignQuizToClass() {
                               {students.map((student) => (
                                 <label
                                   key={student.id}
-                                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${
-                                    selectedStudents.includes(student.id)
+                                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${selectedStudents.includes(student.id)
                                       ? "border-blue-500 bg-blue-50"
                                       : "border-gray-200 hover:border-blue-300"
-                                  }`}
+                                    }`}
                                 >
                                   <input
                                     type="checkbox"
@@ -1046,11 +1079,10 @@ export default function AssignQuizToClass() {
             (isSynchronous && !assignmentSettings.deadline) ||
             (isSynchronous && !generatedQuizCode)
           }
-          className={`px-6 py-3 font-semibold rounded-lg flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${
-            isSynchronous
+          className={`px-6 py-3 font-semibold rounded-lg flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${isSynchronous
               ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
               : "bg-purple-600 hover:bg-purple-700 text-white"
-          }`}
+            }`}
         >
           {assigning ? (
             <>
