@@ -12,6 +12,8 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import Toast from "../../components/Toast";
 import {
   ArrowLeft,
   Users,
@@ -45,6 +47,13 @@ export default function AssignQuizToClass() {
   const [generatedQuizCode, setGeneratedQuizCode] = useState(null);
   const [showStudentModal, setShowStudentModal] = useState(false);
 
+  // Toast state
+  const [toast, setToast] = useState({ show: false, type: "", title: "", message: "" });
+  const showToast = (type, title, message) => setToast({ show: true, type, title, message });
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
+
   const [assignmentSettings, setAssignmentSettings] = useState({
     dueDate: "",
     instructions: "",
@@ -68,7 +77,7 @@ export default function AssignQuizToClass() {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        alert("Please login first");
+        showToast("error", "Authentication Required", "Please login first.");
         navigate("/login");
         return;
       }
@@ -78,7 +87,7 @@ export default function AssignQuizToClass() {
       const quizSnap = await getDoc(quizRef);
 
       if (!quizSnap.exists()) {
-        alert("Quiz not found!");
+        showToast("error", "Not Found", "Quiz not found!");
         navigate("/teacher/quizzes");
         return;
       }
@@ -86,7 +95,7 @@ export default function AssignQuizToClass() {
       const quizData = { id: quizSnap.id, ...quizSnap.data() };
 
       if (quizData.teacherId !== currentUser.uid) {
-        alert("You don't have permission to assign this quiz!");
+        showToast("error", "Permission Denied", "You don't have permission to assign this quiz!");
         navigate("/teacher/quizzes");
         return;
       }
@@ -117,7 +126,7 @@ export default function AssignQuizToClass() {
       const classSnap = await getDoc(classRef);
 
       if (!classSnap.exists()) {
-        alert("Class not found!");
+        showToast("error", "Not Found", "Class not found!");
         navigate("/teacher/classes/add");
         return;
       }
@@ -177,7 +186,7 @@ export default function AssignQuizToClass() {
       setSelectedStudents(studentsList.map((s) => s.id));
     } catch (error) {
       console.error("Error fetching data:", error);
-      alert("Error loading data");
+      showToast("error", "Error", "Error loading data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -248,39 +257,46 @@ export default function AssignQuizToClass() {
     const newMode = assignmentSettings.mode;
     const modeChanged = oldMode !== newMode;
 
-    let confirmMessage = `This quiz is already assigned to this class.\n\n`;
+    let confirmMessage = `This quiz is already assigned to this class.`;
 
     if (modeChanged) {
-      confirmMessage += `⚠️ MODE CHANGE DETECTED:\n`;
-      confirmMessage += `From: ${oldMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"}\n`;
-      confirmMessage += `To: ${newMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"}\n\n`;
+      confirmMessage += ` Mode will change from ${oldMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"} to ${newMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"}.`;
     }
 
-    confirmMessage += `Do you want to REPLACE the existing assignment with the new settings?`;
+    confirmMessage += ` Do you want to REPLACE the existing assignment with the new settings?`;
 
-    if (!window.confirm(confirmMessage)) return;
+    setConfirmDialog({
+      isOpen: true,
+      title: modeChanged ? "Mode Change Detected" : "Replace Existing Assignment?",
+      message: confirmMessage,
+      confirmLabel: "Replace",
+      color: modeChanged ? "orange" : "blue",
+      onConfirm: async () => {
+        setConfirmDialog({ isOpen: false });
+        setAssigning(true);
 
-    setAssigning(true);
+        try {
+          const deletePromises = existingAssignment.assignmentDocs.map((doc) =>
+            deleteDoc(doc.ref)
+          );
+          await Promise.all(deletePromises);
 
-    try {
-      const deletePromises = existingAssignment.assignmentDocs.map((doc) =>
-        deleteDoc(doc.ref)
-      );
-      await Promise.all(deletePromises);
-
-      await createNewAssignments();
-    } catch (error) {
-      console.error("Error reassigning quiz:", error);
-      alert("Error reassigning quiz. Please try again.");
-    } finally {
-      setAssigning(false);
-    }
+          await createNewAssignments();
+        } catch (error) {
+          console.error("Error reassigning quiz:", error);
+          showToast("error", "Reassignment Failed", "Error reassigning quiz. Please try again.");
+        } finally {
+          setAssigning(false);
+        }
+      },
+      onCancel: () => setConfirmDialog({ isOpen: false }),
+    });
   };
 
   const createNewAssignments = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      alert("Please log in first!");
+      showToast("error", "Authentication Required", "Please log in first!");
       return;
     }
 
@@ -360,47 +376,58 @@ export default function AssignQuizToClass() {
     const validPromises = assignmentPromises.filter(p => p !== null);
 
     if (validPromises.length === 0) {
-      alert("❌ No students with accounts selected! Please create accounts first.");
+      showToast("error", "No Valid Students", "No students with accounts selected! Please create accounts first.");
       return;
     }
 
     if (validPromises.length < selectedStudents.length) {
       const studentsWithoutAccounts = selectedStudents.length - validPromises.length;
-      if (!window.confirm(`⚠️ ${studentsWithoutAccounts} student(s) don't have accounts yet and will be skipped.\n\nContinue assigning to ${validPromises.length} student(s)?`)) {
-        return;
-      }
+
+      setConfirmDialog({
+        isOpen: true,
+        title: "Students Without Accounts",
+        message: `${studentsWithoutAccounts} student(s) don't have accounts yet and will be skipped. Continue assigning to ${validPromises.length} student(s)?`,
+        confirmLabel: "Continue",
+        color: "orange",
+        onConfirm: async () => {
+          setConfirmDialog({ isOpen: false });
+          await Promise.all(validPromises);
+          showToast("success", "Quiz Assigned!", `Quiz ${existingAssignment?.exists ? 'reassigned' : 'assigned'} to ${validPromises.length} student(s) in ${classData.name} successfully!`);
+          setTimeout(() => navigate(`/teacher/class/${classId}`), 1500);
+        },
+        onCancel: () => setConfirmDialog({ isOpen: false }),
+      });
+      return;
     }
 
     await Promise.all(validPromises);
 
-    alert(
-      `Quiz ${existingAssignment?.exists ? 'reassigned' : 'assigned'} to ${validPromises.length} student(s) in ${classData.name} successfully!`
-    );
+    showToast("success", "Quiz Assigned!", `Quiz ${existingAssignment?.exists ? 'reassigned' : 'assigned'} to ${validPromises.length} student(s) in ${classData.name} successfully!`);
 
     // Always go back to class page after assignment
-    navigate(`/teacher/class/${classId}`);
+    setTimeout(() => navigate(`/teacher/class/${classId}`), 1500);
   };
 
   const handleAssignQuiz = async () => {
     if (selectedStudents.length === 0) {
-      alert("Please select at least one student");
+      showToast("warning", "No Students Selected", "Please select at least one student.");
       return;
     }
 
     const isSynchronous = assignmentSettings.mode === "synchronous";
 
     if (!isSynchronous && !assignmentSettings.dueDate) {
-      alert("Please set a due date for this assignment");
+      showToast("warning", "Due Date Required", "Please set a due date for this assignment.");
       return;
     }
 
     if (isSynchronous && !assignmentSettings.deadline) {
-      alert("Please set an expiration deadline for synchronous mode");
+      showToast("warning", "Deadline Required", "Please set an expiration deadline for synchronous mode.");
       return;
     }
 
     if (isSynchronous && !generatedQuizCode) {
-      alert("Please generate a quiz code for synchronous mode");
+      showToast("warning", "Quiz Code Required", "Please generate a quiz code for synchronous mode.");
       return;
     }
 
@@ -415,7 +442,7 @@ export default function AssignQuizToClass() {
       await createNewAssignments();
     } catch (error) {
       console.error("Error assigning quiz:", error);
-      alert("Error assigning quiz. Please try again.");
+      showToast("error", "Assignment Failed", "Error assigning quiz. Please try again.");
     } finally {
       setAssigning(false);
     }
@@ -998,6 +1025,18 @@ export default function AssignQuizToClass() {
           )}
         </button>
       </div>
+
+      {/* Custom Dialog & Toast */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        color={confirmDialog.color}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={confirmDialog.onCancel || (() => setConfirmDialog({ isOpen: false }))}
+      />
+      <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
     </div>
   );
 }

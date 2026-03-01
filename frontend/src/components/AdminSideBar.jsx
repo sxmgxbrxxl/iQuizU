@@ -68,16 +68,16 @@ export default function AdminTopbar({ user, userDoc }) {
         <div className="h-full flex items-center px-4 lg:px-6 gap-4">
 
           {/* Logo */}
-            <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 bg-blue-500 blur-lg opacity-30 rounded-full" />
-              <img src={LOGO} alt="iQuizU Logo" className="w-8 h-8 relative z-10" />
-            </div>
-            <div className="hidden sm:flex flex-col leading-none">
-              <span className="font-Outfit font-bold text-lg text-white tracking-tight">iQuizU</span>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-0.5 mt-0.5">
-                <ShieldCheck size={9} /> Admin Panel
-              </span>
-            </div>
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 bg-blue-500 blur-lg opacity-30 rounded-full" />
+            <img src={LOGO} alt="iQuizU Logo" className="w-8 h-8 relative z-10" />
+          </div>
+          <div className="hidden sm:flex flex-col leading-none">
+            <span className="font-Outfit font-bold text-lg text-white tracking-tight">iQuizU</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-0.5 mt-0.5">
+              <ShieldCheck size={9} /> Admin Panel
+            </span>
+          </div>
 
           {/* Desktop Nav Links */}
           <nav className="hidden lg:flex items-center gap-1 ml-6 flex-1">

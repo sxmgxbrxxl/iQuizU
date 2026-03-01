@@ -216,6 +216,8 @@ function App() {
         style={{
           display: "flex",
           height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
           fontFamily: "Outfit, 'Segoe UI', sans-serif",
           margin: 0,
           padding: 0,
@@ -223,242 +225,33 @@ function App() {
           overflow: "hidden",
         }}
       >
-        {/* Skeleton Sidebar */}
-        <div
-          style={{
-            width: "260px",
-            height: "100vh",
-            background: "#ffffff",
-            borderRight: "1px solid #e8eaed",
-            padding: "24px 16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            flexShrink: 0,
-          }}
-        >
-          {/* Logo skeleton */}
+        <div style={{ textAlign: "center" }}>
           <div
             style={{
-              width: "120px",
-              height: "32px",
-              borderRadius: "8px",
-              background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-              backgroundSize: "200% 100%",
-              animation: "skeletonPulse 1.5s ease-in-out infinite",
-              marginBottom: "16px",
+              width: "40px",
+              height: "40px",
+              border: "3px solid #e8eaed",
+              borderTopColor: "#3b82f6",
+              borderRadius: "50%",
+              animation: "spinLoader 0.8s linear infinite",
+              margin: "0 auto 16px",
             }}
           />
-
-          {/* Avatar + name skeleton */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 0" }}>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                backgroundSize: "200% 100%",
-                animation: "skeletonPulse 1.5s ease-in-out infinite",
-                flexShrink: 0,
-              }}
-            />
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  width: "100px",
-                  height: "12px",
-                  borderRadius: "6px",
-                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                  backgroundSize: "200% 100%",
-                  animation: "skeletonPulse 1.5s ease-in-out infinite",
-                  marginBottom: "6px",
-                }}
-              />
-              <div
-                style={{
-                  width: "70px",
-                  height: "10px",
-                  borderRadius: "6px",
-                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                  backgroundSize: "200% 100%",
-                  animation: "skeletonPulse 1.5s ease-in-out infinite",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Nav items skeleton */}
-          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-            {[140, 120, 100, 130, 90].map((w, i) => (
-              <div
-                key={i}
-                style={{
-                  width: `${w}px`,
-                  height: "36px",
-                  borderRadius: "10px",
-                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                  backgroundSize: "200% 100%",
-                  animation: `skeletonPulse 1.5s ease-in-out ${i * 0.1}s infinite`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Skeleton Main Content */}
-        <div
-          style={{
-            flex: 1,
-            padding: "32px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "24px",
-            overflow: "hidden",
-          }}
-        >
-          {/* Header skeleton */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div
-                style={{
-                  width: "220px",
-                  height: "24px",
-                  borderRadius: "8px",
-                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                  backgroundSize: "200% 100%",
-                  animation: "skeletonPulse 1.5s ease-in-out infinite",
-                  marginBottom: "10px",
-                }}
-              />
-              <div
-                style={{
-                  width: "160px",
-                  height: "14px",
-                  borderRadius: "6px",
-                  background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                  backgroundSize: "200% 100%",
-                  animation: "skeletonPulse 1.5s ease-in-out 0.1s infinite",
-                }}
-              />
-            </div>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                backgroundSize: "200% 100%",
-                animation: "skeletonPulse 1.5s ease-in-out infinite",
-              }}
-            />
-          </div>
-
-          {/* Stat cards skeleton */}
-          <div style={{ display: "flex", gap: "16px" }}>
-            {[1, 2, 3, 4].map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  height: "100px",
-                  borderRadius: "16px",
-                  background: "#ffffff",
-                  border: "1px solid #e8eaed",
-                  padding: "20px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div
-                  style={{
-                    width: "60%",
-                    height: "12px",
-                    borderRadius: "6px",
-                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                    backgroundSize: "200% 100%",
-                    animation: `skeletonPulse 1.5s ease-in-out ${i * 0.15}s infinite`,
-                  }}
-                />
-                <div
-                  style={{
-                    width: "40%",
-                    height: "22px",
-                    borderRadius: "8px",
-                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                    backgroundSize: "200% 100%",
-                    animation: `skeletonPulse 1.5s ease-in-out ${i * 0.15 + 0.1}s infinite`,
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Content area skeleton */}
           <div
             style={{
-              flex: 1,
-              borderRadius: "16px",
-              background: "#ffffff",
-              border: "1px solid #e8eaed",
-              padding: "24px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              fontSize: "14px",
+              color: "#9ca3af",
+              fontWeight: 500,
             }}
           >
-            {/* Table header */}
-            <div style={{ display: "flex", gap: "16px" }}>
-              {[30, 25, 20, 25].map((w, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: `${w}%`,
-                    height: "14px",
-                    borderRadius: "6px",
-                    background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                    backgroundSize: "200% 100%",
-                    animation: `skeletonPulse 1.5s ease-in-out ${i * 0.1}s infinite`,
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Table rows */}
-            {[1, 2, 3, 4, 5].map((_, rowIdx) => (
-              <div
-                key={rowIdx}
-                style={{
-                  display: "flex",
-                  gap: "16px",
-                  padding: "12px 0",
-                  borderTop: "1px solid #f3f4f6",
-                }}
-              >
-                {[30, 25, 20, 25].map((w, colIdx) => (
-                  <div
-                    key={colIdx}
-                    style={{
-                      width: `${w}%`,
-                      height: "12px",
-                      borderRadius: "6px",
-                      background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
-                      backgroundSize: "200% 100%",
-                      animation: `skeletonPulse 1.5s ease-in-out ${(rowIdx * 0.08) + (colIdx * 0.05)}s infinite`,
-                    }}
-                  />
-                ))}
-              </div>
-            ))}
+            Loading...
           </div>
         </div>
 
-        {/* Skeleton CSS Animation */}
         <style>{`
-          @keyframes skeletonPulse {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+          @keyframes spinLoader {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
           }
         `}</style>
       </div>
