@@ -192,7 +192,7 @@ export default function Sidebar({ user, userDoc }) {
             className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105 lg:hidden"
             aria-label="Toggle sidebar"
           >
-            {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+            <Menu size={24} />
           </button>
 
           {/* Logo */}
