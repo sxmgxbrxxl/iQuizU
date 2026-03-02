@@ -17,6 +17,8 @@ import {
   Archive,
   User,
   Settings,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
 
 export default function Sidebar({ user, userDoc }) {
@@ -35,8 +37,9 @@ export default function Sidebar({ user, userDoc }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // FIXED: Simple logic - if collapsed, stay collapsed unless explicitly expanded
-  const shouldExpand = !isCollapsed;
+  // On mobile, always show expanded. On desktop, respect collapse state.
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+  const shouldExpand = isMobile ? true : !isCollapsed;
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -181,34 +184,25 @@ export default function Sidebar({ user, userDoc }) {
     <>
       {/* Top Bar */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-lg z-50 flex items-center justify-between px-6">
-        {/* Left Section: Hamburger + Logo (desktop only) */}
+        {/* Left Section: Mobile hamburger + Logo */}
         <div className="flex items-center gap-4">
+          {/* Mobile hamburger only */}
           <button
-            onClick={() => {
-              if (window.innerWidth < 1024) {
-                setIsMobileOpen(!isMobileOpen);
-              } else {
-                setIsCollapsed(!isCollapsed);
-              }
-            }}
-            className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105"
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105 lg:hidden"
             aria-label="Toggle sidebar"
           >
             <Menu size={24} />
           </button>
 
-          {/* Logo next to hamburger - desktop only */}
-          <div className="hidden lg:flex items-center gap-3">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
             <img src={LOGO} alt="Logo" className="w-10 h-10" />
             <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
           </div>
         </div>
 
-        {/* Center Section: Logo - mobile only */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex lg:hidden items-center gap-3">
-          <img src={LOGO} alt="Logo" className="w-10 h-10" />
-          <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
-        </div>
+
 
         {/* Right Section: Profile Dropdown */}
         <div className="flex items-center gap-2 sm:gap-4">
@@ -296,10 +290,34 @@ export default function Sidebar({ user, userDoc }) {
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
           }}
-          className={`flex flex-col py-6 space-y-1 overflow-y-auto flex-1 transition-all duration-300 [&::-webkit-scrollbar]:hidden ${shouldExpand ? "px-6" : "px-2"
+          className={`flex flex-col py-5 space-y-1 overflow-y-auto flex-1 transition-all duration-300 [&::-webkit-scrollbar]:hidden ${shouldExpand ? "px-4" : "px-3"
             }`}
         >
-          <div className="flex flex-col space-y-3">
+          {/* Navigation Header with Toggle */}
+          <div className={`flex items-center mb-3 ${shouldExpand ? "justify-between px-2" : "justify-center"}`}>
+            {shouldExpand && (
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Outfit">Navigation</span>
+            )}
+            {/* Desktop: sidebar collapse/expand toggle */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+              aria-label="Toggle sidebar"
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+            {/* Mobile: close button */}
+            <button
+              onClick={() => setIsMobileOpen(false)}
+              className="flex lg:hidden items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+              aria-label="Close sidebar"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
             {menuItems.map((item, index) => (
               <Link
                 key={item.to}
@@ -312,22 +330,18 @@ export default function Sidebar({ user, userDoc }) {
                 }}
                 title={!shouldExpand ? item.label : ""}
                 style={staggerDelay(index)}
-                className={`flex items-center relative overflow-hidden rounded-xl text-gray-700 transition-all duration-300 group animate-sidebarSlideIn
+                className={`flex items-center rounded-xl transition-all duration-200 group animate-sidebarSlideIn
                 ${shouldExpand
-                    ? "gap-4 px-3 py-3 hover:bg-blue-50 hover:shadow-md"
-                    : "justify-center py-3 hover:bg-blue-50"
-                  }
-                ${isActive(item.to) ? "bg-gradient-to-r from-blue-50 to-blue-100/60 text-blue-700 shadow-md ring-1 ring-blue-200/50" : ""}`}
+                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    : `justify-center py-3 ${!isActive(item.to) ? "text-gray-500 hover:bg-gray-100" : ""}`
+                  }`}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/50 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>
-                {isActive(item.to) && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full transition-all duration-300" />
-                )}
-                <div className={`relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-all duration-300 ${isActive(item.to) ? "scale-110" : ""}`}>
-                  <item.icon size={22} className={`transition-colors duration-300 ${isActive(item.to) ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} />
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                  }`}>
+                  <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${shouldExpand
+                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -346,22 +360,18 @@ export default function Sidebar({ user, userDoc }) {
                 }}
                 title={!shouldExpand ? "Classes" : ""}
                 style={staggerDelay(1)}
-                className={`flex items-center relative overflow-hidden rounded-xl text-gray-700 transition-all duration-300 group w-full animate-sidebarSlideIn
+                className={`flex items-center rounded-xl transition-all duration-200 group w-full animate-sidebarSlideIn
                 ${shouldExpand
-                    ? "gap-4 px-3 py-3 hover:bg-blue-50 hover:shadow-md"
-                    : "justify-center py-3 hover:bg-blue-50"
-                  }
-                ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "bg-gradient-to-r from-blue-50 to-blue-100/60 text-blue-700 shadow-md ring-1 ring-blue-200/50" : ""}`}
+                    ? `gap-3 px-3 py-2.5 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    : `justify-center py-3 ${!(location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive')) ? "text-gray-500 hover:bg-gray-100" : ""}`
+                  }`}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/50 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>
-                {(location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive')) && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full transition-all duration-300" />
-                )}
-                <div className={`relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-all duration-300 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "scale-110" : ""}`}>
-                  <BookOpen size={22} className={`transition-colors duration-300 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} />
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                  }`}>
+                  <BookOpen size={22} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
+                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -369,29 +379,35 @@ export default function Sidebar({ user, userDoc }) {
                   Classes
                 </span>
                 {shouldExpand && (
-                  <div className="relative flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     {classes.length > 0 && (
-                      <span className="bg-blue-100 text-blue-600 text-xs font-bold font-Outfit px-2 py-0.5 rounded-full min-w-[20px] text-center transition-transform duration-300 group-hover:scale-110">
+                      <span className={`text-xs font-bold font-Outfit px-2 py-0.5 rounded-full min-w-[20px] text-center ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive')
+                        ? "bg-white/20 text-white"
+                        : "bg-teal-50 text-teal-600"
+                        }`}>
                         {classes.length}
                       </span>
                     )}
-                    <div className={`transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${classesOpen ? "rotate-180" : ""}`}>
-                      <ChevronDown size={18} className="text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
+                    <div className={`transition-transform duration-300 ${classesOpen ? "rotate-180" : ""}`}>
+                      <ChevronDown size={18} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive')
+                        ? "text-white/70"
+                        : "text-gray-400 group-hover:text-gray-600"
+                        }`} />
                     </div>
                   </div>
                 )}
               </button>
 
               {shouldExpand && classesOpen && (
-                <div className="mt-1 ml-3 border-l-2 border-blue-200 pl-3 animate-expandDown overflow-hidden">
+                <div className="mt-1 ml-3 border-l-2 border-teal-200 pl-3 animate-expandDown overflow-hidden">
                   {/* Add Class Button */}
                   <Link
                     to="/teacher/classes/add"
                     onClick={() => setIsMobileOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 my-1 rounded-lg text-blue-600 hover:bg-blue-50 hover:shadow-sm transition-all duration-200 group animate-popIn"
+                    className="flex items-center gap-3 px-3 py-2.5 my-1 rounded-lg text-teal-600 hover:bg-teal-50 hover:shadow-sm transition-all duration-200 group animate-popIn"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 group-hover:rotate-90 transition-all duration-300 flex-shrink-0">
-                      <Plus size={16} className="text-blue-600" />
+                    <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center group-hover:bg-teal-200 group-hover:rotate-90 transition-all duration-300 flex-shrink-0">
+                      <Plus size={16} className="text-teal-600" />
                     </div>
                     <span className="font-Outfit text-sm font-semibold">Add Class</span>
                   </Link>
@@ -431,24 +447,24 @@ export default function Sidebar({ user, userDoc }) {
                               setHoveredClass(null);
                             }}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isClassActive(cls.id)
-                              ? "bg-blue-50 text-blue-700 shadow-sm"
+                              ? "bg-teal-50 text-teal-700 shadow-sm"
                               : "text-gray-600 hover:bg-gray-50 hover:text-gray-800 hover:translate-x-1"
                               }`}
                           >
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-all duration-300 ${isClassActive(cls.id) ? "bg-blue-500 scale-125 animate-activePulse" : "bg-green-400 group-hover:scale-150 group-hover:bg-blue-400"
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-all duration-300 ${isClassActive(cls.id) ? "bg-teal-500 scale-125 animate-activePulse" : "bg-green-400 group-hover:scale-150 group-hover:bg-teal-400"
                               }`}></div>
                             <div className="flex flex-col flex-1 min-w-0">
                               <span className="font-Outfit text-sm font-medium truncate">
                                 {cls.code || "No Code"}
                               </span>
-                              <span className={`font-Outfit text-xs truncate transition-colors duration-200 ${isClassActive(cls.id) ? "text-blue-500" : "text-gray-400"
+                              <span className={`font-Outfit text-xs truncate transition-colors duration-200 ${isClassActive(cls.id) ? "text-teal-500" : "text-gray-400"
                                 }`}>
                                 Section {cls.classNo || "—"}
                               </span>
                             </div>
                             <span className={`text-xs font-Outfit font-medium flex-shrink-0 px-1.5 py-0.5 rounded-md transition-all duration-200 ${isClassActive(cls.id)
-                              ? "bg-blue-100 text-blue-600"
-                              : "bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600"
+                              ? "bg-teal-100 text-teal-600"
+                              : "bg-gray-100 text-gray-500 group-hover:bg-teal-100 group-hover:text-teal-600"
                               }`}>
                               {cls.studentCount || 0}
                             </span>
@@ -473,22 +489,18 @@ export default function Sidebar({ user, userDoc }) {
                 }}
                 title={!shouldExpand ? item.label : ""}
                 style={staggerDelay(index + 2)}
-                className={`flex items-center relative overflow-hidden rounded-xl text-gray-700 transition-all duration-300 group animate-sidebarSlideIn
+                className={`flex items-center rounded-xl transition-all duration-200 group animate-sidebarSlideIn
                 ${shouldExpand
-                    ? "gap-4 px-3 py-3 hover:bg-blue-50 hover:shadow-md"
-                    : "justify-center py-3 hover:bg-blue-50"
-                  }
-                ${isActive(item.to) ? "bg-gradient-to-r from-blue-50 to-blue-100/60 text-blue-700 shadow-md ring-1 ring-blue-200/50" : ""}`}
+                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    : `justify-center py-3 ${!isActive(item.to) ? "text-gray-500 hover:bg-gray-100" : ""}`
+                  }`}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/50 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>
-                {isActive(item.to) && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full transition-all duration-300" />
-                )}
-                <div className={`relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-all duration-300 ${isActive(item.to) ? "scale-110" : ""}`}>
-                  <item.icon size={22} className={`transition-colors duration-300 ${isActive(item.to) ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} />
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                  }`}>
+                  <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap ${shouldExpand
+                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -507,22 +519,18 @@ export default function Sidebar({ user, userDoc }) {
                 }}
                 title={!shouldExpand ? "Archives" : ""}
                 style={staggerDelay(4)}
-                className={`flex items-center relative overflow-hidden rounded-xl text-gray-700 transition-all duration-300 group w-full animate-sidebarSlideIn
+                className={`flex items-center rounded-xl transition-all duration-200 group w-full animate-sidebarSlideIn
                 ${shouldExpand
-                    ? "gap-4 px-3 py-3 hover:bg-blue-50 hover:shadow-md"
-                    : "justify-center py-3 hover:bg-blue-50"
-                  }
-                ${location.pathname.includes('/teacher/archives') ? "bg-gradient-to-r from-blue-50 to-blue-100/60 text-blue-700 shadow-md ring-1 ring-blue-200/50" : ""}`}
+                    ? `gap-3 px-3 py-2.5 ${location.pathname.includes('/teacher/archives') ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    : `justify-center py-3 ${!location.pathname.includes('/teacher/archives') ? "text-gray-500 hover:bg-gray-100" : ""}`
+                  }`}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/50 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>
-                {location.pathname.includes('/teacher/archives') && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full transition-all duration-300" />
-                )}
-                <div className={`relative flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-all duration-300 ${location.pathname.includes('/teacher/archives') ? "scale-110" : ""}`}>
-                  <Archive size={22} className={`transition-colors duration-300 ${location.pathname.includes('/teacher/archives') ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} />
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && location.pathname.includes('/teacher/archives') ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                  }`}>
+                  <Archive size={22} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/archives') ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`relative font-Outfit font-medium text-base transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
+                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -530,21 +538,22 @@ export default function Sidebar({ user, userDoc }) {
                   Archives
                 </span>
                 {shouldExpand && (
-                  <div className="relative">
-                    <div className={`transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${archiveOpen ? "rotate-180" : ""}`}>
-                      <ChevronDown size={18} className="text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
-                    </div>
+                  <div className={`transition-transform duration-300 ${archiveOpen ? "rotate-180" : ""}`}>
+                    <ChevronDown size={18} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/archives')
+                      ? "text-white/70"
+                      : "text-gray-400 group-hover:text-gray-600"
+                      }`} />
                   </div>
                 )}
               </button>
 
               {shouldExpand && archiveOpen && (
-                <div className="mt-2 ml-4 space-y-2 border-l-2 border-blue-200 pl-4 animate-expandDown overflow-hidden">
+                <div className="mt-1 ml-3 space-y-1 border-l-2 border-teal-200 pl-3 animate-expandDown overflow-hidden">
                   <Link
                     to="/teacher/archives/classes"
                     onClick={() => setIsMobileOpen(false)}
                     style={staggerDelay(0)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/classes' ? 'bg-blue-50 text-blue-700' : ''
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-teal-50 hover:text-teal-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/classes' ? 'bg-teal-50 text-teal-700' : ''
                       }`}
                   >
                     <BookOpen size={18} className="text-amber-500 group-hover:scale-110 transition-all duration-300" />
@@ -555,7 +564,7 @@ export default function Sidebar({ user, userDoc }) {
                     to="/teacher/archives/quizzes"
                     onClick={() => setIsMobileOpen(false)}
                     style={staggerDelay(1)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/quizzes' ? 'bg-blue-50 text-blue-700' : ''
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-teal-50 hover:text-teal-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/quizzes' ? 'bg-teal-50 text-teal-700' : ''
                       }`}
                   >
                     <FileText size={18} className="text-amber-500 group-hover:scale-110 transition-all duration-300" />

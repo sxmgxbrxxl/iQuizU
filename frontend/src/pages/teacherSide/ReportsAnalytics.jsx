@@ -838,7 +838,7 @@ export default function ReportsAnalytics() {
               className="bg-gradient-to-br from-blue-50 to-emerald-50 border-2 border-blue-200 rounded-2xl p-6 text-left hover:shadow-lg hover:border-blue-400 transition-all duration-300 group"
             >
               <h2 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition">
-                {cls.name}
+                {cls.classNo && cls.code ? `#${cls.classNo} ${cls.code}` : cls.classNo ? `#${cls.classNo}` : cls.code || cls.name}
               </h2>
               <p className="text-sm text-gray-600 mb-1">
                 <span className="font-semibold">{cls.studentCount || 0}</span> students
@@ -871,7 +871,7 @@ export default function ReportsAnalytics() {
                 ← Back to Classes
               </button>
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-4 md:p-6">
-                <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-1 md:mb-2">{selectedClass.name}</h2>
+                <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-1 md:mb-2">{selectedClass.classNo && selectedClass.code ? `#${selectedClass.classNo} ${selectedClass.code}` : selectedClass.classNo ? `#${selectedClass.classNo}` : selectedClass.code || selectedClass.name}</h2>
                 <p className="text-sm md:text-base text-gray-600">Select a quiz to view analytics</p>
               </div>
             </div>

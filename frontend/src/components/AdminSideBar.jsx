@@ -10,33 +10,67 @@ import {
   Home,
   NotebookTabs,
   ShieldCheck,
-  ChevronDown,
+  User,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
 import { auth } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
 
 export default function AdminTopbar({ user, userDoc }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const sidebarRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
-  const userMenuRef = useRef(null);
 
-  // Close user dropdown when clicking outside
+  // On mobile, always show expanded. On desktop, respect collapse state.
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+  const shouldExpand = isMobile ? true : !isCollapsed;
+
   useEffect(() => {
-    const handleClick = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setUserMenuOpen(false);
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      shouldExpand ? "288px" : "80px"
+    );
+  }, [shouldExpand]);
+
+  // Handle click outside sidebar on mobile
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        isMobileOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(e.target) &&
+        !e.target.closest('button[aria-label="Toggle sidebar"]')
+      ) {
+        setIsMobileOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMobileOpen]);
+
+  // Close profile dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
-    setMobileOpen(false);
+    setIsMobileOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -61,196 +95,204 @@ export default function AdminTopbar({ user, userDoc }) {
     return location.pathname.includes(path);
   };
 
+  const userName = userDoc?.firstName || user?.displayName || "Admin";
+  const userEmail = userDoc?.email || user?.email || "Administrator";
+  const userInitial = userName.charAt(0).toUpperCase();
+
+  // Staggered animation delay helper
+  const staggerDelay = (index) => ({ animationDelay: `${index * 0.06}s`, animationFillMode: 'both' });
+
   return (
     <>
-      {/* ── Top Navbar ── */}
-      <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 border-b border-slate-800 shadow-lg shadow-slate-950/30">
-        <div className="h-full flex items-center px-4 lg:px-6 gap-4">
+      {/* Top Bar */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 shadow-lg z-50 flex items-center justify-between px-6">
+        {/* Left Section: Mobile hamburger + Logo */}
+        <div className="flex items-center gap-4">
+          {/* Mobile hamburger only */}
+          <button
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105 lg:hidden"
+            aria-label="Toggle sidebar"
+          >
+            <Menu size={24} />
+          </button>
 
           {/* Logo */}
-            <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 bg-blue-500 blur-lg opacity-30 rounded-full" />
-              <img src={LOGO} alt="iQuizU Logo" className="w-8 h-8 relative z-10" />
-            </div>
-            <div className="hidden sm:flex flex-col leading-none">
-              <span className="font-Outfit font-bold text-lg text-white tracking-tight">iQuizU</span>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-0.5 mt-0.5">
+          <div className="flex items-center gap-3">
+            <img src={LOGO} alt="Logo" className="w-10 h-10" />
+            <div className="flex flex-col leading-none">
+              <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-200 flex items-center gap-0.5">
                 <ShieldCheck size={9} /> Admin Panel
               </span>
             </div>
+          </div>
+        </div>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden lg:flex items-center gap-1 ml-6 flex-1">
-            {menuItems.map((item) => {
-              const active = isActive(item.to);
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => {
-                    if (active) window.dispatchEvent(new Event("refreshPage"));
-                  }}
-                  className={`group relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium font-Outfit transition-all duration-200
-                    ${active
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-900/30"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800"
-                    }`}
-                >
-                  <item.icon size={17} strokeWidth={active ? 2.5 : 2} className="shrink-0" />
-                  <span>{item.label}</span>
-                  {active && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-blue-300 rounded-full opacity-60" />
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Spacer on mobile */}
-          <div className="flex-1 lg:hidden" />
-
-          {/* Desktop: User Dropdown */}
-          <div className="hidden lg:block relative" ref={userMenuRef}>
+        {/* Right Section: Profile Dropdown */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="relative" ref={profileDropdownRef}>
             <button
-              onClick={() => setUserMenuOpen((v) => !v)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-700 text-slate-300 hover:text-white transition-all duration-200 text-sm font-Outfit"
+              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+              className={`flex items-center gap-2 p-2 pr-3 rounded-lg transition-all duration-200 hover:scale-105 ${profileDropdownOpen ? "bg-white/20" : "hover:bg-white/10"
+                }`}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-900 to-blue-300 rounded-full flex items-center justify-center text-sm shadow-lg ring-2 ring-white/20">
-                {user?.displayName?.[0] || user?.email?.[0] || "A"}
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-300 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/20">
+                {userInitial}
               </div>
             </button>
 
-            {userMenuOpen && (
-              <div className="font-Outfit absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-3 border-b border-slate-700">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs uppercase shrink-0">
-                    {user?.displayName?.[0] || user?.email?.[0] || "A"}
+            {/* Dropdown Menu */}
+            {profileDropdownOpen && (
+              <div
+                className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn"
+                style={{ animation: 'fadeIn 0.15s ease-out' }}
+              >
+                {/* User Info Header */}
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-300 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-base shadow-md">
+                      {userInitial}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-Outfit font-semibold text-sm text-gray-800 truncate">{userName}</span>
+                      <span className="font-Outfit text-xs text-gray-400 truncate">{userEmail}</span>
+                    </div>
                   </div>
-                  <span className="max-w-[120px] truncate">{user?.displayName || user?.email || "Admin"}</span>
                 </div>
-                <button
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    setShowConfirm(true);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors font-Outfit"
-                >
-                  <LogOut size={16} />
-                  Sign Out
-                </button>
+
+                {/* Divider + Logout */}
+                <div className="border-t border-gray-100 pt-1">
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      setShowConfirm(true);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 group"
+                  >
+                    <LogOut size={18} className="text-red-400 group-hover:text-red-500 transition-colors" />
+                    <span className="font-Outfit text-sm font-medium">Sign Out</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
-
-          {/* Mobile: Hamburger */}
-          <button
-            onClick={() => setMobileOpen((v) => !v)}
-            className="lg:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all active:scale-95"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
         </div>
-      </header>
+      </div>
 
-      {/* ── Mobile Drawer ── */}
-      {/* Backdrop */}
-      {mobileOpen && (
+      {/* Mobile Overlay Backdrop */}
+      {isMobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-200"
-          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden animate-overlayFade"
+          onClick={() => setIsMobileOpen(false)}
         />
       )}
 
-      {/* Slide-down panel */}
+      {/* Sidebar */}
       <div
-        className={`fixed top-16 left-0 right-0 z-35 lg:hidden bg-slate-900 border-b border-slate-800 shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]
-          ${mobileOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"}`}
-        style={{ zIndex: 35 }}
+        ref={sidebarRef}
+        className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white border-r border-gray-200 shadow-xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-40 flex flex-col
+        ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        ${isCollapsed ? "lg:w-20" : "lg:w-72"}
+        w-72`}
       >
-        {/* User info strip */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-800 bg-slate-950/40">
-          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm uppercase shrink-0">
-            {user?.displayName?.[0] || user?.email?.[0] || "A"}
+        <nav
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+          className={`flex flex-col py-5 space-y-1 overflow-y-auto flex-1 transition-all duration-300 [&::-webkit-scrollbar]:hidden ${shouldExpand ? "px-4" : "px-3"
+            }`}
+        >
+          {/* Navigation Header with Toggle */}
+          <div className={`flex items-center mb-3 ${shouldExpand ? "justify-between px-2" : "justify-center"}`}>
+            {shouldExpand && (
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Outfit">Navigation</span>
+            )}
+            {/* Desktop: sidebar collapse/expand toggle */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+              aria-label="Toggle sidebar"
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+            {/* Mobile: close button */}
+            <button
+              onClick={() => setIsMobileOpen(false)}
+              className="flex lg:hidden items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+              aria-label="Close sidebar"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-medium text-white font-Outfit truncate">
-              {user?.displayName || "Admin"}
-            </p>
-            <p className="text-xs text-slate-400 truncate">{user?.email}</p>
-          </div>
-        </div>
 
-        {/* Nav items */}
-        <nav className="px-3 py-3 space-y-1">
-          {menuItems.map((item) => {
-            const active = isActive(item.to);
-            return (
+          <div className="flex flex-col space-y-1.5">
+            {menuItems.map((item, index) => (
               <Link
                 key={item.to}
                 to={item.to}
                 onClick={() => {
-                  setMobileOpen(false);
-                  if (active) window.dispatchEvent(new Event("refreshPage"));
+                  setIsMobileOpen(false);
+                  if (isActive(item.to)) {
+                    window.dispatchEvent(new Event('refreshPage'));
+                  }
                 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium font-Outfit transition-all duration-150
-                  ${active
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/30"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                title={!shouldExpand ? item.label : ""}
+                style={staggerDelay(index)}
+                className={`flex items-center rounded-xl transition-all duration-200 group animate-sidebarSlideIn
+                ${shouldExpand
+                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    : `justify-center py-3 ${!isActive(item.to) ? "text-gray-500 hover:bg-gray-100" : ""}`
                   }`}
               >
-                <item.icon size={19} strokeWidth={active ? 2.5 : 2} />
-                {item.label}
-                {active && <span className="ml-auto w-2 h-2 rounded-full bg-blue-300 opacity-70" />}
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-indigo-500 shadow-lg shadow-indigo-500/25" : ""
+                  }`}>
+                  <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
+                </div>
+                <span
+                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
+                    ? "opacity-100 max-w-xs"
+                    : "opacity-0 max-w-0 overflow-hidden"
+                    }`}
+                >
+                  {item.label}
+                </span>
               </Link>
-            );
-          })}
+            ))}
+          </div>
         </nav>
-
-        {/* Sign out */}
-        <div className="px-3 pb-4 pt-1 border-t border-slate-800 mt-1">
-          <button
-            onClick={() => {
-              setMobileOpen(false);
-              setShowConfirm(true);
-            }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-colors font-Outfit"
-          >
-            <LogOut size={19} />
-            Sign Out
-          </button>
-        </div>
       </div>
-
-      {/* ── Page offset helper ── */}
-      {/* Add pt-16 to your page layout wrapper to offset the fixed navbar */}
 
       {/* ── Logout Confirmation Modal ── */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm font-Outfit animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 animate-popIn">
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LogOut className="text-red-500" size={32} />
+        <div className="font-Outfit fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-slideUp">
+            <div className="flex items-start gap-4">
+              <div className="bg-red-100 p-4 rounded-full items-center justify-center flex">
+                <LogOut className="text-red-500" size={24} />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Sign Out?</h3>
-              <p className="text-slate-500 text-sm mb-6">
-                Are you sure you want to sign out of the admin panel?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowConfirm(false)}
-                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl shadow-lg shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  Sign Out
-                </button>
+              <div>
+                <h3 className="text-2xl font-bold text-title">Confirm Logout</h3>
+                <p className="text-subtext">
+                  Are you sure you want to sign out of the admin panel?
+                </p>
               </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 active:scale-95 hover:scale-105 duration-200 transition font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 active:scale-95 hover:scale-105 duration-200 transition font-semibold"
+              >
+                Sign Out
+              </button>
             </div>
           </div>
         </div>

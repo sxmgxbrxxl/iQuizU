@@ -12,6 +12,8 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import Toast from "../../components/Toast";
 import {
   ArrowLeft,
   Users,
@@ -46,6 +48,13 @@ export default function AssignQuizToClass() {
   const [generatedQuizCode, setGeneratedQuizCode] = useState(null);
   const [expandedClasses, setExpandedClasses] = useState({});
 
+  // Toast state
+  const [toast, setToast] = useState({ show: false, type: "", title: "", message: "" });
+  const showToast = (type, title, message) => setToast({ show: true, type, title, message });
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
+
   const [assignmentSettings, setAssignmentSettings] = useState({
     dueDate: "",
     instructions: "",
@@ -69,7 +78,7 @@ export default function AssignQuizToClass() {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        alert("Please login first");
+        showToast("error", "Authentication Required", "Please login first.");
         navigate("/login");
         return;
       }
@@ -79,7 +88,7 @@ export default function AssignQuizToClass() {
       const quizSnap = await getDoc(quizRef);
 
       if (!quizSnap.exists()) {
-        alert("Quiz not found!");
+        showToast("error", "Not Found", "Quiz not found!");
         navigate("/teacher/quizzes");
         return;
       }
@@ -87,7 +96,7 @@ export default function AssignQuizToClass() {
       const quizData = { id: quizSnap.id, ...quizSnap.data() };
 
       if (quizData.teacherId !== currentUser.uid) {
-        alert("You don't have permission to assign this quiz!");
+        showToast("error", "Permission Denied", "You don't have permission to assign this quiz!");
         navigate("/teacher/quizzes");
         return;
       }
@@ -144,7 +153,7 @@ export default function AssignQuizToClass() {
 
     } catch (error) {
       console.error("Error fetching data:", error);
-      alert("Error loading data");
+      showToast("error", "Error", "Error loading data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -386,26 +395,75 @@ export default function AssignQuizToClass() {
     }
   };
 
+  // Core assignment logic after all confirmations pass
+  const executeAssignment = async (classesWithExisting = []) => {
+    // Delete existing assignments if needed
+    for (const classId of classesWithExisting) {
+      const existing = existingAssignments[classId];
+      if (existing?.assignmentDocs) {
+        const deletePromises = existing.assignmentDocs.map((doc) =>
+          deleteDoc(doc.ref)
+        );
+        await Promise.all(deletePromises);
+      }
+    }
+
+    setAssigning(true);
+
+    try {
+      const results = [];
+
+      for (const classId of selectedClasses) {
+        const result = await createAssignmentsForClass(classId);
+        const classItem = allClasses.find((c) => c.id === classId);
+        results.push({
+          className: classItem?.name || "Unknown",
+          ...result,
+        });
+      }
+
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.filter((r) => !r.success).length;
+
+      if (successCount > 0) {
+        const totalStudents = results
+          .filter((r) => r.success)
+          .reduce((sum, r) => sum + r.count, 0);
+        showToast("success", "Quiz Assigned!", `Successfully assigned to ${successCount} class(es), ${totalStudents} student(s) total.`);
+      }
+      if (failCount > 0) {
+        showToast("error", "Partial Failure", `Failed for ${failCount} class(es).`);
+      }
+
+      setTimeout(() => navigate("/teacher/quizzes"), 1500);
+    } catch (error) {
+      console.error("Error assigning quiz:", error);
+      showToast("error", "Assignment Failed", "Error assigning quiz. Please try again.");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const handleAssignQuiz = async () => {
     if (selectedClasses.length === 0) {
-      alert("Please select at least one class");
+      showToast("warning", "No Class Selected", "Please select at least one class.");
       return;
     }
 
     const isSynchronous = assignmentSettings.mode === "synchronous";
 
     if (!isSynchronous && !assignmentSettings.dueDate) {
-      alert("Please set a due date for this assignment");
+      showToast("warning", "Due Date Required", "Please set a due date for this assignment.");
       return;
     }
 
     if (isSynchronous && !assignmentSettings.deadline) {
-      alert("Please set an expiration deadline for synchronous mode");
+      showToast("warning", "Deadline Required", "Please set an expiration deadline for synchronous mode.");
       return;
     }
 
     if (isSynchronous && !generatedQuizCode) {
-      alert("Please generate a quiz code for synchronous mode");
+      showToast("warning", "Quiz Code Required", "Please generate a quiz code for synchronous mode.");
       return;
     }
 
@@ -414,7 +472,7 @@ export default function AssignQuizToClass() {
       const selected = selectedStudentsByClass[classId] || [];
       if (selected.length === 0) {
         const classItem = allClasses.find((c) => c.id === classId);
-        alert(`Please select at least one student in ${classItem?.name || "the class"}`);
+        showToast("warning", "No Students Selected", `Please select at least one student in ${classItem?.name || "the class"}.`);
         return;
       }
     }
@@ -423,29 +481,6 @@ export default function AssignQuizToClass() {
     const classesWithExisting = selectedClasses.filter(
       (classId) => existingAssignments[classId]?.exists
     );
-
-    if (classesWithExisting.length > 0) {
-      const classNames = classesWithExisting
-        .map((id) => allClasses.find((c) => c.id === id)?.name)
-        .join(", ");
-
-      if (!window.confirm(
-        `The following classes already have this quiz assigned:\n${classNames}\n\nDo you want to REPLACE the existing assignments?`
-      )) {
-        return;
-      }
-
-      // Delete existing assignments
-      for (const classId of classesWithExisting) {
-        const existing = existingAssignments[classId];
-        if (existing?.assignmentDocs) {
-          const deletePromises = existing.assignmentDocs.map((doc) =>
-            deleteDoc(doc.ref)
-          );
-          await Promise.all(deletePromises);
-        }
-      }
-    }
 
     // Check for students without accounts
     let totalSkipped = 0;
@@ -473,53 +508,62 @@ export default function AssignQuizToClass() {
       }
     });
 
+    // If existing assignments found, show confirm dialog first
+    if (classesWithExisting.length > 0) {
+      const classNames = classesWithExisting
+        .map((id) => allClasses.find((c) => c.id === id)?.name)
+        .join(", ");
+
+      setConfirmDialog({
+        isOpen: true,
+        title: "Replace Existing Assignments?",
+        message: `The following classes already have this quiz assigned: ${classNames}. Do you want to REPLACE the existing assignments?`,
+        confirmLabel: "Replace",
+        color: "orange",
+        onConfirm: () => {
+          setConfirmDialog({ isOpen: false });
+          // After confirming replacement, check for skipped students
+          if (totalSkipped > 0) {
+            setConfirmDialog({
+              isOpen: true,
+              title: "Students Without Accounts",
+              message: `${totalSkipped} student(s) do not have registered accounts and will be skipped (${skippedDetails.join(", ")}). Only ${totalValid} student(s) will receive the assignment. Continue anyway?`,
+              confirmLabel: "Continue",
+              color: "orange",
+              onConfirm: () => {
+                setConfirmDialog({ isOpen: false });
+                executeAssignment(classesWithExisting);
+              },
+              onCancel: () => setConfirmDialog({ isOpen: false }),
+            });
+          } else {
+            executeAssignment(classesWithExisting);
+          }
+        },
+        onCancel: () => setConfirmDialog({ isOpen: false }),
+      });
+      return;
+    }
+
+    // No existing assignments but has skipped students
     if (totalSkipped > 0) {
-      const message = `⚠️ WARNING: ${totalSkipped} student(s) do not have registered accounts yet and WILL BE SKIPPED.\n\n` +
-        `Details:\n${skippedDetails.join('\n')}\n\n` +
-        `Only ${totalValid} student(s) will receive the assignment.\n\n` +
-        `Continue anyway?`;
-
-      if (!window.confirm(message)) {
-        return;
-      }
+      setConfirmDialog({
+        isOpen: true,
+        title: "Students Without Accounts",
+        message: `${totalSkipped} student(s) do not have registered accounts and will be skipped (${skippedDetails.join(", ")}). Only ${totalValid} student(s) will receive the assignment. Continue anyway?`,
+        confirmLabel: "Continue",
+        color: "orange",
+        onConfirm: () => {
+          setConfirmDialog({ isOpen: false });
+          executeAssignment();
+        },
+        onCancel: () => setConfirmDialog({ isOpen: false }),
+      });
+      return;
     }
 
-    setAssigning(true);
-
-    try {
-      const results = [];
-
-      for (const classId of selectedClasses) {
-        const result = await createAssignmentsForClass(classId);
-        const classItem = allClasses.find((c) => c.id === classId);
-        results.push({
-          className: classItem?.name || "Unknown",
-          ...result,
-        });
-      }
-
-      const successCount = results.filter((r) => r.success).length;
-      const failCount = results.filter((r) => !r.success).length;
-
-      let message = "";
-      if (successCount > 0) {
-        const totalStudents = results
-          .filter((r) => r.success)
-          .reduce((sum, r) => sum + r.count, 0);
-        message += `✓ Successfully assigned to ${successCount} class(es), ${totalStudents} student(s) total\n`;
-      }
-      if (failCount > 0) {
-        message += `\n✗ Failed for ${failCount} class(es)`;
-      }
-
-      alert(message);
-      navigate("/teacher/quizzes");
-    } catch (error) {
-      console.error("Error assigning quiz:", error);
-      alert("Error assigning quiz. Please try again.");
-    } finally {
-      setAssigning(false);
-    }
+    // No issues, proceed directly
+    executeAssignment();
   };
 
   const getTotalSelectedStudents = () => {
@@ -887,8 +931,8 @@ export default function AssignQuizToClass() {
 
           <div
             className={`border-2 rounded-xl p-6 ${isSynchronous
-                ? "border-purple-200 bg-purple-50"
-                : "border-blue-200 bg-blue-50"
+              ? "border-purple-200 bg-purple-50"
+              : "border-blue-200 bg-blue-50"
               }`}
           >
             <h3
@@ -1015,8 +1059,8 @@ export default function AssignQuizToClass() {
                                 <label
                                   key={student.id}
                                   className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${selectedStudents.includes(student.id)
-                                      ? "border-blue-500 bg-blue-50"
-                                      : "border-gray-200 hover:border-blue-300"
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-gray-200 hover:border-blue-300"
                                     }`}
                                 >
                                   <input
@@ -1080,8 +1124,8 @@ export default function AssignQuizToClass() {
             (isSynchronous && !generatedQuizCode)
           }
           className={`px-6 py-3 font-semibold rounded-lg flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${isSynchronous
-              ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-              : "bg-purple-600 hover:bg-purple-700 text-white"
+            ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+            : "bg-purple-600 hover:bg-purple-700 text-white"
             }`}
         >
           {assigning ? (
@@ -1101,6 +1145,18 @@ export default function AssignQuizToClass() {
           )}
         </button>
       </div>
+
+      {/* Custom Dialog & Toast */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        color={confirmDialog.color}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={confirmDialog.onCancel || (() => setConfirmDialog({ isOpen: false }))}
+      />
+      <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
     </div>
   );
 }
