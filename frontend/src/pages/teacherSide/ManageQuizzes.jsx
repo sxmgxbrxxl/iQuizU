@@ -936,13 +936,11 @@ export default function ManageQuizzes() {
   // RENDER
   // -----------------------------------------------------------------
   return (
-    <div className="p-4 md:p-8 font-Outfit animate-fadeIn">
+    <div className="p-4 md:p-8 font-Poppins animate-fadeIn">
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-6">
-        <NotebookPen className="w-8 h-8 text-blue-600 hidden md:block" />
         <div className="flex flex-col">
           <h2 className="text-2xl font-bold text-title flex items-center gap-2">
-            <NotebookPen className="w-6 h-6 text-blue-600 md:hidden" />
             Manage Quizzes
           </h2>
           <p className="text-sm md:text-md font-light text-subtext">
@@ -973,8 +971,8 @@ export default function ManageQuizzes() {
       </div>
 
       {/* Published Quizzes */}
-      <div className="bg-white rounded-2xl border border-gray-200 border-l-4 border-l-blue-400 shadow-sm p-6 mb-8">
-        <h3 className="text-xl text-title font-semibold mb-4">
+      <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
+        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 text-left">
           Your Published Quizzes
         </h3>
 
@@ -993,31 +991,35 @@ export default function ManageQuizzes() {
                   <div
                     key={q.id}
                     onClick={() => setSelectedPublishedQuiz(q)}
-                    className="group relative overflow-hidden border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 bg-white hover:-translate-y-1 cursor-pointer"
+                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
                   >
-                    {/* Top Accent Gradient */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                    {/* Background blob using blue scale */}
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
 
-                    <div className="flex flex-col h-full">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300">
-                          <NotebookPen className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors duration-300" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <NotebookPen className="w-6 h-6 text-blue-700" strokeWidth={2} />
                         </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                          {q.title}
+                        </h3>
                       </div>
 
-                      <h4 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 leading-snug group-hover:text-blue-700 transition-colors">
-                        {q.title}
-                      </h4>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
+                        Published quiz with {q.questionCount} questions totaling {q.totalPoints} points.
+                      </p>
 
-                      <div className="mt-auto pt-4 flex items-center gap-4 border-t border-gray-100 pb-1">
-                        <div className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
-                          <Brain className="w-4 h-4 text-gray-400" />
-                          <span className="text-xs font-semibold">{q.questionCount} Qs</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
-                          <CheckCircle className="w-4 h-4 text-gray-400" />
-                          <span className="text-xs font-semibold">{q.totalPoints} Pts</span>
-                        </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
+                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
+                          Published
+                        </span>
+                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
+                          {q.questionCount} Questions
+                        </span>
+                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
+                          {q.totalPoints} Points
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1030,7 +1032,7 @@ export default function ManageQuizzes() {
 
       {/* Published Quiz Detail Dialog */}
       {mounted && selectedPublishedQuiz && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn" onClick={() => setSelectedPublishedQuiz(null)}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedPublishedQuiz(null)}>
           <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
             {/* Dialog Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-blue-50/50">
@@ -1164,11 +1166,11 @@ export default function ManageQuizzes() {
 
 
       {/* Synchronous Quizzes Section */}
-      <div className="mb-8 bg-white rounded-2xl border border-gray-200 border-l-4 border-l-amber-400 shadow-sm p-6">
-        <h3 className="text-xl text-title font-semibold mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-amber-500" /> Synchronous Quizzes
+      <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
+        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
+          Synchronous Quizzes
           {synchronousQuizzes.length > 0 && (
-            <span className="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold ml-2">
               {synchronousQuizzes.length}
             </span>
           )}
@@ -1192,42 +1194,36 @@ export default function ManageQuizzes() {
                   <div
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedSyncQuiz(a)}
-                    className="group relative overflow-hidden border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 bg-white hover:-translate-y-1 hover:border-amber-300 cursor-pointer"
+                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
                   >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#fef3c7] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
 
-                    <div className="flex flex-col h-full">
-                      <div className="flex items-start justify-between mb-3 gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-500 transition-colors duration-300 shrink-0">
-                          <Zap className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors duration-300" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <Zap className="w-6 h-6 text-[#92400e]" strokeWidth={2} />
                         </div>
-                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] md:text-xs font-bold rounded-full flex items-center gap-1.5 border border-emerald-200 whitespace-nowrap shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> LIVE
-                        </span>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                          {a.title}
+                        </h3>
                       </div>
 
-                      <h4 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 leading-snug group-hover:text-amber-700 transition-colors">
-                        {a.title}
-                      </h4>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
+                        Assigned to {a.className} • {a.studentCount} Students
+                      </p>
 
-                      <div className="mt-auto space-y-2 pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
-                          <Users className="w-4 h-4 text-gray-400 shrink-0" />
-                          <span className="font-semibold truncate">{a.className}</span>
-                          <span className="text-gray-400 text-xs ml-auto bg-white px-1.5 py-0.5 rounded border border-gray-200">{a.studentCount} Students</span>
-                        </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
+                        <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#d97706] animate-pulse"></span>
+                          LIVE
+                        </span>
+                        <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full">
+                          Sync
+                        </span>
                         {a.dueDate && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
-                            <Clock className="w-4 h-4 text-gray-400 shrink-0" />
-                            <span className="text-gray-500 text-xs">Due:</span>
-                            <span className="font-semibold text-xs truncate text-gray-700">
-                              {new Date(a.dueDate).toLocaleDateString("en-PH", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                          </div>
+                          <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Due {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1241,7 +1237,7 @@ export default function ManageQuizzes() {
 
       {/* Sync Quiz Detail Dialog */}
       {mounted && selectedSyncQuiz && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn" onClick={() => setSelectedSyncQuiz(null)}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedSyncQuiz(null)}>
           <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
             {/* Dialog Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-amber-50/50">
@@ -1349,11 +1345,11 @@ export default function ManageQuizzes() {
       )
       }
 
-      <div className="mb-8 bg-white rounded-2xl border border-gray-200 border-l-4 border-l-violet-400 shadow-sm p-6">
-        <h3 className="text-xl text-title font-semibold mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-violet-500" /> Asynchronous Quizzes
+      <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
+        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
+          Asynchronous Quizzes
           {assignedQuizzes.length > 0 && (
-            <span className="bg-violet-50 text-violet-700 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold ml-2">
               {assignedQuizzes.length}
             </span>
           )}
@@ -1375,39 +1371,32 @@ export default function ManageQuizzes() {
                   <div
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedAsyncQuiz(a)}
-                    className="group relative overflow-hidden border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 bg-white hover:-translate-y-1 hover:border-violet-300 cursor-pointer"
+                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
                   >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-purple-500"></div>
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#f3e8ff] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
 
-                    <div className="flex flex-col h-full">
-                      <div className="flex items-start justify-between mb-3 gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center group-hover:bg-violet-500 transition-colors duration-300 shrink-0">
-                          <Calendar className="w-5 h-5 text-violet-600 group-hover:text-white transition-colors duration-300" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <Calendar className="w-6 h-6 text-[#6b21a8]" strokeWidth={2} />
                         </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                          {a.title}
+                        </h3>
                       </div>
 
-                      <h4 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 leading-snug group-hover:text-violet-700 transition-colors">
-                        {a.title}
-                      </h4>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
+                        Assigned to {a.className} • {a.studentCount} Students
+                      </p>
 
-                      <div className="mt-auto space-y-2 pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
-                          <Users className="w-4 h-4 text-gray-400 shrink-0" />
-                          <span className="font-semibold truncate">{a.className}</span>
-                          <span className="text-gray-400 text-xs ml-auto bg-white px-1.5 py-0.5 rounded border border-gray-200">{a.studentCount} Students</span>
-                        </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
+                        <span className="px-3.5 py-1.5 bg-[#e9d5ff] text-[#6b21a8] text-sm font-medium rounded-full">
+                          Async
+                        </span>
                         {a.dueDate && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
-                            <Clock className="w-4 h-4 text-gray-400 shrink-0" />
-                            <span className="text-gray-500 text-xs">Due:</span>
-                            <span className="font-semibold text-xs truncate text-gray-700">
-                              {new Date(a.dueDate).toLocaleDateString("en-PH", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                          </div>
+                          <span className="px-3.5 py-1.5 bg-[#e9d5ff] text-[#6b21a8] text-sm font-medium rounded-full flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Due {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1422,7 +1411,7 @@ export default function ManageQuizzes() {
       {/* Async Quiz Detail Dialog */}
       {
         mounted && selectedAsyncQuiz && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn" onClick={() => setSelectedAsyncQuiz(null)}>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedAsyncQuiz(null)}>
             <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
               {/* Dialog Header */}
               <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-violet-50/50">
@@ -1508,7 +1497,7 @@ export default function ManageQuizzes() {
       {/* Manual Quiz Creation Modal */}
       {
         mounted && showManualModal && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4 font-Outfit animate-fadeIn">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4 font-Poppins animate-fadeIn">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] flex flex-col animate-slideUp">
               {/* Header */}
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
@@ -1876,7 +1865,7 @@ export default function ManageQuizzes() {
       {/* PDF Modal */}
       {
         mounted && showPdfModal && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-slideUp">
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
                 <div className="flex items-center gap-3">
@@ -2006,7 +1995,7 @@ export default function ManageQuizzes() {
       {/* Preview Modal */}
       {
         mounted && showPreviewModal && generatedQuiz && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 md:p-4 font-Outfit animate-fadeIn">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 md:p-4 font-Poppins animate-fadeIn">
             <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] md:max-h-[90vh] flex flex-col animate-slideUp">
               {/* Header */}
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">

@@ -378,7 +378,7 @@ export default function ManageClasses() {
 
       {/* Custom Alert Dialog */}
       {alertDialog.isOpen && (
-        <div className="font-Outfit fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] animate-fadeIn">
+        <div className="font-Poppins fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-slideUp">
             <div className="flex flex-col items-center text-center">
               <div className={`p-4 rounded-full flex items-center justify-center mb-4 ${alertDialog.type === "success" ? "bg-green-100" :

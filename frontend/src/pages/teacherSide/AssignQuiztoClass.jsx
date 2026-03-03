@@ -404,7 +404,7 @@ export default function AssignQuizToClass() {
   }
 
   return (
-    <div className="p-4 md:p-8 font-Outfit">
+    <div className="p-4 md:p-8 font-Poppins">
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={handleBack}

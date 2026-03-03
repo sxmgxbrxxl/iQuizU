@@ -684,14 +684,14 @@ export default function ViewClassPage() {
 
   if (!classData) {
     return (
-      <div className="flex items-center justify-center min-h-screen font-Outfit">
+      <div className="flex items-center justify-center min-h-screen font-Poppins">
         <p className="text-subtext">Class not found</p>
       </div>
     );
   }
 
   return (
-    <div className="px-2 py-6 md:p-8 font-Outfit animate-fadeIn">
+    <div className="px-2 py-6 md:p-8 font-Poppins animate-fadeIn">
 
       {accountCreationProgress && creatingAccounts && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
@@ -1144,7 +1144,7 @@ export default function ViewClassPage() {
       )}
 
       {mounted && showAssignQuizModal && classData && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fadeIn font-Outfit">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fadeIn font-Poppins">
           <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-slideUp">
             <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
               <div className="flex items-center gap-2 md:gap-3 min-w-0">

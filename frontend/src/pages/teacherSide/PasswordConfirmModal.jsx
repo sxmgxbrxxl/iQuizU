@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
-export default function PasswordConfirmModal({ 
-  isOpen, 
-  studentCount, 
-  onConfirm, 
-  onCancel 
+export default function PasswordConfirmModal({
+  isOpen,
+  studentCount,
+  onConfirm,
+  onCancel
 }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +31,7 @@ export default function PasswordConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] font-Outfit backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] font-Poppins backdrop-blur-sm animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-slideUp">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-700 to-blue-400 p-6 text-white">
@@ -62,8 +62,8 @@ export default function PasswordConfirmModal({
                 <div className="flex flex-col items-end justify-end">
                   <span className="font-mono font-semibold text-gray-800">SURNAME1234</span>
                   <span className="text-xs text-subtext text-end">(depends on student's surname and last 4 digits of student number)</span>
-              </div>
                 </div>
+              </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">👤 Login Method:</span>
                 <span className="font-medium text-gray-800">Student Number</span>
@@ -85,11 +85,10 @@ export default function PasswordConfirmModal({
                   setError("");
                 }}
                 placeholder="Enter password"
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                  error 
-                    ? "border-red-300 focus:border-red-500" 
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${error
+                    ? "border-red-300 focus:border-red-500"
                     : "border-gray-300 focus:border-blue-500"
-                }`}
+                  }`}
                 autoFocus
               />
               <button

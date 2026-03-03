@@ -17,6 +17,7 @@ module.exports = {
       },
       fontFamily: {
         Outfit: ["Outfit", "sans-serif"],
+        Poppins: ["Poppins", "sans-serif"],
       },
       keyframes: {
         slideIn: {

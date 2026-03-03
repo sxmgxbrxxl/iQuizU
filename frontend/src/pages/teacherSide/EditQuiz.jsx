@@ -288,7 +288,7 @@ export default function EditQuiz() {
   const hasChanges = hasUnsavedChanges();
 
   return (
-    <div className="px-2 py-6 md:p-8 font-Outfit">
+    <div className="px-2 py-6 md:p-8 font-Poppins">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-6">
         <button

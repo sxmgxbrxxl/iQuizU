@@ -22,7 +22,7 @@ export default function ClassNameModal({
   };
 
   return (
-    <div className="font-Outfit fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm animate-fadeIn">
+    <div className="font-Poppins fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 mx-4 animate-slideUp">
         <h3 className="text-xl font-bold text-title">Enter Class Name</h3>
         <p className="text-subtext mb-4">

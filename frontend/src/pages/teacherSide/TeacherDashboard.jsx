@@ -494,7 +494,7 @@ export default function TeacherDashboard({ user, userDoc }) {
         className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
-        <div className="max-w-7xl mx-auto p-6 font-Outfit">
+        <div className="max-w-7xl mx-auto p-6 font-Poppins">
           {isMainDashboard ? (
             isInitialLoading ? (
               <DashboardSkeleton />
@@ -507,7 +507,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                   <div>
                     <h1 className="text-2xl md:text-3xl font-bold">
                       {getGreeting()},{" "}
-                      {userDoc?.firstName || user?.displayName || "Teacher"}! 👋
+                      {userDoc?.firstName || user?.displayName || "Teacher"}!
                     </h1>
                     <p className="text-md md:text-lg text-blue-100 mt-1">
                       Manage your classes, quizzes, and view student performance
@@ -537,85 +537,105 @@ export default function TeacherDashboard({ user, userDoc }) {
                 {/* Stat Cards - 4 cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   {/* Classes Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <School className="w-6 h-6 text-blue-700" strokeWidth={2} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Total Classes
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {totalClasses}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Active classes</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <School className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Active classes
+                      </p>
                     </div>
                   </div>
 
                   {/* Quizzes Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-emerald-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <NotebookPen className="w-6 h-6 text-emerald-700" strokeWidth={2} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Total Quizzes
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {totalQuizzes}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Created quizzes</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <NotebookPen className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Created quizzes
+                      </p>
                     </div>
                   </div>
 
                   {/* Students Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#f3e8ff] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <Users className="w-6 h-6 text-[#6b21a8]" strokeWidth={2} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Total Students
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {totalStudents}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Enrolled students</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <Users className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Enrolled students
+                      </p>
                     </div>
                   </div>
 
                   {/* Average Score Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#fef3c7] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <TrendingUp className="w-6 h-6 text-[#92400e]" strokeWidth={2} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Avg. Score
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {averageScore !== null ? (
                             <span>
                               {averageScore}
-                              <span className="text-xl text-gray-400 font-bold">%</span>
+                              <span className="text-2xl text-gray-500 font-bold">%</span>
                             </span>
                           ) : (
-                            <span className="text-2xl text-gray-300">N/A</span>
+                            <span className="text-3xl text-gray-400">N/A</span>
                           )}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Overall performance</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <TrendingUp className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Overall performance
+                      </p>
                     </div>
                   </div>
                 </div>
