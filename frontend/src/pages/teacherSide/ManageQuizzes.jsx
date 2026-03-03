@@ -18,6 +18,8 @@ import {
   Snowflake,
   ChevronLeft,
   ChevronRight,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import {
   collection,
@@ -991,17 +993,31 @@ export default function ManageQuizzes() {
                   <div
                     key={q.id}
                     onClick={() => setSelectedPublishedQuiz(q)}
-                    className="border border-gray-200 rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition bg-blue-50/40 hover:bg-blue-50 cursor-pointer"
+                    className="group relative overflow-hidden border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 bg-white hover:-translate-y-1 cursor-pointer"
                   >
-                    <div className="relative flex flex-row">
-                      <div className="flex flex-col w-full">
-                        <h4 className="text-sm md:text-lg font-bold text-title pr-6 break-words leading-tight mb-1">{q.title}</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
-                          {q.questionCount} Questions
-                        </p>
-                        <p className="text-gray-500 text-xs md:text-sm">
-                          {q.totalPoints} Points
-                        </p>
+                    {/* Top Accent Gradient */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300">
+                          <NotebookPen className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors duration-300" />
+                        </div>
+                      </div>
+
+                      <h4 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 leading-snug group-hover:text-blue-700 transition-colors">
+                        {q.title}
+                      </h4>
+
+                      <div className="mt-auto pt-4 flex items-center gap-4 border-t border-gray-100 pb-1">
+                        <div className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                          <Brain className="w-4 h-4 text-gray-400" />
+                          <span className="text-xs font-semibold">{q.questionCount} Qs</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                          <CheckCircle className="w-4 h-4 text-gray-400" />
+                          <span className="text-xs font-semibold">{q.totalPoints} Pts</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1176,32 +1192,44 @@ export default function ManageQuizzes() {
                   <div
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedSyncQuiz(a)}
-                    className="border border-gray-200 rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md hover:border-amber-300 transition-all cursor-pointer bg-white hover:bg-amber-50/40"
+                    className="group relative overflow-hidden border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 bg-white hover:-translate-y-1 hover:border-amber-300 cursor-pointer"
                   >
-                    <div className="flex flex-col md:flex-row md:items-start justify-between mb-2 md:mb-3 gap-1">
-                      <h4 className="text-sm md:text-lg font-bold text-title flex-1 leading-tight break-words">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-500 transition-colors duration-300 shrink-0">
+                          <Zap className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors duration-300" />
+                        </div>
+                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] md:text-xs font-bold rounded-full flex items-center gap-1.5 border border-emerald-200 whitespace-nowrap shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> LIVE
+                        </span>
+                      </div>
+
+                      <h4 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 leading-snug group-hover:text-amber-700 transition-colors">
                         {a.title}
                       </h4>
-                      <span className="self-start px-1.5 py-0.5 md:px-2 md:py-1 bg-emerald-50 text-emerald-600 text-[10px] md:text-xs font-semibold rounded-full flex items-center gap-1 border border-emerald-200 whitespace-nowrap">
-                        <Zap className="w-2.5 h-2.5 md:w-3 md:h-3" /> LIVE
-                      </span>
-                    </div>
 
-                    <div className="space-y-1 md:space-y-2 text-xs md:text-sm">
-                      <p className="text-gray-700 font-medium truncate">
-                        Class: {a.className}
-                      </p>
-                      <p className="text-gray-600">Students: {a.studentCount}</p>
-                      {a.dueDate && (
-                        <p className="text-gray-600">
-                          Due:{" "}
-                          {new Date(a.dueDate).toLocaleDateString("en-PH", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </p>
-                      )}
+                      <div className="mt-auto space-y-2 pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
+                          <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                          <span className="font-semibold truncate">{a.className}</span>
+                          <span className="text-gray-400 text-xs ml-auto bg-white px-1.5 py-0.5 rounded border border-gray-200">{a.studentCount} Students</span>
+                        </div>
+                        {a.dueDate && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
+                            <Clock className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span className="text-gray-500 text-xs">Due:</span>
+                            <span className="font-semibold text-xs truncate text-gray-700">
+                              {new Date(a.dueDate).toLocaleDateString("en-PH", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1284,26 +1312,15 @@ export default function ManageQuizzes() {
 
               {/* Actions */}
               <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedSyncQuiz(null);
-                      navigate(`/teacher/quiz-control/${selectedSyncQuiz.quizId}/${selectedSyncQuiz.classId}`);
-                    }}
-                    className="flex-1 bg-amber-50 text-amber-700 border border-amber-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-amber-100 transition"
-                  >
-                    <Zap className="w-4 h-4" /> Control
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedSyncQuiz(null);
-                      navigate(`/teacher/assign-quiz/${selectedSyncQuiz.quizId}?classId=${selectedSyncQuiz.classId}`);
-                    }}
-                    className="flex-1 bg-gray-100 text-gray-700 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-gray-200 transition"
-                  >
-                    <Pen className="w-4 h-4" /> Reassign
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setSelectedSyncQuiz(null);
+                    navigate(`/teacher/quiz-control/${selectedSyncQuiz.quizId}/${selectedSyncQuiz.classId}`);
+                  }}
+                  className="w-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-amber-100 transition"
+                >
+                  <Zap className="w-4 h-4" /> Control
+                </button>
                 <button
                   onClick={() => {
                     setSelectedSyncQuiz(null);
@@ -1358,27 +1375,41 @@ export default function ManageQuizzes() {
                   <div
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedAsyncQuiz(a)}
-                    className="border border-gray-200 rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md hover:border-violet-300 transition-all cursor-pointer bg-white hover:bg-violet-50/40"
+                    className="group relative overflow-hidden border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 bg-white hover:-translate-y-1 hover:border-violet-300 cursor-pointer"
                   >
-                    <h4 className="text-sm md:text-lg font-bold text-title mb-2 md:mb-3 leading-tight break-words">
-                      {a.title}
-                    </h4>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-purple-500"></div>
 
-                    <div className="space-y-1 md:space-y-2 text-xs md:text-sm">
-                      <p className="text-gray-700 font-medium truncate">
-                        Class: {a.className}
-                      </p>
-                      <p className="text-gray-600">Students: {a.studentCount}</p>
-                      {a.dueDate && (
-                        <p className="text-gray-600">
-                          Due:{" "}
-                          {new Date(a.dueDate).toLocaleDateString("en-PH", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </p>
-                      )}
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center group-hover:bg-violet-500 transition-colors duration-300 shrink-0">
+                          <Calendar className="w-5 h-5 text-violet-600 group-hover:text-white transition-colors duration-300" />
+                        </div>
+                      </div>
+
+                      <h4 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 leading-snug group-hover:text-violet-700 transition-colors">
+                        {a.title}
+                      </h4>
+
+                      <div className="mt-auto space-y-2 pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
+                          <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                          <span className="font-semibold truncate">{a.className}</span>
+                          <span className="text-gray-400 text-xs ml-auto bg-white px-1.5 py-0.5 rounded border border-gray-200">{a.studentCount} Students</span>
+                        </div>
+                        {a.dueDate && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-2 py-1.5 rounded-md border border-gray-100">
+                            <Clock className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span className="text-gray-500 text-xs">Due:</span>
+                            <span className="font-semibold text-xs truncate text-gray-700">
+                              {new Date(a.dueDate).toLocaleDateString("en-PH", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1437,26 +1468,15 @@ export default function ManageQuizzes() {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedAsyncQuiz(null);
-                        navigate(`/teacher/quiz-results/${selectedAsyncQuiz.quizId}/${selectedAsyncQuiz.classId}`);
-                      }}
-                      className="flex-1 bg-violet-50 text-violet-600 border border-violet-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-violet-100 transition"
-                    >
-                      <Eye className="w-4 h-4" /> Results
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedAsyncQuiz(null);
-                        navigate(`/teacher/assign-quiz/${selectedAsyncQuiz.quizId}?classId=${selectedAsyncQuiz.classId}`);
-                      }}
-                      className="flex-1 bg-gray-100 text-gray-700 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-gray-200 transition"
-                    >
-                      <Pen className="w-4 h-4" /> Reassign
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedAsyncQuiz(null);
+                      navigate(`/teacher/quiz-results/${selectedAsyncQuiz.quizId}/${selectedAsyncQuiz.classId}`);
+                    }}
+                    className="w-full bg-violet-50 text-violet-600 border border-violet-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-violet-100 transition"
+                  >
+                    <Eye className="w-4 h-4" /> Results
+                  </button>
                   <button
                     onClick={() => {
                       setSelectedAsyncQuiz(null);
@@ -2133,8 +2153,8 @@ export default function ManageQuizzes() {
                         </span>
                         {tab.label}
                         <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-slate-200 text-slate-600"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-slate-200 text-slate-600"
                           }`}>
                           {count}
                         </span>

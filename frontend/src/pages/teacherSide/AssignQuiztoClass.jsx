@@ -9,7 +9,6 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
-  deleteDoc,
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -26,7 +25,6 @@ import {
   Shuffle,
   Trophy,
   Eye,
-  AlertCircle,
   Loader2,
   School,
   X,
@@ -43,7 +41,7 @@ export default function AssignQuizToClass() {
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
-  const [existingAssignment, setExistingAssignment] = useState(null);
+
   const [generatedQuizCode, setGeneratedQuizCode] = useState(null);
   const [showStudentModal, setShowStudentModal] = useState(false);
 
@@ -134,28 +132,7 @@ export default function AssignQuizToClass() {
       const classInfo = { id: classSnap.id, ...classSnap.data() };
       setClassData(classInfo);
 
-      // Check existing assignment
-      const existingCheck = await checkExistingAssignment(classId);
 
-      if (existingCheck.exists) {
-        setExistingAssignment(existingCheck);
-
-        setAssignmentSettings((prev) => ({
-          ...prev,
-          mode: existingCheck.mode,
-          dueDate: existingCheck.dueDate || "",
-          instructions: existingCheck.instructions || "",
-          timeLimit: existingCheck.settings.timeLimit || null,
-          deadline: existingCheck.settings.deadline || null,
-          shuffleQuestions: existingCheck.settings.shuffleQuestions || false,
-          shuffleChoices: existingCheck.settings.shuffleChoices || false,
-          showResults: existingCheck.settings.showResults !== false,
-          allowReview: existingCheck.settings.allowReview !== false,
-          showCorrectAnswers: existingCheck.settings.showCorrectAnswers !== false,
-          passingScore: existingCheck.settings.passingScore || 60,
-          maxAttempts: existingCheck.settings.maxAttempts || 1,
-        }));
-      }
 
       // Fetch Students
       const studentsRef = collection(db, "users");
@@ -250,48 +227,7 @@ export default function AssignQuizToClass() {
     );
   };
 
-  const handleReassignQuiz = async () => {
-    if (!existingAssignment || !existingAssignment.exists) return;
 
-    const oldMode = existingAssignment.mode;
-    const newMode = assignmentSettings.mode;
-    const modeChanged = oldMode !== newMode;
-
-    let confirmMessage = `This quiz is already assigned to this class.`;
-
-    if (modeChanged) {
-      confirmMessage += ` Mode will change from ${oldMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"} to ${newMode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"}.`;
-    }
-
-    confirmMessage += ` Do you want to REPLACE the existing assignment with the new settings?`;
-
-    setConfirmDialog({
-      isOpen: true,
-      title: modeChanged ? "Mode Change Detected" : "Replace Existing Assignment?",
-      message: confirmMessage,
-      confirmLabel: "Replace",
-      color: modeChanged ? "orange" : "blue",
-      onConfirm: async () => {
-        setConfirmDialog({ isOpen: false });
-        setAssigning(true);
-
-        try {
-          const deletePromises = existingAssignment.assignmentDocs.map((doc) =>
-            deleteDoc(doc.ref)
-          );
-          await Promise.all(deletePromises);
-
-          await createNewAssignments();
-        } catch (error) {
-          console.error("Error reassigning quiz:", error);
-          showToast("error", "Reassignment Failed", "Error reassigning quiz. Please try again.");
-        } finally {
-          setAssigning(false);
-        }
-      },
-      onCancel: () => setConfirmDialog({ isOpen: false }),
-    });
-  };
 
   const createNewAssignments = async () => {
     const currentUser = auth.currentUser;
@@ -392,7 +328,7 @@ export default function AssignQuizToClass() {
         onConfirm: async () => {
           setConfirmDialog({ isOpen: false });
           await Promise.all(validPromises);
-          showToast("success", "Quiz Assigned!", `Quiz ${existingAssignment?.exists ? 'reassigned' : 'assigned'} to ${validPromises.length} student(s) in ${classData.name} successfully!`);
+          showToast("success", "Quiz Assigned!", `Quiz assigned to ${validPromises.length} student(s) in ${classData.name} successfully!`);
           setTimeout(() => navigate(`/teacher/class/${classId}`), 1500);
         },
         onCancel: () => setConfirmDialog({ isOpen: false }),
@@ -402,7 +338,7 @@ export default function AssignQuizToClass() {
 
     await Promise.all(validPromises);
 
-    showToast("success", "Quiz Assigned!", `Quiz ${existingAssignment?.exists ? 'reassigned' : 'assigned'} to ${validPromises.length} student(s) in ${classData.name} successfully!`);
+    showToast("success", "Quiz Assigned!", `Quiz assigned to ${validPromises.length} student(s) in ${classData.name} successfully!`);
 
     // Always go back to class page after assignment
     setTimeout(() => navigate(`/teacher/class/${classId}`), 1500);
@@ -431,8 +367,10 @@ export default function AssignQuizToClass() {
       return;
     }
 
-    if (existingAssignment?.exists) {
-      await handleReassignQuiz();
+    // Check if quiz is already assigned to this class
+    const existingCheck = await checkExistingAssignment(classId);
+    if (existingCheck.exists) {
+      showToast("error", "Already Assigned", "This quiz is already assigned to this class. Please delete the existing assignment first before assigning again.");
       return;
     }
 
@@ -514,28 +452,7 @@ export default function AssignQuizToClass() {
         )}
       </div>
 
-      {existingAssignment?.exists && (
-        <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-xl">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="font-bold text-yellow-900 mb-2">
-                Quiz Already Assigned
-              </h4>
-              <p className="text-sm text-yellow-800 mb-2">
-                This quiz is already assigned to this class in{" "}
-                <span className="font-bold">
-                  {existingAssignment.mode === "synchronous" ? "SYNCHRONOUS (Live)" : "ASYNCHRONOUS (Self-Paced)"}
-                </span>{" "}
-                mode.
-              </p>
-              <p className="text-sm text-yellow-800">
-                You can modify the settings below (including the mode) and click "Reassign Quiz" to replace the existing assignment.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
         <div className="lg:col-span-1 space-y-4 md:space-y-6">
@@ -573,11 +490,7 @@ export default function AssignQuizToClass() {
                     ? "You control when students can access the quiz"
                     : "Students can take quiz anytime before due date"}
                 </p>
-                {existingAssignment?.exists && existingAssignment.mode !== assignmentSettings.mode && (
-                  <p className="text-xs text-orange-700 font-semibold mt-2 bg-orange-100 p-2 rounded">
-                    ⚠️ Mode will change from {existingAssignment.mode === "synchronous" ? "LIVE" : "SELF-PACED"} to {assignmentSettings.mode === "synchronous" ? "LIVE" : "SELF-PACED"}
-                  </p>
-                )}
+
               </div>
 
               {isSynchronous && (
@@ -857,7 +770,7 @@ export default function AssignQuizToClass() {
             <p className="text-sm text-gray-600">
               {selectedStudents.length === 0
                 ? "No students selected"
-                : `Quiz will be ${existingAssignment?.exists ? 'reassigned' : 'assigned'} to ${selectedStudents.length} out of ${students.length} student${students.length !== 1 ? "s" : ""}`}
+                : `Quiz will be assigned to ${selectedStudents.length} out of ${students.length} student${students.length !== 1 ? "s" : ""}`}
             </p>
             {isSynchronous && (
               <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
@@ -1005,7 +918,7 @@ export default function AssignQuizToClass() {
           {assigning ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              {existingAssignment?.exists ? "Reassigning..." : "Assigning..."}
+              Assigning...
             </>
           ) : (
             <>
@@ -1014,13 +927,8 @@ export default function AssignQuizToClass() {
               ) : (
                 <Send className="w-5 h-5" />
               )}
-              {existingAssignment?.exists ? (
-                `Reassign Quiz to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? "s" : ""
-                }`
-              ) : (
-                `Assign Quiz to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? "s" : ""
-                }`
-              )}
+              {`Assign Quiz to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? "s" : ""
+                }`}
             </>
           )}
         </button>
