@@ -766,7 +766,7 @@ export default function ReportsAnalytics() {
 
   if (loading) {
     return (
-      <div className="py-4 px-3 md:py-6 md:px-8 font-Outfit">
+      <div className="py-4 px-3 md:py-6 md:px-8 font-Poppins">
         <div className="flex items-center gap-3">
           <BarChart2 className="w-7 h-7 md:w-8 md:h-8 text-blue-500 mb-4 md:mb-6" />
           <div className="flex flex-col mb-4 md:mb-6">
@@ -801,7 +801,7 @@ export default function ReportsAnalytics() {
   }
 
   return (
-    <div className="py-4 px-3 md:py-6 md:px-8 font-Outfit">
+    <div className="py-4 px-3 md:py-6 md:px-8 font-Poppins">
       {/* Toast Notification */}
       <Toast toast={toast} onClose={clearToast} />
 

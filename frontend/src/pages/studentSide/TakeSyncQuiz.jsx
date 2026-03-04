@@ -382,6 +382,41 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [quizStarted]);
 
+  // Prevent closing tab or going back
+  useEffect(() => {
+    if (!quizStarted || showResults) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave the quiz? Your progress might be lost.";
+      return "Are you sure you want to leave the quiz? Your progress might be lost.";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Push initial state to trap back button
+    window.history.pushState(null, "", window.location.href);
+
+    const handlePopState = (e) => {
+      window.history.pushState(null, "", window.location.href);
+      setConfirmDialog({
+        isOpen: true,
+        title: "Action Not Allowed",
+        message: "You cannot navigate back while taking a quiz. Please submit your answers first.",
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [quizStarted, showResults]);
+
   const shuffleArray = (array) => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {

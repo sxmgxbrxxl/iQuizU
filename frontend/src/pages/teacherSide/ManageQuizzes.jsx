@@ -18,6 +18,8 @@ import {
   Snowflake,
   ChevronLeft,
   ChevronRight,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import {
   collection,
@@ -934,13 +936,11 @@ export default function ManageQuizzes() {
   // RENDER
   // -----------------------------------------------------------------
   return (
-    <div className="p-4 md:p-8 font-Outfit animate-fadeIn">
+    <div className="p-4 md:p-8 font-Poppins animate-fadeIn">
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-6">
-        <NotebookPen className="w-8 h-8 text-blue-600 hidden md:block" />
         <div className="flex flex-col">
           <h2 className="text-2xl font-bold text-title flex items-center gap-2">
-            <NotebookPen className="w-6 h-6 text-blue-600 md:hidden" />
             Manage Quizzes
           </h2>
           <p className="text-sm md:text-md font-light text-subtext">
@@ -971,8 +971,8 @@ export default function ManageQuizzes() {
       </div>
 
       {/* Published Quizzes */}
-      <div className="bg-white rounded-2xl border border-gray-200 border-l-4 border-l-blue-400 shadow-sm p-6 mb-8">
-        <h3 className="text-xl text-title font-semibold mb-4">
+      <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
+        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 text-left">
           Your Published Quizzes
         </h3>
 
@@ -991,17 +991,35 @@ export default function ManageQuizzes() {
                   <div
                     key={q.id}
                     onClick={() => setSelectedPublishedQuiz(q)}
-                    className="border border-gray-200 rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition bg-blue-50/40 hover:bg-blue-50 cursor-pointer"
+                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
                   >
-                    <div className="relative flex flex-row">
-                      <div className="flex flex-col w-full">
-                        <h4 className="text-sm md:text-lg font-bold text-title pr-6 break-words leading-tight mb-1">{q.title}</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                    {/* Background blob using blue scale */}
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <NotebookPen className="w-6 h-6 text-blue-700" strokeWidth={2} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                          {q.title}
+                        </h3>
+                      </div>
+
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
+                        Published quiz with {q.questionCount} questions totaling {q.totalPoints} points.
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
+                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
+                          Published
+                        </span>
+                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
                           {q.questionCount} Questions
-                        </p>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        </span>
+                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
                           {q.totalPoints} Points
-                        </p>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1014,7 +1032,7 @@ export default function ManageQuizzes() {
 
       {/* Published Quiz Detail Dialog */}
       {mounted && selectedPublishedQuiz && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn" onClick={() => setSelectedPublishedQuiz(null)}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedPublishedQuiz(null)}>
           <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
             {/* Dialog Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-blue-50/50">
@@ -1148,11 +1166,11 @@ export default function ManageQuizzes() {
 
 
       {/* Synchronous Quizzes Section */}
-      <div className="mb-8 bg-white rounded-2xl border border-gray-200 border-l-4 border-l-amber-400 shadow-sm p-6">
-        <h3 className="text-xl text-title font-semibold mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-amber-500" /> Synchronous Quizzes
+      <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
+        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
+          Synchronous Quizzes
           {synchronousQuizzes.length > 0 && (
-            <span className="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold ml-2">
               {synchronousQuizzes.length}
             </span>
           )}
@@ -1176,32 +1194,38 @@ export default function ManageQuizzes() {
                   <div
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedSyncQuiz(a)}
-                    className="border border-gray-200 rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md hover:border-amber-300 transition-all cursor-pointer bg-white hover:bg-amber-50/40"
+                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
                   >
-                    <div className="flex flex-col md:flex-row md:items-start justify-between mb-2 md:mb-3 gap-1">
-                      <h4 className="text-sm md:text-lg font-bold text-title flex-1 leading-tight break-words">
-                        {a.title}
-                      </h4>
-                      <span className="self-start px-1.5 py-0.5 md:px-2 md:py-1 bg-emerald-50 text-emerald-600 text-[10px] md:text-xs font-semibold rounded-full flex items-center gap-1 border border-emerald-200 whitespace-nowrap">
-                        <Zap className="w-2.5 h-2.5 md:w-3 md:h-3" /> LIVE
-                      </span>
-                    </div>
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#fef3c7] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
 
-                    <div className="space-y-1 md:space-y-2 text-xs md:text-sm">
-                      <p className="text-gray-700 font-medium truncate">
-                        Class: {a.className}
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <Zap className="w-6 h-6 text-[#92400e]" strokeWidth={2} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                          {a.title}
+                        </h3>
+                      </div>
+
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
+                        Assigned to {a.className} • {a.studentCount} Students
                       </p>
-                      <p className="text-gray-600">Students: {a.studentCount}</p>
-                      {a.dueDate && (
-                        <p className="text-gray-600">
-                          Due:{" "}
-                          {new Date(a.dueDate).toLocaleDateString("en-PH", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </p>
-                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
+                        <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#d97706] animate-pulse"></span>
+                          LIVE
+                        </span>
+                        <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full">
+                          Sync
+                        </span>
+                        {a.dueDate && (
+                          <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Due {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1213,7 +1237,7 @@ export default function ManageQuizzes() {
 
       {/* Sync Quiz Detail Dialog */}
       {mounted && selectedSyncQuiz && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn" onClick={() => setSelectedSyncQuiz(null)}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedSyncQuiz(null)}>
           <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
             {/* Dialog Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-amber-50/50">
@@ -1284,26 +1308,15 @@ export default function ManageQuizzes() {
 
               {/* Actions */}
               <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedSyncQuiz(null);
-                      navigate(`/teacher/quiz-control/${selectedSyncQuiz.quizId}/${selectedSyncQuiz.classId}`);
-                    }}
-                    className="flex-1 bg-amber-50 text-amber-700 border border-amber-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-amber-100 transition"
-                  >
-                    <Zap className="w-4 h-4" /> Control
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedSyncQuiz(null);
-                      navigate(`/teacher/assign-quiz/${selectedSyncQuiz.quizId}?classId=${selectedSyncQuiz.classId}`);
-                    }}
-                    className="flex-1 bg-gray-100 text-gray-700 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-gray-200 transition"
-                  >
-                    <Pen className="w-4 h-4" /> Reassign
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setSelectedSyncQuiz(null);
+                    navigate(`/teacher/quiz-control/${selectedSyncQuiz.quizId}/${selectedSyncQuiz.classId}`);
+                  }}
+                  className="w-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-amber-100 transition"
+                >
+                  <Zap className="w-4 h-4" /> Control
+                </button>
                 <button
                   onClick={() => {
                     setSelectedSyncQuiz(null);
@@ -1332,11 +1345,11 @@ export default function ManageQuizzes() {
       )
       }
 
-      <div className="mb-8 bg-white rounded-2xl border border-gray-200 border-l-4 border-l-violet-400 shadow-sm p-6">
-        <h3 className="text-xl text-title font-semibold mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-violet-500" /> Asynchronous Quizzes
+      <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
+        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
+          Asynchronous Quizzes
           {assignedQuizzes.length > 0 && (
-            <span className="bg-violet-50 text-violet-700 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold ml-2">
               {assignedQuizzes.length}
             </span>
           )}
@@ -1358,27 +1371,34 @@ export default function ManageQuizzes() {
                   <div
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedAsyncQuiz(a)}
-                    className="border border-gray-200 rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md hover:border-violet-300 transition-all cursor-pointer bg-white hover:bg-violet-50/40"
+                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
                   >
-                    <h4 className="text-sm md:text-lg font-bold text-title mb-2 md:mb-3 leading-tight break-words">
-                      {a.title}
-                    </h4>
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#f3e8ff] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
 
-                    <div className="space-y-1 md:space-y-2 text-xs md:text-sm">
-                      <p className="text-gray-700 font-medium truncate">
-                        Class: {a.className}
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <Calendar className="w-6 h-6 text-[#6b21a8]" strokeWidth={2} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                          {a.title}
+                        </h3>
+                      </div>
+
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
+                        Assigned to {a.className} • {a.studentCount} Students
                       </p>
-                      <p className="text-gray-600">Students: {a.studentCount}</p>
-                      {a.dueDate && (
-                        <p className="text-gray-600">
-                          Due:{" "}
-                          {new Date(a.dueDate).toLocaleDateString("en-PH", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </p>
-                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
+                        <span className="px-3.5 py-1.5 bg-[#e9d5ff] text-[#6b21a8] text-sm font-medium rounded-full">
+                          Async
+                        </span>
+                        {a.dueDate && (
+                          <span className="px-3.5 py-1.5 bg-[#e9d5ff] text-[#6b21a8] text-sm font-medium rounded-full flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Due {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1391,7 +1411,7 @@ export default function ManageQuizzes() {
       {/* Async Quiz Detail Dialog */}
       {
         mounted && selectedAsyncQuiz && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn" onClick={() => setSelectedAsyncQuiz(null)}>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedAsyncQuiz(null)}>
             <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
               {/* Dialog Header */}
               <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-violet-50/50">
@@ -1437,26 +1457,15 @@ export default function ManageQuizzes() {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedAsyncQuiz(null);
-                        navigate(`/teacher/quiz-results/${selectedAsyncQuiz.quizId}/${selectedAsyncQuiz.classId}`);
-                      }}
-                      className="flex-1 bg-violet-50 text-violet-600 border border-violet-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-violet-100 transition"
-                    >
-                      <Eye className="w-4 h-4" /> Results
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedAsyncQuiz(null);
-                        navigate(`/teacher/assign-quiz/${selectedAsyncQuiz.quizId}?classId=${selectedAsyncQuiz.classId}`);
-                      }}
-                      className="flex-1 bg-gray-100 text-gray-700 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-gray-200 transition"
-                    >
-                      <Pen className="w-4 h-4" /> Reassign
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedAsyncQuiz(null);
+                      navigate(`/teacher/quiz-results/${selectedAsyncQuiz.quizId}/${selectedAsyncQuiz.classId}`);
+                    }}
+                    className="w-full bg-violet-50 text-violet-600 border border-violet-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-violet-100 transition"
+                  >
+                    <Eye className="w-4 h-4" /> Results
+                  </button>
                   <button
                     onClick={() => {
                       setSelectedAsyncQuiz(null);
@@ -1488,7 +1497,7 @@ export default function ManageQuizzes() {
       {/* Manual Quiz Creation Modal */}
       {
         mounted && showManualModal && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4 font-Outfit animate-fadeIn">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4 font-Poppins animate-fadeIn">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] flex flex-col animate-slideUp">
               {/* Header */}
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
@@ -1856,7 +1865,7 @@ export default function ManageQuizzes() {
       {/* PDF Modal */}
       {
         mounted && showPdfModal && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Outfit animate-fadeIn">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-slideUp">
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
                 <div className="flex items-center gap-3">
@@ -1986,7 +1995,7 @@ export default function ManageQuizzes() {
       {/* Preview Modal */}
       {
         mounted && showPreviewModal && generatedQuiz && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 md:p-4 font-Outfit animate-fadeIn">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 md:p-4 font-Poppins animate-fadeIn">
             <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] md:max-h-[90vh] flex flex-col animate-slideUp">
               {/* Header */}
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
@@ -2133,8 +2142,8 @@ export default function ManageQuizzes() {
                         </span>
                         {tab.label}
                         <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-slate-200 text-slate-600"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-slate-200 text-slate-600"
                           }`}>
                           {count}
                         </span>

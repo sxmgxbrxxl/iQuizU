@@ -656,7 +656,7 @@ export default function QuizControlPanel() {
   };
 
   return (
-    <div className="p-4 md:p-8 font-Outfit">
+    <div className="p-4 md:p-8 font-Poppins">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2">
         <button
           onClick={() => navigate("/teacher/quizzes")}

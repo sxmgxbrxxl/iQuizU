@@ -684,14 +684,14 @@ export default function ViewClassPage() {
 
   if (!classData) {
     return (
-      <div className="flex items-center justify-center min-h-screen font-Outfit">
+      <div className="flex items-center justify-center min-h-screen font-Poppins">
         <p className="text-subtext">Class not found</p>
       </div>
     );
   }
 
   return (
-    <div className="px-2 py-6 md:p-8 font-Outfit animate-fadeIn">
+    <div className="px-2 py-6 md:p-8 font-Poppins animate-fadeIn">
 
       {accountCreationProgress && creatingAccounts && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
@@ -703,21 +703,26 @@ export default function ViewClassPage() {
       )}
 
       {/* CLASS INFO SECTION */}
-      <div className="mb-4 md:mb-6 bg-white border border-gray-200 rounded-xl p-3 md:p-4">
-        <div className="mb-4 md:mb-6 pb-4 md:pb-6 border-b border-gray-200">
-          <h2 className="text-xl md:text-3xl font-bold text-gray-900">{classData?.name}</h2>
-          <div className="grid grid-cols-3 gap-2 md:gap-4 mt-3 md:mt-4">
-            <div>
-              <p className="text-xs md:text-sm text-gray-600 font-semibold uppercase tracking-wider">Class No.</p>
-              <p className="text-base md:text-xl font-bold text-gray-800 mt-1">#{classData?.classNo || "N/A"}</p>
-            </div>
-            <div>
-              <p className="text-xs md:text-sm text-gray-600 font-semibold uppercase tracking-wider">Code</p>
-              <p className="text-base md:text-xl font-bold text-gray-800 mt-1">{classData?.code || "N/A"}</p>
-            </div>
-            <div>
-              <p className="text-xs md:text-sm text-gray-600 font-semibold uppercase tracking-wider">Students</p>
-              <p className="text-base md:text-xl font-bold text-gray-800 mt-1">{students.length}</p>
+      <div className="mb-4 md:mb-6 relative bg-blue-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-blue-500">
+        {/* Background blob design */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col h-full gap-3">
+          <div className="mb-1 md:mb-2 pb-4 md:pb-6 border-b border-blue-400/50">
+            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{classData?.name}</h2>
+            <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4 md:mt-6">
+              <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
+                <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Class No.</p>
+                <p className="text-lg md:text-2xl font-bold text-white mt-1">#{classData?.classNo || "N/A"}</p>
+              </div>
+              <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
+                <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Code</p>
+                <p className="text-lg md:text-2xl font-bold text-white mt-1">{classData?.code || "N/A"}</p>
+              </div>
+              <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
+                <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Students</p>
+                <p className="text-lg md:text-2xl font-bold text-white mt-1">{students.length}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -766,8 +771,8 @@ export default function ViewClassPage() {
       </div>
 
       {activeTab === "students" ? (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden animate-slideIn">
-          <div className="p-4 md:p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
+        <div className="bg-white border border-blue-500 rounded-2xl shadow-sm overflow-hidden animate-slideIn">
+          <div className="p-4 md:p-6 border-b border-blue-500 bg-gradient-to-r from-green-50 to-blue-50">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <span className="text-lg md:text-xl font-bold text-title">Students List</span>
@@ -1144,7 +1149,7 @@ export default function ViewClassPage() {
       )}
 
       {mounted && showAssignQuizModal && classData && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fadeIn font-Outfit">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fadeIn font-Poppins">
           <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-slideUp">
             <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
               <div className="flex items-center gap-2 md:gap-3 min-w-0">

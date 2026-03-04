@@ -239,7 +239,7 @@ export default function TeacherProfile({ user, userDoc }) {
     }
 
     return (
-        <div className="font-Outfit animate-fadeIn">
+        <div className="font-Poppins animate-fadeIn">
             {/* Toast Notification */}
             <Toast toast={toast} onClose={clearToast} />
 

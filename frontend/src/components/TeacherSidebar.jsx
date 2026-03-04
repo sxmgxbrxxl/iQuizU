@@ -166,6 +166,9 @@ export default function Sidebar({ user, userDoc }) {
     if (path === "/teacher") {
       return location.pathname === "/teacher";
     }
+    if (path === "quizzes") {
+      return location.pathname.includes(path) && !location.pathname.includes("archives");
+    }
     return location.pathname.includes(path);
   };
 
@@ -198,7 +201,7 @@ export default function Sidebar({ user, userDoc }) {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <img src={LOGO} alt="Logo" className="w-10 h-10" />
-            <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
+            <h1 className="text-2xl font-bold font-Poppins leading-tight text-white">iQuizU</h1>
           </div>
         </div>
 
@@ -230,8 +233,8 @@ export default function Sidebar({ user, userDoc }) {
                       {userInitial}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-Outfit font-semibold text-sm text-gray-800 truncate">{userName}</span>
-                      <span className="font-Outfit text-xs text-gray-400 truncate">{userEmail}</span>
+                      <span className="font-Poppins font-semibold text-sm text-gray-800 truncate">{userName}</span>
+                      <span className="font-Poppins text-xs text-gray-400 truncate">{userEmail}</span>
                     </div>
                   </div>
                 </div>
@@ -246,7 +249,7 @@ export default function Sidebar({ user, userDoc }) {
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-150 group"
                   >
                     <User size={18} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span className="font-Outfit text-sm font-medium">My Profile</span>
+                    <span className="font-Poppins text-sm font-medium">My Profile</span>
                   </button>
                 </div>
 
@@ -260,7 +263,7 @@ export default function Sidebar({ user, userDoc }) {
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 group"
                   >
                     <LogOut size={18} className="text-red-400 group-hover:text-red-500 transition-colors" />
-                    <span className="font-Outfit text-sm font-medium">Logout</span>
+                    <span className="font-Poppins text-sm font-medium">Logout</span>
                   </button>
                 </div>
               </div>
@@ -296,7 +299,7 @@ export default function Sidebar({ user, userDoc }) {
           {/* Navigation Header with Toggle */}
           <div className={`flex items-center mb-3 ${shouldExpand ? "justify-between px-2" : "justify-center"}`}>
             {shouldExpand && (
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Outfit">Navigation</span>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Poppins">Navigation</span>
             )}
             {/* Desktop: sidebar collapse/expand toggle */}
             <button
@@ -332,16 +335,16 @@ export default function Sidebar({ user, userDoc }) {
                 style={staggerDelay(index)}
                 className={`flex items-center rounded-xl transition-all duration-200 group animate-sidebarSlideIn
                 ${shouldExpand
-                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" : "text-gray-500 hover:bg-gray-100"}`
                     : `justify-center py-3 ${!isActive(item.to) ? "text-gray-500 hover:bg-gray-100" : ""}`
                   }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-blue-600 shadow-lg shadow-blue-600/25" : ""
                   }`}>
                   <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
+                  className={`font-Poppins font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -362,16 +365,16 @@ export default function Sidebar({ user, userDoc }) {
                 style={staggerDelay(1)}
                 className={`flex items-center rounded-xl transition-all duration-200 group w-full animate-sidebarSlideIn
                 ${shouldExpand
-                    ? `gap-3 px-3 py-2.5 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    ? `gap-3 px-3 py-2.5 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" : "text-gray-500 hover:bg-gray-100"}`
                     : `justify-center py-3 ${!(location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive')) ? "text-gray-500 hover:bg-gray-100" : ""}`
                   }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "bg-blue-600 shadow-lg shadow-blue-600/25" : ""
                   }`}>
                   <BookOpen size={22} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive') ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
+                  className={`font-Poppins font-medium text-sm transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -381,9 +384,9 @@ export default function Sidebar({ user, userDoc }) {
                 {shouldExpand && (
                   <div className="flex items-center gap-2">
                     {classes.length > 0 && (
-                      <span className={`text-xs font-bold font-Outfit px-2 py-0.5 rounded-full min-w-[20px] text-center ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive')
+                      <span className={`text-xs font-bold font-Poppins px-2 py-0.5 rounded-full min-w-[20px] text-center ${location.pathname.includes('/teacher/class') && !location.pathname.includes('/archive')
                         ? "bg-white/20 text-white"
-                        : "bg-teal-50 text-teal-600"
+                        : "bg-blue-50 text-blue-600"
                         }`}>
                         {classes.length}
                       </span>
@@ -399,21 +402,21 @@ export default function Sidebar({ user, userDoc }) {
               </button>
 
               {shouldExpand && classesOpen && (
-                <div className="mt-1 ml-3 border-l-2 border-teal-200 pl-3 animate-expandDown overflow-hidden">
+                <div className="mt-1 ml-3 border-l-2 border-blue-200 pl-3 animate-expandDown overflow-hidden">
                   {/* Add Class Button */}
                   <Link
                     to="/teacher/classes/add"
                     onClick={() => setIsMobileOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 my-1 rounded-lg text-teal-600 hover:bg-teal-50 hover:shadow-sm transition-all duration-200 group animate-popIn"
+                    className="flex items-center gap-3 px-3 py-2.5 my-1 rounded-lg text-blue-600 hover:bg-blue-50 hover:shadow-sm transition-all duration-200 group animate-popIn"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center group-hover:bg-teal-200 group-hover:rotate-90 transition-all duration-300 flex-shrink-0">
-                      <Plus size={16} className="text-teal-600" />
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 group-hover:rotate-90 transition-all duration-300 flex-shrink-0">
+                      <Plus size={16} className="text-blue-600" />
                     </div>
-                    <span className="font-Outfit text-sm font-semibold">Add Class</span>
+                    <span className="font-Poppins text-sm font-semibold">Add Class</span>
                   </Link>
 
                   {classes.length === 0 && (
-                    <div className="px-3 py-3 text-gray-400 text-sm italic font-Outfit text-center animate-fadeIn">
+                    <div className="px-3 py-3 text-gray-400 text-sm italic font-Poppins text-center animate-fadeIn">
                       No classes yet
                     </div>
                   )}
@@ -447,24 +450,24 @@ export default function Sidebar({ user, userDoc }) {
                               setHoveredClass(null);
                             }}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isClassActive(cls.id)
-                              ? "bg-teal-50 text-teal-700 shadow-sm"
+                              ? "bg-blue-50 text-blue-700 shadow-sm"
                               : "text-gray-600 hover:bg-gray-50 hover:text-gray-800 hover:translate-x-1"
                               }`}
                           >
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-all duration-300 ${isClassActive(cls.id) ? "bg-teal-500 scale-125 animate-activePulse" : "bg-green-400 group-hover:scale-150 group-hover:bg-teal-400"
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-all duration-300 ${isClassActive(cls.id) ? "bg-blue-600 scale-125 animate-activePulse" : "bg-green-400 group-hover:scale-150 group-hover:bg-blue-400"
                               }`}></div>
                             <div className="flex flex-col flex-1 min-w-0">
-                              <span className="font-Outfit text-sm font-medium truncate">
+                              <span className="font-Poppins text-sm font-medium truncate">
                                 {cls.code || "No Code"}
                               </span>
-                              <span className={`font-Outfit text-xs truncate transition-colors duration-200 ${isClassActive(cls.id) ? "text-teal-500" : "text-gray-400"
+                              <span className={`font-Poppins text-xs truncate transition-colors duration-200 ${isClassActive(cls.id) ? "text-blue-500" : "text-gray-400"
                                 }`}>
                                 Section {cls.classNo || "—"}
                               </span>
                             </div>
-                            <span className={`text-xs font-Outfit font-medium flex-shrink-0 px-1.5 py-0.5 rounded-md transition-all duration-200 ${isClassActive(cls.id)
-                              ? "bg-teal-100 text-teal-600"
-                              : "bg-gray-100 text-gray-500 group-hover:bg-teal-100 group-hover:text-teal-600"
+                            <span className={`text-xs font-Poppins font-medium flex-shrink-0 px-1.5 py-0.5 rounded-md transition-all duration-200 ${isClassActive(cls.id)
+                              ? "bg-blue-100 text-blue-600"
+                              : "bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600"
                               }`}>
                               {cls.studentCount || 0}
                             </span>
@@ -491,16 +494,16 @@ export default function Sidebar({ user, userDoc }) {
                 style={staggerDelay(index + 2)}
                 className={`flex items-center rounded-xl transition-all duration-200 group animate-sidebarSlideIn
                 ${shouldExpand
-                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" : "text-gray-500 hover:bg-gray-100"}`
                     : `justify-center py-3 ${!isActive(item.to) ? "text-gray-500 hover:bg-gray-100" : ""}`
                   }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-blue-600 shadow-lg shadow-blue-600/25" : ""
                   }`}>
                   <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
+                  className={`font-Poppins font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -521,16 +524,16 @@ export default function Sidebar({ user, userDoc }) {
                 style={staggerDelay(4)}
                 className={`flex items-center rounded-xl transition-all duration-200 group w-full animate-sidebarSlideIn
                 ${shouldExpand
-                    ? `gap-3 px-3 py-2.5 ${location.pathname.includes('/teacher/archives') ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    ? `gap-3 px-3 py-2.5 ${location.pathname.includes('/teacher/archives') ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" : "text-gray-500 hover:bg-gray-100"}`
                     : `justify-center py-3 ${!location.pathname.includes('/teacher/archives') ? "text-gray-500 hover:bg-gray-100" : ""}`
                   }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && location.pathname.includes('/teacher/archives') ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && location.pathname.includes('/teacher/archives') ? "bg-blue-600 shadow-lg shadow-blue-600/25" : ""
                   }`}>
                   <Archive size={22} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/archives') ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
+                  className={`font-Poppins font-medium text-sm transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -548,27 +551,27 @@ export default function Sidebar({ user, userDoc }) {
               </button>
 
               {shouldExpand && archiveOpen && (
-                <div className="mt-1 ml-3 space-y-1 border-l-2 border-teal-200 pl-3 animate-expandDown overflow-hidden">
+                <div className="mt-1 ml-3 space-y-1 border-l-2 border-blue-200 pl-3 animate-expandDown overflow-hidden">
                   <Link
                     to="/teacher/archives/classes"
                     onClick={() => setIsMobileOpen(false)}
                     style={staggerDelay(0)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-teal-50 hover:text-teal-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/classes' ? 'bg-teal-50 text-teal-700' : ''
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/classes' ? 'bg-blue-50 text-blue-700' : ''
                       }`}
                   >
-                    <BookOpen size={18} className="text-amber-500 group-hover:scale-110 transition-all duration-300" />
-                    <span className="font-Outfit text-sm font-medium">Archived Classes</span>
+                    <BookOpen size={18} className={`transition-all duration-300 group-hover:scale-110 ${location.pathname === '/teacher/archives/classes' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'}`} />
+                    <span className="font-Poppins text-sm font-medium">Archived Classes</span>
                   </Link>
 
                   <Link
                     to="/teacher/archives/quizzes"
                     onClick={() => setIsMobileOpen(false)}
                     style={staggerDelay(1)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-teal-50 hover:text-teal-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/quizzes' ? 'bg-teal-50 text-teal-700' : ''
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/quizzes' ? 'bg-blue-50 text-blue-700' : ''
                       }`}
                   >
-                    <FileText size={18} className="text-amber-500 group-hover:scale-110 transition-all duration-300" />
-                    <span className="font-Outfit text-sm font-medium">Archived Quizzes</span>
+                    <FileText size={18} className={`transition-all duration-300 group-hover:scale-110 ${location.pathname === '/teacher/archives/quizzes' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'}`} />
+                    <span className="font-Poppins text-sm font-medium">Archived Quizzes</span>
                   </Link>
                 </div>
               )}
@@ -587,7 +590,7 @@ export default function Sidebar({ user, userDoc }) {
             transform: 'translateY(-100%)',
           }}
         >
-          <div className="bg-white text-gray-800 text-xs rounded-lg px-3 py-2 shadow-lg border border-gray-200 font-Outfit font-medium whitespace-nowrap">
+          <div className="bg-white text-gray-800 text-xs rounded-lg px-3 py-2 shadow-lg border border-gray-200 font-Poppins font-medium whitespace-nowrap">
             {tooltipPos.name}
           </div>
           <div className="absolute top-full left-4 w-2 h-2 bg-white border-b border-r border-gray-200 transform rotate-45 -mt-1"></div>
@@ -597,7 +600,7 @@ export default function Sidebar({ user, userDoc }) {
 
 
       {showConfirm && (
-        <div className="font-Outfit fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+        <div className="font-Poppins fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-slideUp">
             <div className="flex items-start gap-4">
               <div className="bg-red-100 p-4 rounded-full items-center justify-center flex">

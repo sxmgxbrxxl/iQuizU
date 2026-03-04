@@ -494,7 +494,7 @@ export default function TeacherDashboard({ user, userDoc }) {
         className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
-        <div className="max-w-7xl mx-auto p-6 font-Outfit">
+        <div className="max-w-7xl mx-auto p-6 font-Poppins">
           {isMainDashboard ? (
             isInitialLoading ? (
               <DashboardSkeleton />
@@ -503,18 +503,20 @@ export default function TeacherDashboard({ user, userDoc }) {
                 {/* Header with greeting */}
                 {/* Header with greeting */}
                 {/* Header with greeting */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-                  <div>
-                    <h1 className="text-2xl md:text-3xl font-bold">
+                <div className="relative bg-blue-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-blue-500 flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+                  {/* Background blob design */}
+                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
+                  <div className="relative z-10">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                       {getGreeting()},{" "}
-                      {userDoc?.firstName || user?.displayName || "Teacher"}! 👋
+                      {userDoc?.firstName || user?.displayName || "Teacher"}!
                     </h1>
                     <p className="text-md md:text-lg text-blue-100 mt-1">
-                      Manage your classes, quizzes, and view student performance
-                      analytics
+                      Manage your classes, quizzes, and view student performance analytics
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-blue-100 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10">
+                  <div className="relative z-10 flex items-center gap-3 text-sm text-blue-100 bg-blue-700/30 px-4 py-2 rounded-xl backdrop-blur-sm border border-blue-500/30">
                     <div className="flex items-center gap-2">
                       <CalendarDays size={16} />
                       <span>{getFormattedDate()}</span>
@@ -537,85 +539,105 @@ export default function TeacherDashboard({ user, userDoc }) {
                 {/* Stat Cards - 4 cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   {/* Classes Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          <School className="w-5 h-5 text-blue-700" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Total Classes
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {totalClasses}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Active classes</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <School className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Active classes
+                      </p>
                     </div>
                   </div>
 
                   {/* Quizzes Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-emerald-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          <NotebookPen className="w-5 h-5 text-emerald-700" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Total Quizzes
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {totalQuizzes}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Created quizzes</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <NotebookPen className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Created quizzes
+                      </p>
                     </div>
                   </div>
 
                   {/* Students Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#f3e8ff] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-xl bg-[#f3e8ff] flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          <Users className="w-5 h-5 text-[#6b21a8]" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Total Students
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {totalStudents}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Enrolled students</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <Users className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Enrolled students
+                      </p>
                     </div>
                   </div>
 
                   {/* Average Score Card */}
-                  <div className="group relative bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-50 to-transparent rounded-bl-full opacity-80"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
+                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#fef3c7] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full gap-3">
+                      <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          <TrendingUp className="w-5 h-5 text-[#92400e]" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
                           Avg. Score
-                        </p>
-                        <h2 className="text-4xl font-extrabold text-gray-800 mt-2">
+                        </h3>
+                      </div>
+
+                      <div className="flex items-baseline mt-1">
+                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
                           {averageScore !== null ? (
                             <span>
                               {averageScore}
-                              <span className="text-xl text-gray-400 font-bold">%</span>
+                              <span className="text-2xl text-gray-500 font-bold">%</span>
                             </span>
                           ) : (
-                            <span className="text-2xl text-gray-300">N/A</span>
+                            <span className="text-3xl text-gray-400">N/A</span>
                           )}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Overall performance</p>
                       </div>
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <TrendingUp className="h-7 w-7 text-white" />
-                      </div>
+                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                        Overall performance
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -626,56 +648,65 @@ export default function TeacherDashboard({ user, userDoc }) {
                     <Sparkles size={20} className="text-gray-400" />
                     Quick Actions
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <button
                       onClick={() => navigate("/teacher/quizzes")}
-                      className="group flex items-center gap-4 bg-white border border-gray-100 p-4 rounded-2xl shadow-sm hover:shadow-lg hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 hover:-translate-y-0.5 transition-all duration-300"
+                      className="relative overflow-hidden group flex flex-col items-start text-left bg-white border border-gray-100 p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1"
                     >
-                      <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <PlusCircle size={20} className="text-blue-500" />
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100 to-transparent rounded-bl-full opacity-0 group-hover:opacity-50 transition-opacity duration-500 z-0" />
+
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 z-10 shadow-sm border border-blue-100 group-hover:border-transparent">
+                        <PlusCircle size={28} />
                       </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-sm text-gray-700">Create Quiz</p>
-                        <p className="text-xs text-gray-400">Generate or build a new quiz</p>
+
+                      <div className="mt-5 z-10">
+                        <h3 className="font-bold text-gray-800 text-[17px] group-hover:text-blue-600 transition-colors">Create Quiz</h3>
+                        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Generate dynamically via AI or build manually</p>
                       </div>
-                      <ArrowRight
-                        size={16}
-                        className="ml-auto text-gray-300 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"
-                      />
+
+                      <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-blue-600 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
+                        Get Started <ArrowRight size={16} />
+                      </div>
                     </button>
 
                     <button
                       onClick={() => navigate("/teacher/classes/add")}
-                      className="group flex items-center gap-4 bg-white border border-gray-100 p-4 rounded-2xl shadow-sm hover:shadow-lg hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 hover:-translate-y-0.5 transition-all duration-300"
+                      className="relative overflow-hidden group flex flex-col items-start text-left bg-white border border-gray-100 p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1"
                     >
-                      <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <BookOpen size={20} className="text-emerald-500" />
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-100 to-transparent rounded-bl-full opacity-0 group-hover:opacity-50 transition-opacity duration-500 z-0" />
+
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 z-10 shadow-sm border border-emerald-100 group-hover:border-transparent">
+                        <BookOpen size={28} />
                       </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-sm text-gray-700">Create Class</p>
-                        <p className="text-xs text-gray-400">Add a new class section</p>
+
+                      <div className="mt-5 z-10">
+                        <h3 className="font-bold text-gray-800 text-[17px] group-hover:text-emerald-600 transition-colors">Create Class</h3>
+                        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Add a new class section and enroll students</p>
                       </div>
-                      <ArrowRight
-                        size={16}
-                        className="ml-auto text-gray-300 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"
-                      />
+
+                      <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-emerald-600 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
+                        Enroll Now <ArrowRight size={16} />
+                      </div>
                     </button>
 
                     <button
                       onClick={() => navigate("/teacher/reports")}
-                      className="group flex items-center gap-4 bg-white border border-gray-100 p-4 rounded-2xl shadow-sm hover:shadow-lg hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 hover:-translate-y-0.5 transition-all duration-300"
+                      className="relative overflow-hidden group flex flex-col items-start text-left bg-white border border-gray-100 p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1"
                     >
-                      <div className="w-11 h-11 rounded-xl bg-violet-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <BarChart3 size={20} className="text-violet-500" />
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100 to-transparent rounded-bl-full opacity-0 group-hover:opacity-50 transition-opacity duration-500 z-0" />
+
+                      <div className="w-14 h-14 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-violet-600 group-hover:text-white transition-all duration-300 z-10 shadow-sm border border-violet-100 group-hover:border-transparent">
+                        <BarChart3 size={28} />
                       </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-sm text-gray-700">View Reports</p>
-                        <p className="text-xs text-gray-400">Analytics & performance</p>
+
+                      <div className="mt-5 z-10">
+                        <h3 className="font-bold text-gray-800 text-[17px] group-hover:text-violet-600 transition-colors">View Reports</h3>
+                        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Analyze performance, scores, and growth</p>
                       </div>
-                      <ArrowRight
-                        size={16}
-                        className="ml-auto text-gray-300 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"
-                      />
+
+                      <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-violet-600 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
+                        Analytics <ArrowRight size={16} />
+                      </div>
                     </button>
                   </div>
                 </div>

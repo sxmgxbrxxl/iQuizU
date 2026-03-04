@@ -231,6 +231,41 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isQuizStarted]);
 
+  // Prevent closing tab or going back
+  useEffect(() => {
+    if (!isQuizStarted || showResults) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave the quiz? Your progress might be lost.";
+      return "Are you sure you want to leave the quiz? Your progress might be lost.";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Push initial state to trap back button
+    window.history.pushState(null, "", window.location.href);
+
+    const handlePopState = (e) => {
+      window.history.pushState(null, "", window.location.href);
+      setConfirmDialog({
+        isOpen: true,
+        title: "Action Not Allowed",
+        message: "You cannot navigate back while taking a quiz. Please submit your answers first.",
+        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        showCancel: false,
+        confirmLabel: "Okay"
+      });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isQuizStarted, showResults]);
+
   // Save progress to localStorage
   useEffect(() => {
     if (assignmentId && answers && Object.keys(answers).length > 0) {

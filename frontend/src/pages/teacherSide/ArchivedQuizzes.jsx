@@ -155,7 +155,7 @@ export default function ArchivedQuizzes({ user }) {
 
   if (loading) {
     return (
-      <div className="py-6 px-2 md:p-8 font-Outfit animate-fadeIn">
+      <div className="py-6 px-2 md:p-8 font-Poppins animate-fadeIn">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -215,7 +215,7 @@ export default function ArchivedQuizzes({ user }) {
   }
 
   return (
-    <div className="py-6 px-2 md:p-8 font-Outfit animate-fadeIn">
+    <div className="py-6 px-2 md:p-8 font-Poppins animate-fadeIn">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -334,7 +334,7 @@ export default function ArchivedQuizzes({ user }) {
 
       {/* Delete Confirmation Modal */}
       {mounted && showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn font-Outfit">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn font-Poppins">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md text-center animate-slideUp">
             <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
               <Trash2 className="w-6 h-6 text-red-600" />
@@ -387,7 +387,7 @@ export default function ArchivedQuizzes({ user }) {
       {/* Custom Notification Toast */}
       {mounted && notification.show && createPortal(
         <div
-          className="fixed top-6 right-6 z-[60] animate-slideIn font-Outfit"
+          className="fixed top-6 right-6 z-[60] animate-slideIn font-Poppins"
           style={{ maxWidth: '420px', minWidth: '320px' }}
         >
           <div
