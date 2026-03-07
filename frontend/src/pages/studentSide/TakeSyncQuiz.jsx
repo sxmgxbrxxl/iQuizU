@@ -1104,7 +1104,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   const hasWarnings = suspiciousActivities.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 font-Outfit">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 font-Poppins">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 md:py-4">

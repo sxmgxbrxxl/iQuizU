@@ -41,8 +41,8 @@ export default function AdminDashboard() {
       <div className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
-        <div className="py-6 px-2 md:p-8 font-Outfit">
-          <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Outfit animate-fadeIn">
+        <div className="py-6 px-2 md:p-8 font-Poppins">
+          <div className="bg-background rounded-3xl shadow-md border border-gray-100 p-8 min-h-[400px] font-Poppins animate-fadeIn">
             {isMainDashboard ? (
               <div className="px-2 py-6 md:p-8 animate-fadeIn">
                 <h1 className="text-2xl md:text-3xl font-bold text-title">

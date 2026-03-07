@@ -187,7 +187,7 @@ const ManageTeachers = () => {
   );
 
   return (
-    <div className="p-8 bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
+    <div className="p-8 bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen font-Poppins">
       {/* ✅ Success Dialog Modal */}
       {mounted &&
         showSuccessDialog &&
@@ -339,12 +339,11 @@ const ManageTeachers = () => {
                         </td>
                         <td className="py-3 px-4">
                           <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
-                              teacher.status === "Active" ||
-                              !teacher.status
+                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${teacher.status === "Active" ||
+                                !teacher.status
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
-                            }`}
+                              }`}
                           >
                             <CheckCircle size={16} />
                             {teacher.status || "Active"}
@@ -361,7 +360,7 @@ const ManageTeachers = () => {
                               Reset Password
                             </button>
                             {teacher.status === "Active" ||
-                            !teacher.status ? (
+                              !teacher.status ? (
                               <button
                                 onClick={() =>
                                   handleDeactivate(teacher.id)

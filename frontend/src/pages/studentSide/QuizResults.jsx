@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { collection, addDoc, query, where, getDocs, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase/firebaseConfig";
 
-export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignment = { subject: "General", className: "Class A" }, quizResults = { correctPoints: 45, totalPoints: 50, base50ScorePercentage: 95, rawScorePercentage: 90, totalQuestions: 50 }, questions = [], answers = [], onNavigate = () => {} }) {
+export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignment = { subject: "General", className: "Class A" }, quizResults = { correctPoints: 45, totalPoints: 50, base50ScorePercentage: 95, rawScorePercentage: 90, totalQuestions: 50 }, questions = [], answers = [], onNavigate = () => { } }) {
   const navigate = useNavigate();
   const { assignmentId } = useParams();
   const [recommendations, setRecommendations] = useState([]);
@@ -259,11 +259,11 @@ Score: ${analysis.scorePercentage}% (${analysis.correctAnswers}/${analysis.allQu
 
 STUDENT'S QUIZ PERFORMANCE:
 ${analysis.allQuestions.map((q, i) =>
-  `Question ${i + 1}: "${q.question}"
+      `Question ${i + 1}: "${q.question}"
 Correct Answer: "${q.correctAnswer}"
 Student's Answer: "${q.studentAnswer}"
 Result: ${q.isCorrect ? "✓ CORRECT" : "✗ INCORRECT"}`
-).join('\n\n')}
+    ).join('\n\n')}
 
 TASK: Generate 5-8 SPECIFIC study recommendations based on the questions above.
 
@@ -349,7 +349,7 @@ Now generate recommendations for this student:`;
   const remark = getGradeRemark(quizResults.base50ScorePercentage || 75);
 
   return (
-    <div className="min-h-screen px-2 py-6 md:p-16 font-Outfit bg-gray-50">
+    <div className="min-h-screen px-2 py-6 md:p-16 font-Poppins bg-gray-50">
       <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <button

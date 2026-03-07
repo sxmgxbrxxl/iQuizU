@@ -311,7 +311,7 @@ export default function StudentProfile({ user, userDoc }) {
     }
 
     return (
-        <div className="font-Outfit animate-fadeIn mb-12">
+        <div className="font-Poppins animate-fadeIn mb-12">
             <Toast toast={toast} onClose={clearToast} />
             <ConfirmDialog
                 isOpen={confirmDialog.isOpen}
@@ -325,18 +325,17 @@ export default function StudentProfile({ user, userDoc }) {
                 color={confirmDialog.color}
             />
 
-            {/* ─── Gradient Banner Header (Green Theme) ─── */}
-            <div className="relative bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 rounded-2xl mx-3 md:mx-6 mt-4 px-6 py-8 md:py-10 overflow-hidden shadow-lg">
-                <div className="absolute top-[-30px] right-[-30px] w-40 h-40 bg-white/10 rounded-full" />
-                <div className="absolute bottom-[-20px] right-[80px] w-24 h-24 bg-white/5 rounded-full" />
+            {/* ─── Header Card (Green Theme) ─── */}
+            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden mx-3 md:mx-6 mt-4 px-6 py-8 md:p-8 group text-white border border-green-500">
+                {/* Background blob */}
+                <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
 
-                <div className="relative flex items-center gap-3">
-                    <IdCard className="w-8 h-8 md:w-10 md:h-10 text-white/90" />
-                    <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">My Profile</h1>
+                <div className="relative z-10">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Profile</h1>
+                    <p className="text-green-100 text-sm md:text-base mt-1">
+                        Your personal profile and academic details.
+                    </p>
                 </div>
-                <p className="relative text-green-100 text-sm md:text-base mt-1 ml-11 md:ml-[52px]">
-                    Your personal profile and academic details.
-                </p>
             </div>
 
             {/* ─── Profile Photo Section ─── */}
@@ -356,7 +355,7 @@ export default function StudentProfile({ user, userDoc }) {
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="absolute bottom-1 right-1 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
+                        className="absolute bottom-1 right-1 w-10 h-10 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
                     >
                         {uploading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Pencil className="w-4 h-4 text-white" />}
                     </button>
@@ -374,7 +373,7 @@ export default function StudentProfile({ user, userDoc }) {
 
             {/* ─── Personal Details Card ─── */}
             <div className="mx-3 md:mx-6 mt-6 mb-6">
-                <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
+                <div className="bg-white rounded-2xl overflow-hidden border border-green-500">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                         <h3 className="text-lg md:text-xl font-bold text-green-600">Personal Details</h3>
                         {!editing && (
@@ -566,7 +565,7 @@ export default function StudentProfile({ user, userDoc }) {
                 </div>
 
                 {/* ─── Security Card ─── */}
-                <div className="bg-white rounded-2xl shadow-md overflow-hidden mt-4 border border-gray-100">
+                <div className="bg-white rounded-2xl overflow-hidden mt-4 border border-green-500">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                         <h3 className="text-lg md:text-xl font-bold text-orange-500">Security</h3>
                     </div>

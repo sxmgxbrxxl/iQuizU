@@ -59,7 +59,7 @@ export default function Toast({ show, type = "info", title, message, onClose, du
 
     return createPortal(
         <div
-            className="fixed top-6 right-6 z-[60] animate-slideIn font-Outfit"
+            className="fixed top-6 right-6 z-[60] animate-slideIn font-Poppins"
             style={{ maxWidth: "420px", minWidth: "320px" }}
         >
             <div
