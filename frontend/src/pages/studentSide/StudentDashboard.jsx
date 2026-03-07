@@ -475,19 +475,22 @@ export default function StudentDashboard({ user, userDoc }) {
       >
         <div className="max-w-7xl mx-auto p-6">
           {isMainDashboard ? (
-            <div className="py-6 md:p-8 font-Outfit animate-fadeIn">
+            <div className="py-6 md:p-8 font-Poppins animate-fadeIn">
               {/* Header with greeting */}
-              <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">
+              <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-green-500 flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+                {/* Background blob design */}
+                <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
+                <div className="relative z-10">
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                     {getGreeting()},{" "}
-                    {userDoc?.firstName || userDoc?.name || "Student"}! 👋
+                    {userDoc?.firstName || userDoc?.name || "Student"}
                   </h1>
                   <p className="text-md md:text-lg text-green-100 mt-1">
                     Ready to learn? Check your assigned quizzes below.
                   </p>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-green-100 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10">
+                <div className="relative z-10 flex items-center gap-3 text-sm text-green-100 bg-green-700/30 px-4 py-2 rounded-xl backdrop-blur-sm border border-green-500/30">
                   <div className="flex items-center gap-2">
                     <CalendarDays size={16} />
                     <span>{getFormattedDate()}</span>
@@ -558,11 +561,10 @@ export default function StudentDashboard({ user, userDoc }) {
               </section>
 
               {/* Assigned Quizzes Section */}
-              <section className="bg-white rounded-xl sm:rounded-2xl shadow-md mt-4 md:mt-8 p-4 sm:p-6 animate-slideIn">
+              <section className="bg-white rounded-2xl border border-green-500 p-4 sm:p-6 md:p-8 mt-4 md:mt-8 animate-slideIn">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-green-600" />
-                    <span className="leading-tight">Asynchronous Quizzes <span className="block sm:inline sm:ml-1 text-sm sm:text-base md:text-lg text-gray-600">(Self-Paced)</span></span>
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">
+                    Asynchronous Quizzes <span className="text-sm sm:text-base md:text-lg text-gray-600">(Self-Paced)</span>
                   </h3>
                   {assignedQuizzes.length > 0 && (
                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-bold w-fit">
@@ -590,11 +592,13 @@ export default function StudentDashboard({ user, userDoc }) {
                       return (
                         <div
                           key={quiz.id}
-                          className={`border-2 rounded-lg sm:rounded-xl p-3 sm:p-5 transition-all ${quiz.completed
-                            ? "border-gray-200 bg-gray-50"
-                            : "border-green-200 bg-white hover:shadow-md"
+                          className={`relative rounded-[20px] border overflow-hidden p-3 sm:p-6 transition-all group ${quiz.completed
+                            ? "border-gray-100 bg-gray-50 shadow-[0_2px_10px_rgb(0,0,0,0.04)]"
+                            : "border-gray-100 bg-white shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)]"
                             }`}
                         >
+                          {/* Background blob */}
+                          {!quiz.completed && <div className="absolute -top-16 -right-16 w-52 h-52 bg-green-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />}
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
@@ -715,9 +719,8 @@ export default function StudentDashboard({ user, userDoc }) {
               </section>
 
               {/* Quiz Analytics Section */}
-              <section className="bg-white rounded-xl sm:rounded-2xl shadow-md p-4 sm:p-6 mt-4 md:mt-8 animate-slideIn">
+              <section className="bg-white rounded-2xl border border-green-500 p-4 sm:p-6 md:p-8 mt-4 md:mt-8 animate-slideIn">
                 <div className="flex items-center gap-2 mb-4 sm:mb-6">
-                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-green-600" />
                   <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">Your Quiz Performance</h3>
                 </div>
 

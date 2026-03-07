@@ -185,7 +185,7 @@ export default function StudentSidebar({ user, userDoc }) {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <img src={LOGO} alt="Logo" className="w-10 h-10" />
-            <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
+            <h1 className="text-2xl font-bold font-Poppins leading-tight text-white">iQuizU</h1>
           </div>
         </div>
 
@@ -208,7 +208,7 @@ export default function StudentSidebar({ user, userDoc }) {
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn origin-top-right overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                  <h3 className="font-Outfit font-semibold text-gray-800">Notifications</h3>
+                  <h3 className="font-Poppins font-semibold text-gray-800">Notifications</h3>
                 </div>
 
                 <div className="max-h-[60vh] overflow-y-auto">
@@ -302,8 +302,8 @@ export default function StudentSidebar({ user, userDoc }) {
                       {userInitial}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-Outfit font-semibold text-sm text-gray-800 truncate">{userName}</span>
-                      <span className="font-Outfit text-xs text-gray-400 truncate">{userEmail}</span>
+                      <span className="font-Poppins font-semibold text-sm text-gray-800 truncate">{userName}</span>
+                      <span className="font-Poppins text-xs text-gray-400 truncate">{userEmail}</span>
                     </div>
                   </div>
                 </div>
@@ -318,7 +318,7 @@ export default function StudentSidebar({ user, userDoc }) {
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-150 group"
                   >
                     <User size={18} className="text-gray-400 group-hover:text-green-500 transition-colors" />
-                    <span className="font-Outfit text-sm font-medium">My Profile</span>
+                    <span className="font-Poppins text-sm font-medium">My Profile</span>
                   </button>
                 </div>
 
@@ -332,7 +332,7 @@ export default function StudentSidebar({ user, userDoc }) {
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 group"
                   >
                     <LogOut size={18} className="text-red-400 group-hover:text-red-500 transition-colors" />
-                    <span className="font-Outfit text-sm font-medium">Logout</span>
+                    <span className="font-Poppins text-sm font-medium">Logout</span>
                   </button>
                 </div>
               </div>
@@ -368,7 +368,7 @@ export default function StudentSidebar({ user, userDoc }) {
           {/* Navigation Header with Toggle */}
           <div className={`flex items-center mb-3 ${shouldExpand ? "justify-between px-2" : "justify-center"}`}>
             {shouldExpand && (
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Outfit">Navigation</span>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Poppins">Navigation</span>
             )}
             {/* Desktop: sidebar collapse/expand toggle */}
             <button
@@ -413,7 +413,7 @@ export default function StudentSidebar({ user, userDoc }) {
                   <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
+                  className={`font-Poppins font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -427,7 +427,7 @@ export default function StudentSidebar({ user, userDoc }) {
       </div>
 
       {showConfirm && (
-        <div className="font-Outfit fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+        <div className="font-Poppins fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-slideUp">
             <div className="flex items-start gap-4">
               <div className="bg-red-100 p-4 rounded-full items-center justify-center flex">

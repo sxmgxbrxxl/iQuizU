@@ -307,8 +307,8 @@ export default function AdminAnalytics() {
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all hover:-translate-y-1">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-slate-500 text-sm font-medium mb-1 font-Outfit uppercase tracking-wide">{title}</p>
-          <h3 className="text-3xl font-bold text-slate-800 font-Outfit">{value}</h3>
+          <p className="text-slate-500 text-sm font-medium mb-1 font-Poppins uppercase tracking-wide">{title}</p>
+          <h3 className="text-3xl font-bold text-slate-800 font-Poppins">{value}</h3>
           {change !== undefined && (
             <div className="flex items-center gap-1 mt-2">
               <TrendingUp className={`${change >= 0 ? 'text-emerald-500' : 'text-red-500'}`} size={16} />
@@ -328,7 +328,7 @@ export default function AdminAnalytics() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center font-Outfit">
+      <div className="min-h-screen flex items-center justify-center font-Poppins">
         <div className="text-center flex flex-col gap-3 items-center">
           <Loader2 className="animate-spin text-blue-600" size={48} />
           <p className="text-slate-500 font-medium">Loading analytics data...</p>
@@ -338,7 +338,7 @@ export default function AdminAnalytics() {
   }
 
   return (
-    <div className="p-6 md:p-8 font-Outfit animate-in fade-in duration-500">
+    <div className="p-6 md:p-8 font-Poppins animate-in fade-in duration-500">
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

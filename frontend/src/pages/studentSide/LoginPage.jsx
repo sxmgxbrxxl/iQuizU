@@ -147,14 +147,14 @@ export default function LoginPage() {
       await sendPasswordResetEmail(auth, emailToSend);
       setRecoveryMessage(`✓ Password reset link sent to ${emailToSend}`);
       setRecoveryEmail("");
-      
+
       // Auto close modal after 3 seconds on success
       setTimeout(() => {
         handleCloseRecoveryModal();
       }, 3000);
     } catch (err) {
       console.error("Recovery error:", err);
-      
+
       switch (err.code) {
         case "auth/user-not-found":
           setError("No account found.");
@@ -188,20 +188,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-background via-background to-green-200 relative h-screen w-full flex items-center justify-center font-Outfit px-10">
+    <div className="bg-gradient-to-b from-background via-background to-green-200 relative h-screen w-full flex items-center justify-center font-Poppins px-10">
       {/* Back button */}
       <Link
         to="/"
         className="flex flex-row items-center justify-center absolute top-10 left-10 text-black bg-components px-6 py-4 rounded-full shadow-md transition transform duration-200 ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none hover:shadow-lg font-bold"
       >
-        <ChevronLeft className="w-5 h-5 mr-2"/>
+        <ChevronLeft className="w-5 h-5 mr-2" />
         Back
       </Link>
 
       {/* Login Card */}
       <div className="bg-components p-10 rounded-3xl shadow-lg w-96">
         <form onSubmit={handleSubmit}>
-          <img src={LOGO} alt="Logo" className="h-16 w-16 mx-auto mb-4 rounded-full outline-dotted outline-accent"/>
+          <img src={LOGO} alt="Logo" className="h-16 w-16 mx-auto mb-4 rounded-full outline-dotted outline-accent" />
           <h2 className="text-2xl font-bold mb-6 text-center">Log In to iQuizU</h2>
 
           {error && (
@@ -209,7 +209,7 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-          
+
           {recoveryMessage && (
             <div className="mb-4 text-green-600 text-sm bg-green-50 border border-green-200 rounded-lg p-3">
               {recoveryMessage}
@@ -299,7 +299,7 @@ export default function LoginPage() {
             <p className="text-sm text-gray-600 mb-6">
               Enter your email or student number and we'll send you a password reset link.
             </p>
-            
+
             {error && (
               <div className="mb-4 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
                 {error}

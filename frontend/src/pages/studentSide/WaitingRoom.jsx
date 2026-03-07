@@ -2,7 +2,7 @@ import { Zap, AlertCircle, Loader } from "lucide-react";
 
 export default function WaitingRoom({ quiz, assignment, questions, onNavigate }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 flex items-center justify-center p-3 sm:p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 flex items-center justify-center p-3 sm:p-4 md:p-6 font-Poppins">
       <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-500 hover:shadow-3xl animate-fadeIn">
         <div className="text-center">
           {/* Header Section */}
@@ -60,7 +60,7 @@ export default function WaitingRoom({ quiz, assignment, questions, onNavigate })
                 Please Wait for Instructions
               </p>
               <p className="text-xs sm:text-sm text-yellow-800 leading-relaxed">
-                Your teacher will start the quiz session shortly. Stay on this page 
+                Your teacher will start the quiz session shortly. Stay on this page
                 and wait for the quiz to become active. Do not refresh or close this page.
               </p>
             </div>

@@ -121,7 +121,7 @@ export default function AdminTopbar({ user, userDoc }) {
           <div className="flex items-center gap-3">
             <img src={LOGO} alt="Logo" className="w-10 h-10" />
             <div className="flex flex-col leading-none">
-              <h1 className="text-2xl font-bold font-Outfit leading-tight text-white">iQuizU</h1>
+              <h1 className="text-2xl font-bold font-Poppins leading-tight text-white">iQuizU</h1>
               <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-200 flex items-center gap-0.5">
                 <ShieldCheck size={9} /> Admin Panel
               </span>
@@ -155,8 +155,8 @@ export default function AdminTopbar({ user, userDoc }) {
                       {userInitial}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-Outfit font-semibold text-sm text-gray-800 truncate">{userName}</span>
-                      <span className="font-Outfit text-xs text-gray-400 truncate">{userEmail}</span>
+                      <span className="font-Poppins font-semibold text-sm text-gray-800 truncate">{userName}</span>
+                      <span className="font-Poppins text-xs text-gray-400 truncate">{userEmail}</span>
                     </div>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function AdminTopbar({ user, userDoc }) {
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 group"
                   >
                     <LogOut size={18} className="text-red-400 group-hover:text-red-500 transition-colors" />
-                    <span className="font-Outfit text-sm font-medium">Sign Out</span>
+                    <span className="font-Poppins text-sm font-medium">Sign Out</span>
                   </button>
                 </div>
               </div>
@@ -207,7 +207,7 @@ export default function AdminTopbar({ user, userDoc }) {
           {/* Navigation Header with Toggle */}
           <div className={`flex items-center mb-3 ${shouldExpand ? "justify-between px-2" : "justify-center"}`}>
             {shouldExpand && (
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Outfit">Navigation</span>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-Poppins">Navigation</span>
             )}
             {/* Desktop: sidebar collapse/expand toggle */}
             <button
@@ -252,7 +252,7 @@ export default function AdminTopbar({ user, userDoc }) {
                   <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
-                  className={`font-Outfit font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
+                  className={`font-Poppins font-medium text-sm transition-all duration-300 whitespace-nowrap ${shouldExpand
                     ? "opacity-100 max-w-xs"
                     : "opacity-0 max-w-0 overflow-hidden"
                     }`}
@@ -267,7 +267,7 @@ export default function AdminTopbar({ user, userDoc }) {
 
       {/* ── Logout Confirmation Modal ── */}
       {showConfirm && (
-        <div className="font-Outfit fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+        <div className="font-Poppins fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-slideUp">
             <div className="flex items-start gap-4">
               <div className="bg-red-100 p-4 rounded-full items-center justify-center flex">

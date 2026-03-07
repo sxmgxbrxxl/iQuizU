@@ -34,8 +34,12 @@ export default function StudentPerformance({ user, userDoc }) {
 
     useEffect(() => {
         if (user && userDoc) {
-            fetchAssignedQuizzes();
-            fetchQuizSubmissions();
+            const loadData = async () => {
+                setLoading(true);
+                await Promise.all([fetchAssignedQuizzes(), fetchQuizSubmissions()]);
+                setLoading(false);
+            };
+            loadData();
         }
     }, [user, userDoc]);
 
@@ -127,7 +131,6 @@ export default function StudentPerformance({ user, userDoc }) {
     };
 
     const fetchAssignedQuizzes = async () => {
-        setLoading(true);
         try {
             const currentUser = auth.currentUser;
 
@@ -183,8 +186,6 @@ export default function StudentPerformance({ user, userDoc }) {
             setAssignedQuizzes(quizzes);
         } catch (error) {
             console.error("❌ ERROR FETCHING QUIZZES:", error);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -313,12 +314,14 @@ export default function StudentPerformance({ user, userDoc }) {
     };
 
     return (
-        <div className="px-2 py-6 md:p-8 font-Outfit animate-fadeIn">
-            <div className="flex flex-row items-center gap-4">
-                <BarChart3 className="text-green-500 w-8 h-8 mb-6" />
-                <div className="flex flex-col mb-6">
-                    <h1 className="text-2xl font-bold text-title">Performance</h1>
-                    <p className="text-md font-light text-subtext">View your recent performance here.</p>
+        <div className="px-4 py-6 sm:px-6 sm:py-8 md:p-8 lg:px-10 font-Poppins animate-fadeIn">
+            {/* Header Card */}
+            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-green-500 mb-6">
+                {/* Background blob */}
+                <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+                <div className="relative z-10">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Performance</h1>
+                    <p className="text-green-100 mt-1">View your recent performance here.</p>
                 </div>
             </div>
 
@@ -326,7 +329,7 @@ export default function StudentPerformance({ user, userDoc }) {
                 <AnalyticsSkeleton />
             ) : (
                 /* Quiz Analytics Section */
-                <section className="bg-components rounded-2xl shadow-md p-6 animate-slideIn" >
+                <section className="bg-components rounded-2xl border border-green-500 p-6 md:p-8 animate-slideIn" >
                     {analytics.totalQuizzes === 0 ? (
                         <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
                             <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-300" />
@@ -451,7 +454,7 @@ export default function StudentPerformance({ user, userDoc }) {
 
             {/* Detailed Quiz Modal */}
             {mounted && showDetailModal && selectedQuiz && createPortal(
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm animate-fadeIn font-Outfit">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm animate-fadeIn font-Poppins">
                     <div
                         style={{
                             scrollbarWidth: 'none',

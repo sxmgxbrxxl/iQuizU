@@ -131,7 +131,7 @@ const ManageStudents = () => {
   const isAllSelected = filteredStudents.length > 0 && selectedStudents.length === filteredStudents.length;
 
   return (
-    <div className="py-6 px-2 md:p-8 font-Outfit animate-fadeIn">
+    <div className="py-6 px-2 md:p-8 font-Poppins animate-fadeIn">
       <h1 className="text-2xl text-title font-bold">Manage Students</h1>
       <p className="text-md md:text-xl text-subtext">All your student details, accessible and easy to manage.</p>
 

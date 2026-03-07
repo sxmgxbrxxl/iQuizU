@@ -49,7 +49,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-components h-20 mx-5 md:mx-20 flex items-center justify-between font-Outfit shadow-md rounded-full px-6 relative z-50">
+    <nav className="bg-components h-20 mx-5 md:mx-20 flex items-center justify-between font-Poppins shadow-md rounded-full px-6 relative z-50">
       {/* Logo Section */}
       <div className="flex items-center gap-3">
         <img src={LOGO} alt="Logo" className="h-12 w-12" />

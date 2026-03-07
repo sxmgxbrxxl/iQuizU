@@ -38,7 +38,7 @@ function SkeletonKeyframes() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function ProfileSkeleton() {
     return (
-        <div className="font-Outfit animate-pulse">
+        <div className="font-Poppins animate-pulse">
             <SkeletonKeyframes />
 
             {/* Banner */}
@@ -90,7 +90,7 @@ export function ProfileSkeleton() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function AnalyticsSkeleton() {
     return (
-        <div className="py-4 px-3 md:py-6 md:px-8 font-Outfit">
+        <div className="py-4 px-3 md:py-6 md:px-8 font-Poppins">
             <SkeletonKeyframes />
 
             {/* Header */}
@@ -125,7 +125,7 @@ export function AnalyticsSkeleton() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function ResultsTableSkeleton() {
     return (
-        <div className="p-8 font-Outfit max-w-7xl mx-auto">
+        <div className="p-8 font-Poppins max-w-7xl mx-auto">
             <SkeletonKeyframes />
 
             {/* Back button + header */}
@@ -189,7 +189,7 @@ export function ResultsTableSkeleton() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function ClassPageSkeleton() {
     return (
-        <div className="px-2 py-6 md:p-8 font-Outfit">
+        <div className="px-2 py-6 md:p-8 font-Poppins">
             <SkeletonKeyframes />
 
             {/* Class Info Header */}
@@ -285,7 +285,7 @@ export function ClassPageSkeleton() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function QuizGridSkeleton({ count = 6, hasButtons = false }) {
     return (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 animate-pulse font-Outfit">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 animate-pulse font-Poppins">
             <SkeletonKeyframes />
             {[...Array(count)].map((_, i) => (
                 <div
@@ -321,7 +321,7 @@ export function QuizGridSkeleton({ count = 6, hasButtons = false }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function EditQuizSkeleton() {
     return (
-        <div className="px-2 py-6 md:p-8 font-Outfit">
+        <div className="px-2 py-6 md:p-8 font-Poppins">
             <SkeletonKeyframes />
 
             {/* Back button */}
@@ -427,7 +427,7 @@ export function EditQuizSkeleton() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function QuizListSkeleton({ count = 3 }) {
     return (
-        <div className="space-y-4 font-Outfit animate-pulse">
+        <div className="space-y-4 font-Poppins animate-pulse">
             <SkeletonKeyframes />
             {[...Array(count)].map((_, i) => (
                 <div
@@ -465,7 +465,7 @@ export function QuizListSkeleton({ count = 3 }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function QuizControlPanelSkeleton() {
     return (
-        <div className="p-4 md:p-8 font-Outfit animate-pulse">
+        <div className="p-4 md:p-8 font-Poppins animate-pulse">
             <SkeletonKeyframes />
 
             {/* Header: Back Button & Title */}
@@ -584,7 +584,7 @@ export function QuizControlPanelSkeleton() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function QuizResultsSkeleton() {
     return (
-        <div className="p-4 md:p-8 font-Outfit animate-pulse max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 font-Poppins animate-pulse max-w-7xl mx-auto">
             <SkeletonKeyframes />
 
             {/* Header: Back Button */}

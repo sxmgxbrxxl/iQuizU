@@ -762,7 +762,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center font-Outfit p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center font-Poppins p-4">
         <div className="bg-components p-6 rounded-3xl shadow-md">
           <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-4" />
           <p className="text-gray-600 text-sm sm:text-base">Loading quiz...</p>
@@ -812,7 +812,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const hasWarnings = suspiciousActivities.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 font-Outfit">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 font-Poppins">
       <div className="bg-components shadow-md sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
