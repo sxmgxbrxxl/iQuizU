@@ -171,7 +171,7 @@ export default function ArchivedClasses({ user }) {
   if (loading) {
     return (
       <div className="py-6 px-2 md:p-8 font-Poppins animate-fadeIn">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
@@ -220,7 +220,7 @@ export default function ArchivedClasses({ user }) {
 
   return (
     <div className="py-6 px-2 md:p-8 font-Poppins animate-fadeIn">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
