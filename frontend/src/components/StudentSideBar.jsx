@@ -404,11 +404,11 @@ export default function StudentSidebar({ user, userDoc }) {
                 style={staggerDelay(index)}
                 className={`flex items-center rounded-xl transition-all duration-200 group animate-sidebarSlideIn
                 ${shouldExpand
-                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-teal-500 text-white shadow-lg shadow-teal-500/25" : "text-gray-500 hover:bg-gray-100"}`
+                    ? `gap-3 px-3 py-2.5 ${isActive(item.to) ? "bg-green-600 text-white shadow-lg shadow-green-600/25" : "text-gray-500 hover:bg-gray-100"}`
                     : `justify-center py-3 ${!isActive(item.to) ? "text-gray-500 hover:bg-gray-100" : ""}`
                   }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-teal-500 shadow-lg shadow-teal-500/25" : ""
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && isActive(item.to) ? "bg-green-600 shadow-lg shadow-green-600/25" : ""
                   }`}>
                   <item.icon size={22} className={`transition-colors duration-200 ${isActive(item.to) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
