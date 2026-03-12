@@ -938,19 +938,19 @@ export default function ManageQuizzes() {
   return (
     <div className="p-4 md:p-8 font-Poppins animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-6">
+      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-6 bg-blue-600 p-10 rounded-3xl">
         <div className="flex flex-col">
-          <h2 className="text-2xl font-bold text-title flex items-center gap-2">
+          <h2 className="text-3xl font-bold text-white flex items-center gap-2">
             Manage Quizzes
           </h2>
-          <p className="text-sm md:text-md font-light text-subtext">
+          <p className="text-md md:text-md font-light text-white">
             Create, edit, and organize your quizzes with ease.
           </p>
         </div>
       </div>
 
       {/* Create New Quiz */}
-      <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm mb-8 animate-slideIn">
+      <div className="bg-white p-6 md:p-8 rounded-2xl border border-blue-500 shadow-sm mb-8 animate-slideIn">
         <h3 className="text-xl text-title font-semibold mb-3">
           Create New Quiz
         </h3>

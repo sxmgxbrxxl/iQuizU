@@ -768,12 +768,11 @@ export default function ReportsAnalytics() {
     return (
       <div className="py-4 px-3 md:py-6 md:px-8 font-Poppins">
         <div className="flex items-center gap-3">
-          <BarChart2 className="w-7 h-7 md:w-8 md:h-8 text-blue-500 mb-4 md:mb-6" />
-          <div className="flex flex-col mb-4 md:mb-6">
-            <h1 className="text-xl md:text-2xl font-bold text-title flex items-center gap-2">
+          <div className="flex flex-col mb-4 md:mb-6 w-full animate-fadeIn bg-blue-600 p-10 rounded-3xl">
+            <h1 className="text-3xl md:text-2xl font-bold text-white flex items-center gap-2">
               Reports & Analytics
             </h1>
-            <p className="text-sm md:text-md font-light text-subtext">
+            <p className="text-md md:text-md font-light text-white">
               View detailed quiz details and student performance and insights.
             </p>
           </div>
@@ -818,24 +817,23 @@ export default function ReportsAnalytics() {
         color={confirmDialog.color}
       />
       <div className="flex items-center gap-3">
-        <BarChart2 className="w-7 h-7 md:w-8 md:h-8 text-blue-500 mb-4 md:mb-6" />
-        <div className="flex flex-col mb-4 md:mb-6">
-          <h1 className="text-xl md:text-2xl font-bold text-title flex items-center gap-2">
+        <div className="flex flex-col w-full mb-4 md:mb-6 bg-blue-600 p-10 rounded-3xl">
+          <h1 className="text-3xl md:text-2xl font-bold text-white flex items-center gap-2">
             Reports & Analytics
           </h1>
-          <p className="text-sm md:text-md font-light text-subtext">
+          <p className="text-md md:text-md font-light text-white">
             View detailed quiz details and student performance and insights.
           </p>
         </div>
       </div>
 
       {!selectedClass ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slideIn">
           {classes.map((cls) => (
             <button
               key={cls.id}
               onClick={() => setSelectedClass(cls)}
-              className="bg-gradient-to-br from-blue-50 to-emerald-50 border-2 border-blue-200 rounded-2xl p-6 text-left hover:shadow-lg hover:border-blue-400 transition-all duration-300 group"
+              className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 text-left hover:shadow-lg hover:border-blue-400 transition-all duration-300 group"
             >
               <h2 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition">
                 {cls.classNo && cls.code ? `#${cls.classNo} ${cls.code}` : cls.classNo ? `#${cls.classNo}` : cls.code || cls.name}

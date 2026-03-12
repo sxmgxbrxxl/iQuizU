@@ -405,26 +405,6 @@ export default function AssignQuizToClass() {
 
   return (
     <div className="p-4 md:p-8 font-Poppins">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 text-subtext hover:text-subsubtext"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to {classData.name}
-        </button>
-
-        <div className="flex items-center gap-2 text-sm">
-          <span className="px-3 py-1 rounded-full bg-blue-500 text-white">
-            ✓ Class Selected
-          </span>
-          <span className="text-gray-400">→</span>
-          <span className="px-3 py-1 rounded-full bg-blue-400 text-white">
-            Configure & Assign
-          </span>
-        </div>
-      </div>
-
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 md:p-6 rounded-xl mb-6">
         <div className="flex items-center gap-3">
           <School className="w-8 h-8" />
@@ -439,20 +419,6 @@ export default function AssignQuizToClass() {
           </div>
         </div>
       </div>
-
-      <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-        <p className="text-sm text-title">Selected Class:</p>
-        <p className="font-bold text-blue-800 text-lg">
-          {classData.name}
-        </p>
-        {classData.subject && (
-          <p className="text-sm text-gray-600">
-            Subject: {classData.subject}
-          </p>
-        )}
-      </div>
-
-
 
       <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
         <div className="lg:col-span-1 space-y-4 md:space-y-6">
@@ -683,7 +649,30 @@ export default function AssignQuizToClass() {
             </div>
           </div>
 
-          <div className="border-2 border-gray-200 rounded-xl p-4 md:p-6">
+        </div>
+
+        <div className="lg:col-span-2 space-y-4">
+          {/* Student Selection Summary Card */}
+          <div className="border-2 border-gray-200 rounded-xl p-4 md:p-6 bg-white hover:border-blue-300 transition cursor-pointer group" onClick={() => setShowStudentModal(true)}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-100 p-3 rounded-full text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Select Students</h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedStudents.length === 0
+                      ? "No students selected"
+                      : `${selectedStudents.length} of ${students.length} student${students.length !== 1 ? 's' : ''} selected`}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition" />
+            </div>
+          </div>
+
+          <div className="border-2 border-blue-200 rounded-xl p-4 md:p-6">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-blue-600" />
               Assignment Details
@@ -754,59 +743,47 @@ export default function AssignQuizToClass() {
             </div>
           </div>
 
-          <div
-            className={`border-2 rounded-xl p-4 md:p-6 ${isSynchronous
-              ? "border-purple-200 bg-purple-50"
-              : "border-blue-200 bg-blue-50"
-              }`}
-          >
-            <h3
-              className={`text-lg font-bold mb-2 ${isSynchronous ? "text-purple-800" : "text-blue-800"
+          <div className="mt-6 md:mt-8 flex flex-col-reverse md:flex-row md:justify-end gap-3">
+            <button
+              onClick={handleBack}
+              className="w-full md:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100"
+            >
+              Back to {classData.name}
+            </button>
+            <button
+              onClick={handleAssignQuiz}
+              disabled={
+                assigning ||
+                selectedStudents.length === 0 ||
+                (!isSynchronous && !assignmentSettings.dueDate) ||
+                (isSynchronous && !assignmentSettings.deadline) ||
+                (isSynchronous && !generatedQuizCode)
+              }
+              className={`w-full md:w-auto px-6 py-3 font-semibold rounded-lg flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${isSynchronous
+                ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                : "bg-purple-600 hover:bg-purple-700 text-white"
                 }`}
             >
-              Selected: {selectedStudents.length} student
-              {selectedStudents.length !== 1 ? "s" : ""}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {selectedStudents.length === 0
-                ? "No students selected"
-                : `Quiz will be assigned to ${selectedStudents.length} out of ${students.length} student${students.length !== 1 ? "s" : ""}`}
-            </p>
-            {isSynchronous && (
-              <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
-                <p className="text-xs text-yellow-900 font-semibold">
-                  After assignment, you'll return to the class page
-                </p>
-              </div>
-            )}
+              {assigning ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Assigning...
+                </>
+              ) : (
+                <>
+                  {isSynchronous ? (
+                    <Zap className="w-5 h-5" />
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
+                  {`Assign Quiz to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? "s" : ""
+                    }`}
+                </>
+              )}
+            </button>
           </div>
-        </div>
-
-        <div className="lg:col-span-2 space-y-4">
-          {/* Student Selection Summary Card */}
-          <div className="border-2 border-gray-200 rounded-xl p-4 md:p-6 bg-white hover:border-blue-300 transition cursor-pointer group" onClick={() => setShowStudentModal(true)}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-blue-100 p-3 rounded-full text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
-                  <Users className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800">Select Students</h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedStudents.length === 0
-                      ? "No students selected"
-                      : `${selectedStudents.length} of ${students.length} student${students.length !== 1 ? 's' : ''} selected`}
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition" />
-            </div>
-          </div>
-
-          {/* Additional Info / Tips can go here if needed */}
         </div>
       </div>
-
       {/* Student Selection Modal */}
       {showStudentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
@@ -893,46 +870,6 @@ export default function AssignQuizToClass() {
           </div>
         </div>
       )}
-
-      <div className="mt-6 md:mt-8 flex flex-col-reverse md:flex-row md:justify-end gap-3">
-        <button
-          onClick={handleBack}
-          className="w-full md:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100"
-        >
-          Back to {classData.name}
-        </button>
-        <button
-          onClick={handleAssignQuiz}
-          disabled={
-            assigning ||
-            selectedStudents.length === 0 ||
-            (!isSynchronous && !assignmentSettings.dueDate) ||
-            (isSynchronous && !assignmentSettings.deadline) ||
-            (isSynchronous && !generatedQuizCode)
-          }
-          className={`w-full md:w-auto px-6 py-3 font-semibold rounded-lg flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${isSynchronous
-            ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-            : "bg-purple-600 hover:bg-purple-700 text-white"
-            }`}
-        >
-          {assigning ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Assigning...
-            </>
-          ) : (
-            <>
-              {isSynchronous ? (
-                <Zap className="w-5 h-5" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-              {`Assign Quiz to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? "s" : ""
-                }`}
-            </>
-          )}
-        </button>
-      </div>
 
       {/* Custom Dialog & Toast */}
       <ConfirmDialog
