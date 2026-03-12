@@ -473,7 +473,7 @@ export default function StudentDashboard({ user, userDoc }) {
         className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
-        <div className="max-w-7xl mx-auto p-6">
+        <div className="w-full px-4 md:px-8 lg:px-10 py-6">
           {isMainDashboard ? (
             <div className="py-6 md:p-8 font-Poppins animate-fadeIn">
               {/* Header with greeting */}
