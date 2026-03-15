@@ -465,6 +465,10 @@ export default function StudentDashboard({ user, userDoc }) {
   const isMainDashboard =
     location.pathname === "/student" || location.pathname === "/student/";
 
+  const name = userDoc?.firstName || userDoc?.name || "Student";
+  const surname = name.split(",")[0];
+  const formattedSurname = surname.charAt(0).toUpperCase() + surname.slice(1).toLowerCase();
+
   return (
     <div className="flex h-screen bg-background">
       <StudentSidebar user={user} userDoc={userDoc} />
@@ -484,7 +488,7 @@ export default function StudentDashboard({ user, userDoc }) {
                 <div className="relative z-10">
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                     {getGreeting()},{" "}
-                    {userDoc?.firstName || userDoc?.name || "Student"}
+                    {formattedSurname}
                   </h1>
                   <p className="text-md md:text-lg text-green-100 mt-1">
                     Ready to learn? Check your assigned quizzes below.

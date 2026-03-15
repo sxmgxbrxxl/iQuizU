@@ -370,17 +370,17 @@ export default function QuizResults() {
 
   return (
     <div className="w-full p-4 md:p-8 font-Poppins">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2 hover:gap-6 hover:duration-200">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-subtext hover:text-subsubtext transition"
+          className="flex items-center gap-2 text-subtext hover:text-subsubtext transition hover:duration-200 hover:scale-110 active:scale-95"
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Quiz Details
         </button>
       </div>
 
-      <div className="bg-gradient-to-r from-button to-accent text-white p-4 md:p-6 rounded-xl mb-6 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-4 md:p-6 rounded-xl mb-6 shadow-lg">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold mb-1">Quiz Results (Asynchronous)</h1>
@@ -450,7 +450,7 @@ export default function QuizResults() {
         {/* Desktop Table View */}
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full">
-            <thead className="bg-button text-white rounded-lg">
+            <thead className="bg-blue-600 text-white rounded-lg">
               <tr>
                 <th className="px-6 py-4 text-left font-bold rounded-l-lg">Student</th>
                 <th className="px-6 py-4 text-left font-bold">Email</th>
