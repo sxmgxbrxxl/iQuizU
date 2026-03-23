@@ -16,7 +16,7 @@ export default function ViewClassModal({
       <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
         <div className="bg-green-600 text-white p-6 flex justify-between items-center">
           <div>
-            <h3 className="text-2xl font-bold">{classData?.name || "Loading..."}</h3>
+            <h3 className="text-xl font-bold">{classData?.name || "Loading..."}</h3>
             <p className="text-blue-100 text-sm">
               {classData?.studentCount || 0} student(s)
             </p>

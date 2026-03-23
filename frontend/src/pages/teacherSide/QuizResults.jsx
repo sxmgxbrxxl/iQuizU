@@ -369,7 +369,7 @@ export default function QuizResults() {
   const stats = calculateStats();
 
   return (
-    <div className="w-full p-4 md:p-8 font-Poppins">
+    <div className="w-full font-Poppins">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2 hover:gap-6 hover:duration-200">
         <button
           onClick={() => navigate(-1)}
@@ -394,7 +394,7 @@ export default function QuizResults() {
           <div className="flex items-center justify-between">
             <Users className="w-6 h-6 md:w-8 md:h-8 text-button" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{students.length}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{students.length}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Total</div>
             </div>
           </div>
@@ -404,7 +404,7 @@ export default function QuizResults() {
           <div className="flex items-center justify-between">
             <Clock className="w-6 h-6 md:w-8 md:h-8 text-gray-400" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{stats.notStarted}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{stats.notStarted}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Not Started</div>
             </div>
           </div>
@@ -414,7 +414,7 @@ export default function QuizResults() {
           <div className="flex items-center justify-between">
             <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-accent" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{stats.completed}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{stats.completed}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Completed</div>
             </div>
           </div>
@@ -424,7 +424,7 @@ export default function QuizResults() {
           <div className="flex items-center justify-between">
             <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{stats.flaggedForReview}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{stats.flaggedForReview}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Flagged</div>
             </div>
           </div>
@@ -759,7 +759,7 @@ export default function QuizResults() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <Shield className={`w-6 h-6 ${selectedAntiCheatData?.flaggedForReview ? "text-red-600" : "text-green-600"}`} />
-                  <h3 className="text-2xl font-bold text-gray-800">Anti-Cheating Report</h3>
+                  <h3 className="text-xl md:text-2xl font-bold text-gray-800">Anti-Cheating Report</h3>
                 </div>
                 <button
                   onClick={() => setShowAntiCheatModal(false)}
@@ -778,26 +778,26 @@ export default function QuizResults() {
 
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <p className="text-sm font-semibold text-gray-600 mb-1">🔄 Tab Switches</p>
-                  <p className="text-3xl font-bold text-blue-700">{selectedAntiCheatData?.tabSwitchCount || 0}</p>
+                  <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">🔄 Tab Switches</p>
+                  <p className="text-xl md:text-2xl font-bold text-blue-700">{selectedAntiCheatData?.tabSwitchCount || 0}</p>
                   <p className="text-xs text-gray-500 mt-2">Total times student left the quiz</p>
                 </div>
 
                 <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                  <p className="text-sm font-semibold text-gray-600 mb-1">📺 Fullscreen Exits</p>
-                  <p className="text-3xl font-bold text-purple-700">{selectedAntiCheatData?.fullscreenExitCount || 0}</p>
+                  <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">📺 Fullscreen Exits</p>
+                  <p className="text-xl md:text-2xl font-bold text-purple-700">{selectedAntiCheatData?.fullscreenExitCount || 0}</p>
                   <p className="text-xs text-gray-500 mt-2">Times exited fullscreen mode</p>
                 </div>
 
                 <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                  <p className="text-sm font-semibold text-gray-600 mb-1">📋 Copy Attempts</p>
-                  <p className="text-3xl font-bold text-orange-700">{selectedAntiCheatData?.copyAttempts || 0}</p>
+                  <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">📋 Copy Attempts</p>
+                  <p className="text-xl md:text-2xl font-bold text-orange-700">{selectedAntiCheatData?.copyAttempts || 0}</p>
                   <p className="text-xs text-gray-500 mt-2">Copy/paste blocked</p>
                 </div>
 
                 <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                  <p className="text-sm font-semibold text-gray-600 mb-1">🖱️ Right-Click Attempts</p>
-                  <p className="text-3xl font-bold text-red-700">{selectedAntiCheatData?.rightClickAttempts || 0}</p>
+                  <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">🖱️ Right-Click Attempts</p>
+                  <p className="text-xl md:text-2xl font-bold text-red-700">{selectedAntiCheatData?.rightClickAttempts || 0}</p>
                   <p className="text-xs text-gray-500 mt-2">Right-click blocked</p>
                 </div>
               </div>
@@ -902,7 +902,7 @@ export default function QuizResults() {
               <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-700 text-white p-6 border-b">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-2xl font-bold">
+                    <h3 className="text-lg md:text-xl font-bold">
                       {students.find((s) => s.id === selectedStudent)?.name || "Student"}
                     </h3>
                     <p className="text-blue-100 mt-1">
@@ -1000,7 +1000,7 @@ export default function QuizResults() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-overlayFade">
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all animate-popIn">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold text-gray-800">Grant Quiz Access</h3>
+                <h3 className="text-xl font-bold text-gray-800">Grant Quiz Access</h3>
                 <button onClick={() => setShowRetakeModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="w-6 h-6" />
                 </button>
@@ -1057,7 +1057,7 @@ export default function QuizResults() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-overlayFade">
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all animate-popIn">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold text-gray-800">Extend Deadline</h3>
+                <h3 className="text-xl font-bold text-gray-800">Extend Deadline</h3>
                 <button onClick={() => setShowReschedModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="w-6 h-6" />
                 </button>

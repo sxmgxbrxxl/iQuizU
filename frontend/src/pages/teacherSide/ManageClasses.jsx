@@ -763,12 +763,12 @@ export default function ManageClasses() {
   };
 
   return (
-    <div className="px-2 py-6 md:p-8 font-Poppins animate-fadeIn">
+    <div className="w-full font-Poppins animate-fadeIn">
       <div className="flex flex-col mb-6">
-        <h2 className="text-2xl font-bold text-title flex items-center gap-2">
+        <h2 className="text-xl md:text-2xl font-bold text-title flex items-center gap-2">
           Add New Class
         </h2>
-        <p className="text-md font-light text-subtext">
+        <p className="text-sm md:text-base font-light text-subtext">
           Upload a classlist to create a new class ({classCount}/{MAX_CLASSES} classes)
         </p>
       </div>

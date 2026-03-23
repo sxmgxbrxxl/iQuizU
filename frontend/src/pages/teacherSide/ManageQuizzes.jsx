@@ -936,11 +936,11 @@ export default function ManageQuizzes() {
   // RENDER
   // -----------------------------------------------------------------
   return (
-    <div className="p-4 md:p-8 font-Poppins animate-fadeIn">
+    <div className="w-full font-Poppins animate-fadeIn">
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-6 bg-blue-600 p-10 rounded-3xl">
         <div className="flex flex-col">
-          <h2 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
             Manage Quizzes
           </h2>
           <p className="text-md md:text-md font-light text-white">
@@ -972,7 +972,7 @@ export default function ManageQuizzes() {
 
       {/* Published Quizzes */}
       <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
-        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 text-left">
+        <h3 className="text-lg md:text-xl text-slate-900 font-bold mb-8 text-left">
           Your Published Quizzes
         </h3>
 
@@ -1167,7 +1167,7 @@ export default function ManageQuizzes() {
 
       {/* Synchronous Quizzes Section */}
       <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
-        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
+        <h3 className="text-lg md:text-xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
           Synchronous Quizzes
           {synchronousQuizzes.length > 0 && (
             <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold ml-2">
@@ -1257,7 +1257,7 @@ export default function ManageQuizzes() {
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
                   <p className="text-xs text-gray-700 font-semibold mb-2">Quiz Code:</p>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-2xl font-bold text-slate-800 tracking-widest">
+                    <span className="text-xl font-bold text-slate-800 tracking-widest">
                       {selectedSyncQuiz.quizCode}
                     </span>
                     <button
@@ -1346,7 +1346,7 @@ export default function ManageQuizzes() {
       }
 
       <div className="bg-white rounded-2xl border border-blue-500 p-6 md:p-8 mb-8">
-        <h3 className="text-xl md:text-2xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
+        <h3 className="text-lg md:text-xl text-slate-900 font-bold mb-8 flex items-center justify-start gap-2 text-left">
           Asynchronous Quizzes
           {assignedQuizzes.length > 0 && (
             <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold ml-2">
@@ -1504,7 +1504,7 @@ export default function ManageQuizzes() {
                 <div className="flex items-center gap-3">
                   <PlusCircle className="w-8 h-8" />
                   <div>
-                    <h3 className="text-2xl font-bold">Manual Quiz Creation</h3>
+                    <h3 className="text-xl font-bold">Manual Quiz Creation</h3>
                     <p className="text-sm text-green-100">Create your quiz from scratch</p>
                   </div>
                 </div>
@@ -1803,25 +1803,25 @@ export default function ManageQuizzes() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <p className="text-gray-600">Total Questions</p>
-                        <p className="text-2xl font-bold text-blue-600">
+                        <p className="text-xl font-bold text-blue-600">
                           {manualQuestions.length}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-600">Total Points</p>
-                        <p className="text-2xl font-bold text-green-600">
+                        <p className="text-xl font-bold text-green-600">
                           {manualQuestions.reduce((sum, q) => sum + q.points, 0)}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-600">HOTS</p>
-                        <p className="text-2xl font-bold text-purple-600">
+                        <p className="text-xl font-bold text-purple-600">
                           {manualQuestions.filter(q => q.bloom_classification === "HOTS").length}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-600">LOTS</p>
-                        <p className="text-2xl font-bold text-teal-600">
+                        <p className="text-xl font-bold text-teal-600">
                           {manualQuestions.filter(q => q.bloom_classification === "LOTS").length}
                         </p>
                       </div>
@@ -1871,7 +1871,7 @@ export default function ManageQuizzes() {
                 <div className="flex items-center gap-3">
                   <FileUp className="w-8 h-8" />
                   <div>
-                    <h3 className="text-2xl font-bold">Upload PDF</h3>
+                    <h3 className="text-xl font-bold">Upload PDF</h3>
                     <p className="text-sm text-green-100">Create your quiz using artificial intelligence</p>
                   </div>
                 </div>
@@ -2006,7 +2006,7 @@ export default function ManageQuizzes() {
                         type="text"
                         value={editedTitle}
                         onChange={(e) => setEditedTitle(e.target.value)}
-                        className="text-2xl font-bold bg-white text-gray-800 px-3 py-1 rounded"
+                        className="text-lg md:text-xl font-bold bg-white text-gray-800 px-3 py-1 rounded"
                         autoFocus
                       />
                       <button
@@ -2026,7 +2026,7 @@ export default function ManageQuizzes() {
                     <div className="flex items-center gap-3">
                       <Brain className="w-8 h-8" />
                       <div>
-                        <h3 className="text-2xl font-bold">
+                        <h3 className="text-xl font-bold">
                           {generatedQuiz.title}
                         </h3>
                         <div className="flex items-center gap-4 text-sm text-white mt-1">

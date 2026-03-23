@@ -288,7 +288,7 @@ export default function EditQuiz() {
   const hasChanges = hasUnsavedChanges();
 
   return (
-    <div className="px-2 py-6 md:p-8 font-Poppins">
+    <div className="w-full font-Poppins">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-6">
         <button
@@ -314,7 +314,7 @@ export default function EditQuiz() {
               type="text"
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
-              className="text-lg md:text-2xl font-bold bg-white text-gray-800 px-3 py-2 mr-2 rounded-xl flex-1 w-full"
+              className="text-base md:text-xl font-bold bg-white text-gray-800 px-3 py-2 mr-2 rounded-xl flex-1 w-full"
               autoFocus
             />
             <button
@@ -333,7 +333,7 @@ export default function EditQuiz() {
         ) : (
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold cursor-default">{quiz.title}</h2>
+              <h2 className="text-lg md:text-xl font-bold cursor-default">{quiz.title}</h2>
               <div className="flex items-center gap-6 text-sm text-white mt-2 cursor-default">
                 <span className="flex flex-row gap-1 items-center"><BadgeQuestionMark className="w-4 h-4" /> {quiz.questions.length} questions</span>
                 <span className="flex flex-row gap-1 items-center"><CircleStar className="w-4 h-4" /> {quiz.questions.reduce((sum, q) => sum + q.points, 0)} points</span>
@@ -357,7 +357,7 @@ export default function EditQuiz() {
           return (
             <div key={type} className="space-y-4">
               <div className="flex flex-col md:flex-row justify-between items-start gap-3 md:gap-0 border-b-2 border-blue-600 pb-6">
-                <h3 className="text-xl font-bold text-title flex items-start gap-2">
+                <h3 className="text-lg md:text-xl font-bold text-title flex items-start gap-2">
                   {typeLabels[type]}
                   <span className="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
                     {questions.length} {questions.length === 1 ? 'question' : 'questions'}
