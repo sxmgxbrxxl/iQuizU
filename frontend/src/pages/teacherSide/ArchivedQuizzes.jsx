@@ -159,13 +159,12 @@ export default function ArchivedQuizzes({ user }) {
         <div className="w-full">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <Archive className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-800">Archived Quizzes</h1>
+            <div className="flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
+              <h1 className="text-3xl font-bold text-white">Archived Quizzes</h1>
+                <p className="text-white">
+                Manage your archived quizzes. You can restore or permanently delete them.
+              </p>
             </div>
-            <p className="text-gray-600">
-              Manage your archived quizzes. You can restore or permanently delete them.
-            </p>
           </div>
 
           {/* Skeleton Cards Grid */}
@@ -219,13 +218,12 @@ export default function ArchivedQuizzes({ user }) {
       <div className="w-full">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Archive className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-800">Archived Quizzes</h1>
+          <div className="flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
+            <h1 className="text-3xl font-bold text-white">Archived Quizzes</h1>
+              <p className="text-white">
+                Manage your archived quizzes. You can restore or permanently delete them.
+              </p>
           </div>
-          <p className="text-gray-600">
-            Manage your archived quizzes. You can restore or permanently delete them.
-          </p>
         </div>
 
         {/* Quizzes Grid */}

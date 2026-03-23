@@ -292,7 +292,7 @@ export default function StudentSidebar({ user, userDoc }) {
             {/* Dropdown Menu */}
             {profileDropdownOpen && (
               <div
-                className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn"
+                className="absolute right-0 mt-2 w-max bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn"
                 style={{ animation: 'fadeIn 0.15s ease-out' }}
               >
                 {/* User Info Header */}

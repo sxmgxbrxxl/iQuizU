@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, ArrowLeft, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen } from "lucide-react";
+import { Loader2, CircleQuestionMark, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen, Star } from "lucide-react";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import PasswordConfirmModal from './PasswordConfirmModal';
@@ -1150,7 +1150,7 @@ export default function ViewClassPage() {
 
       {mounted && showAssignQuizModal && classData && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fadeIn font-Poppins">
-          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-slideUp">
+          <div className="bg-white rounded-2xl w-full h-max max-w-6xl max-h-6xl flex flex-col animate-slideUp">
             <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <BookOpen className="w-6 h-6 md:w-8 md:h-8 flex-shrink-0" />
@@ -1192,7 +1192,7 @@ export default function ViewClassPage() {
                     <label
                       key={quiz.id}
                       className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl border-2 cursor-pointer transition ${selectedQuizForAssignment === quiz.id
-                        ? "border-blue-500 bg-green-50"
+                        ? "border-blue-500 bg-blue-50"
                         : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
                         }`}
                     >
@@ -1209,9 +1209,9 @@ export default function ViewClassPage() {
                           {quiz.title}
                         </h4>
                         <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 mt-0.5 md:mt-1">
-                          <span>📝 {quiz.questionCount} questions</span>
+                          <span className="flex flex-row gap-2"><CircleQuestionMark className="h-5 w-5 text-blue-500"/> {quiz.questionCount} questions</span>
                           <span>•</span>
-                          <span>🎯 {quiz.totalPoints} points</span>
+                          <span className="flex flex-row gap-2"><Star className="h-5 w-5 text-yellow-300"/> {quiz.totalPoints} points</span>
                         </div>
                       </div>
                       {selectedQuizForAssignment === quiz.id && (
