@@ -314,13 +314,13 @@ export default function StudentPerformance({ user, userDoc }) {
     };
 
     return (
-        <div className="px-4 py-6 sm:px-6 sm:py-8 md:p-8 lg:px-10 font-Poppins animate-fadeIn">
+        <div className="px-2 py-3 sm:px-3 sm:py-4 md:p-4 lg:px-5 font-Poppins animate-fadeIn">
             {/* Header Card */}
-            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-green-500 mb-6">
+            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-5 md:p-6 group text-white border border-green-500 mb-4">
                 {/* Background blob */}
                 <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
                 <div className="relative z-10">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Performance</h1>
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">Performance</h1>
                     <p className="text-green-100 mt-1">View your recent performance here.</p>
                 </div>
             </div>
@@ -329,7 +329,7 @@ export default function StudentPerformance({ user, userDoc }) {
                 <AnalyticsSkeleton />
             ) : (
                 /* Quiz Analytics Section */
-                <section className="bg-components rounded-2xl border border-green-500 p-6 md:p-8 animate-slideIn" >
+                <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 animate-slideIn" >
                     {analytics.totalQuizzes === 0 ? (
                         <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
                             <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-300" />
@@ -344,7 +344,7 @@ export default function StudentPerformance({ user, userDoc }) {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-white text-sm font-semibold">Overall Average</p>
-                                        <p className="text-4xl font-bold mt-1">{analytics.overallAvgScore}%</p>
+                                        <p className="text-3xl font-bold mt-1">{analytics.overallAvgScore}%</p>
                                         <p className="text-white text-xs mt-2">
                                             {analytics.totalQuizzes} quiz{analytics.totalQuizzes !== 1 ? "zes" : ""} taken
                                         </p>
@@ -362,7 +362,7 @@ export default function StudentPerformance({ user, userDoc }) {
                                                 <Lightbulb className="w-5 h-5 text-green-600" />
                                                 <span className="font-semibold text-gray-800 text-sm">Asynchronous Quiz</span>
                                             </div>
-                                            <span className="text-2xl font-bold text-green-700">{analytics.asyncQuizzes.avgScore}%</span>
+                                            <span className="text-xl font-bold text-green-700">{analytics.asyncQuizzes.avgScore}%</span>
                                         </div>
                                         <p className="text-xs text-gray-600">{analytics.asyncQuizzes.completed} quiz{analytics.asyncQuizzes.completed !== 1 ? "zes" : ""}</p>
                                     </div>
@@ -375,7 +375,7 @@ export default function StudentPerformance({ user, userDoc }) {
                                                 <Zap className="w-5 h-5 text-yellow-600" />
                                                 <span className="font-semibold text-gray-800 text-sm">Synchronous Quiz</span>
                                             </div>
-                                            <span className="text-2xl font-bold text-yellow-700">{analytics.syncQuizzes.avgScore}%</span>
+                                            <span className="text-xl font-bold text-yellow-700">{analytics.syncQuizzes.avgScore}%</span>
                                         </div>
                                         <p className="text-xs text-gray-600">{analytics.syncQuizzes.completed} quiz{analytics.syncQuizzes.completed !== 1 ? "zes" : ""}</p>
                                     </div>
@@ -435,7 +435,7 @@ export default function StudentPerformance({ user, userDoc }) {
                                                         </div>
                                                     </div>
                                                     <div className="text-right flex-shrink-0">
-                                                        <p className={`text-2xl font-bold ${getScoreColor(submission.base50ScorePercentage || 0)}`}>
+                                                        <p className={`text-xl font-bold ${getScoreColor(submission.base50ScorePercentage || 0)}`}>
                                                             {submission.base50ScorePercentage || 0}%
                                                         </p>
                                                         <p className="text-xs text-gray-600 font-medium mt-1">
@@ -467,7 +467,7 @@ export default function StudentPerformance({ user, userDoc }) {
                             <div className="flex items-center gap-3">
                                 <Award className="w-8 h-8" />
                                 <div>
-                                    <h2 className="text-2xl font-bold">{selectedQuiz.quizTitle}</h2>
+                                    <h2 className="text-xl font-bold">{selectedQuiz.quizTitle}</h2>
                                     <p className="text-indigo-100 text-sm">{selectedQuiz.className}</p>
                                 </div>
                             </div>
@@ -485,7 +485,7 @@ export default function StudentPerformance({ user, userDoc }) {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-200">
                                     <p className="text-xs text-gray-600 font-semibold mb-1">Final Score</p>
-                                    <p className={`text-3xl font-bold ${getScoreColor(selectedQuiz.base50ScorePercentage)}`}>
+                                    <p className={`text-2xl font-bold ${getScoreColor(selectedQuiz.base50ScorePercentage)}`}>
                                         {selectedQuiz.base50ScorePercentage}%
                                     </p>
                                     <p className="text-xs text-gray-500 mt-2">{selectedQuiz.remark}</p>
@@ -493,13 +493,13 @@ export default function StudentPerformance({ user, userDoc }) {
 
                                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-200">
                                     <p className="text-xs text-gray-600 font-semibold mb-1">Raw Score</p>
-                                    <p className="text-3xl font-bold text-green-600">{selectedQuiz.rawScorePercentage}%</p>
+                                    <p className="text-2xl font-bold text-green-600">{selectedQuiz.rawScorePercentage}%</p>
                                     <p className="text-xs text-gray-500 mt-2">{selectedQuiz.correctPoints}/{selectedQuiz.totalPoints}</p>
                                 </div>
 
                                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-200">
                                     <p className="text-xs text-gray-600 font-semibold mb-1">Questions</p>
-                                    <p className="text-3xl font-bold text-purple-600">{selectedQuiz.totalQuestions}</p>
+                                    <p className="text-2xl font-bold text-purple-600">{selectedQuiz.totalQuestions}</p>
                                     <p className="text-xs text-gray-500 mt-2">Total Items</p>
                                 </div>
                             </div>
