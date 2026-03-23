@@ -288,9 +288,9 @@ export default function ManageClasses() {
   };
 
   return (
-    <div className="px-2 py-6 md:p-8 font-sans animate-fadeIn min-h-screen bg-gray-50">
+    <div className="w-full font-sans animate-fadeIn min-h-screen bg-gray-50">
       <div className="flex flex-col mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
           Add New Class
         </h2>
         <p className="text-md font-light text-gray-600">

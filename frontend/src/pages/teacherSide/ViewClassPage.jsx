@@ -691,7 +691,7 @@ export default function ViewClassPage() {
   }
 
   return (
-    <div className="px-2 py-6 md:p-8 font-Poppins animate-fadeIn">
+    <div className="w-full font-Poppins animate-fadeIn">
 
       {accountCreationProgress && creatingAccounts && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
@@ -709,19 +709,19 @@ export default function ViewClassPage() {
 
         <div className="relative z-10 flex flex-col h-full gap-3">
           <div className="mb-1 md:mb-2 pb-4 md:pb-6 border-b border-blue-400/50">
-            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{classData?.name}</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">{classData?.name}</h2>
             <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4 md:mt-6">
               <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
                 <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Class No.</p>
-                <p className="text-lg md:text-2xl font-bold text-white mt-1">#{classData?.classNo || "N/A"}</p>
+                <p className="text-base md:text-xl font-bold text-white mt-1">#{classData?.classNo || "N/A"}</p>
               </div>
               <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
                 <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Code</p>
-                <p className="text-lg md:text-2xl font-bold text-white mt-1">{classData?.code || "N/A"}</p>
+                <p className="text-base md:text-xl font-bold text-white mt-1">{classData?.code || "N/A"}</p>
               </div>
               <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
                 <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Students</p>
-                <p className="text-lg md:text-2xl font-bold text-white mt-1">{students.length}</p>
+                <p className="text-base md:text-xl font-bold text-white mt-1">{students.length}</p>
               </div>
             </div>
           </div>
@@ -1155,7 +1155,7 @@ export default function ViewClassPage() {
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <BookOpen className="w-6 h-6 md:w-8 md:h-8 flex-shrink-0" />
                 <div className="min-w-0">
-                  <h3 className="text-lg md:text-2xl font-bold truncate">Assign Quiz to {classData?.name}</h3>
+                  <h3 className="text-base md:text-xl font-bold truncate">Assign Quiz to {classData?.name}</h3>
                   <p className="text-xs md:text-sm text-green-100 mt-0.5 md:mt-1">
                     Select from your published quizzes
                   </p>

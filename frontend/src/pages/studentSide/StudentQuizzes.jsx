@@ -440,13 +440,13 @@ export default function StudentQuizzes({ user, userDoc }) {
                     : "border-gray-100 bg-white shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)]"
                     }`}
             >
-                {/* Background blob */}
-                {!quiz.completed && <div className="absolute -top-16 -right-16 w-52 h-52 bg-green-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />}
+
+
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
                         {/* Title and Badge */}
                         <div className="flex items-start gap-2 sm:gap-3 mb-2 flex-wrap">
-                            <h4 className="text-base sm:text-lg font-bold text-gray-800 break-words flex-1 min-w-0">
+                            <h4 className="text-sm sm:text-base font-bold text-gray-800 break-words flex-1 min-w-0">
                                 {quiz.quizTitle}
                             </h4>
                             <div className="flex-shrink-0">
@@ -576,24 +576,24 @@ export default function StudentQuizzes({ user, userDoc }) {
     };
 
     return (
-        <div className="px-4 py-6 sm:px-6 sm:py-8 md:p-8 lg:px-10 font-Poppins min-h-screen animate-fadeIn">
+        <div className="px-2 py-3 sm:px-3 sm:py-4 md:p-4 lg:px-5 font-Poppins min-h-screen animate-fadeIn">
 
             {/* Header Card */}
-            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-green-500 mb-6">
+            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-5 md:p-6 group text-white border border-green-500 mb-4">
                 {/* Background blob */}
                 <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
                 <div className="relative z-10">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Quizzes</h1>
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">Quizzes</h1>
                     <p className="text-green-100 mt-1">View your assigned quizzes here.</p>
                 </div>
             </div>
 
             {/* Asynchronous Quizzes Section */}
-            <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-6 md:p-8 mb-6 animate-slideIn">
+            <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 mb-4 animate-slideIn">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-800">
                         Asynchronous Quizzes
-                        <span className="block sm:inline sm:ml-1 text-sm sm:text-base md:text-lg text-gray-600">(Self-Paced)</span>
+                        <span className="block sm:inline sm:ml-1 text-xs sm:text-sm text-gray-600">(Self-Paced)</span>
                     </h3>
                     {assignedQuizzes.length > 0 && (
                         <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-bold self-start sm:self-auto whitespace-nowrap">
@@ -607,7 +607,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                 ) : assignedQuizzes.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
                         <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
-                        <p className="text-gray-500 text-base sm:text-lg font-medium">No quizzes assigned yet</p>
+                        <p className="text-gray-500 text-sm sm:text-base font-medium">No quizzes assigned yet</p>
                         <p className="text-gray-400 text-xs sm:text-sm mt-2 px-4">
                             Check back later for new assignments
                         </p>
@@ -620,11 +620,11 @@ export default function StudentQuizzes({ user, userDoc }) {
             </section>
 
             {/* Synchronous Quizzes Section */}
-            <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-6 md:p-8 animate-slideIn">
+            <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 animate-slideIn">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-800">
                         Synchronous Quizzes
-                        <span className="block sm:inline sm:ml-1 text-sm sm:text-base md:text-lg text-gray-600">(Real-Time)</span>
+                        <span className="block sm:inline sm:ml-1 text-xs sm:text-sm text-gray-600">(Real-Time)</span>
                     </h3>
                     {synchronousQuizzes.length > 0 && (
                         <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-bold self-start sm:self-auto whitespace-nowrap">
@@ -638,7 +638,7 @@ export default function StudentQuizzes({ user, userDoc }) {
                 ) : synchronousQuizzes.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
                         <Video className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
-                        <p className="text-gray-500 text-base sm:text-lg font-medium">No live quizzes assigned yet</p>
+                        <p className="text-gray-500 text-sm sm:text-base font-medium">No live quizzes assigned yet</p>
                         <p className="text-gray-400 text-xs sm:text-sm mt-2 px-4">
                             Your teacher will assign live quizzes for real-time participation
                         </p>

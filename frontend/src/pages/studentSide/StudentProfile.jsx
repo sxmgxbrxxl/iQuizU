@@ -326,20 +326,20 @@ export default function StudentProfile({ user, userDoc }) {
             />
 
             {/* ─── Header Card (Green Theme) ─── */}
-            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden mx-3 md:mx-6 mt-4 px-6 py-8 md:p-8 group text-white border border-green-500">
+            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden mx-1 md:mx-2 mt-2 px-5 py-6 md:p-6 group text-white border border-green-500">
                 {/* Background blob */}
                 <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
 
                 <div className="relative z-10">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Profile</h1>
-                    <p className="text-green-100 text-sm md:text-base mt-1">
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">My Profile</h1>
+                    <p className="text-green-100 text-xs md:text-sm mt-1">
                         Your personal profile and academic details.
                     </p>
                 </div>
             </div>
 
             {/* ─── Profile Photo Section ─── */}
-            <div className="flex flex-col items-center mt-8 mb-2">
+            <div className="flex flex-col items-center mt-5 mb-2">
                 <div className="relative group">
                     {photoURL ? (
                         <img
@@ -348,7 +348,7 @@ export default function StudentProfile({ user, userDoc }) {
                             className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-xl ring-4 ring-white"
                         />
                     ) : (
-                        <div className="w-32 h-32 md:w-40 md:h-40 text-5xl md:text-7xl bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
+                        <div className="w-32 h-32 md:w-40 md:h-40 text-4xl md:text-6xl bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
                             {userInitial}
                         </div>
                     )}
@@ -367,15 +367,15 @@ export default function StudentProfile({ user, userDoc }) {
                         className="hidden"
                     />
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mt-4">{fullName || displayName}</h2>
+                <h2 className="text-lg md:text-xl font-bold text-gray-800 mt-4">{fullName || displayName}</h2>
                 <p className="text-gray-500 text-sm">{department || "Student"}</p>
             </div>
 
             {/* ─── Personal Details Card ─── */}
-            <div className="mx-3 md:mx-6 mt-6 mb-6">
+            <div className="mx-1 md:mx-2 mt-4 mb-4">
                 <div className="bg-white rounded-2xl overflow-hidden border border-green-500">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                        <h3 className="text-lg md:text-xl font-bold text-green-600">Personal Details</h3>
+                        <h3 className="text-base md:text-lg font-bold text-green-600">Personal Details</h3>
                         {!editing && (
                             <button
                                 onClick={() => setEditing(true)}
@@ -567,7 +567,7 @@ export default function StudentProfile({ user, userDoc }) {
                 {/* ─── Security Card ─── */}
                 <div className="bg-white rounded-2xl overflow-hidden mt-4 border border-green-500">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                        <h3 className="text-lg md:text-xl font-bold text-orange-500">Security</h3>
+                        <h3 className="text-base md:text-lg font-bold text-orange-500">Security</h3>
                     </div>
                     <div className="p-6">
                         <p className="text-gray-500 text-sm mb-4">Send a password reset link to your registered email address.</p>

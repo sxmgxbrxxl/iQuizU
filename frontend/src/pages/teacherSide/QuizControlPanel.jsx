@@ -656,7 +656,7 @@ export default function QuizControlPanel() {
   };
 
   return (
-    <div className="p-4 md:p-8 font-Poppins">
+    <div className="w-full font-Poppins">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2">
         <button
           onClick={() => navigate("/teacher/quizzes")}
@@ -675,7 +675,7 @@ export default function QuizControlPanel() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 md:p-6 rounded-xl mb-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold">{quiz.title}</h2>
+            <h2 className="text-lg md:text-xl font-bold">{quiz.title}</h2>
             <p className="text-white/90 text-sm mt-1">
               Class: {classData.name} • {totalQuestions} questions
             </p>
@@ -706,7 +706,7 @@ export default function QuizControlPanel() {
               <p className="text-sm font-semibold text-title mb-2">Live Quiz Code</p>
               <div className="flex items-center gap-3">
                 <div className="bg-white border-2 border-blue-600 rounded-lg px-4 md:px-6 py-3">
-                  <span className="text-2xl md:text-3xl font-bold text-blue-600 tracking-wider">
+                  <span className="text-xl md:text-2xl font-bold text-blue-600 tracking-wider">
                     {quizSession.quizCode}
                   </span>
                 </div>
@@ -810,7 +810,7 @@ export default function QuizControlPanel() {
           <div className="flex items-center justify-between">
             <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{totalStudents}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{totalStudents}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Total</div>
             </div>
           </div>
@@ -820,7 +820,7 @@ export default function QuizControlPanel() {
           <div className="flex items-center justify-between">
             <Clock className="w-6 h-6 md:w-8 md:h-8 text-gray-500" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{notStartedCount}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{notStartedCount}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Not Started</div>
             </div>
           </div>
@@ -830,7 +830,7 @@ export default function QuizControlPanel() {
           <div className="flex items-center justify-between">
             <Loader className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{inProgressCount}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{inProgressCount}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">In Progress</div>
             </div>
           </div>
@@ -840,7 +840,7 @@ export default function QuizControlPanel() {
           <div className="flex items-center justify-between">
             <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-accent" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{completedCount}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{completedCount}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Completed</div>
             </div>
           </div>
@@ -850,7 +850,7 @@ export default function QuizControlPanel() {
           <div className="flex items-center justify-between">
             <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-title">{flaggedCount}</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{flaggedCount}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Flagged</div>
             </div>
           </div>
@@ -1112,7 +1112,7 @@ export default function QuizControlPanel() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <Shield className={`w-5 h-5 md:w-6 md:h-6 ${selectedAntiCheatData?.flaggedForReview ? "text-red-500" : "text-accent"}`} />
-                  <h3 className="text-lg md:text-2xl font-bold text-title">Anti-Cheating Report</h3>
+                  <h3 className="text-base md:text-xl font-bold text-title">Anti-Cheating Report</h3>
                 </div>
                 <button
                   onClick={() => setShowAntiCheatModal(false)}
@@ -1136,25 +1136,25 @@ export default function QuizControlPanel() {
               <div className="grid grid-cols-2 gap-3 mb-4 md:mb-6">
                 <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
                   <p className="text-xs md:text-sm font-semibold text-subtext mb-1">🔄 Tab Switches</p>
-                  <p className="text-2xl md:text-3xl font-bold text-title">{selectedAntiCheatData?.tabSwitchCount || 0}</p>
+                  <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.tabSwitchCount || 0}</p>
                   <p className="text-xs text-subsubtext mt-1">Times left the quiz</p>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
                   <p className="text-xs md:text-sm font-semibold text-subtext mb-1">📺 Fullscreen Exits</p>
-                  <p className="text-2xl md:text-3xl font-bold text-title">{selectedAntiCheatData?.fullscreenExitCount || 0}</p>
+                  <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.fullscreenExitCount || 0}</p>
                   <p className="text-xs text-subsubtext mt-1">Exited fullscreen</p>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
                   <p className="text-xs md:text-sm font-semibold text-subtext mb-1">📋 Copy Attempts</p>
-                  <p className="text-2xl md:text-3xl font-bold text-title">{selectedAntiCheatData?.copyAttempts || 0}</p>
+                  <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.copyAttempts || 0}</p>
                   <p className="text-xs text-subsubtext mt-1">Copy/paste blocked</p>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
                   <p className="text-xs md:text-sm font-semibold text-subtext mb-1">🖱️ Right-Click</p>
-                  <p className="text-2xl md:text-3xl font-bold text-title">{selectedAntiCheatData?.rightClickAttempts || 0}</p>
+                  <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.rightClickAttempts || 0}</p>
                   <p className="text-xs text-subsubtext mt-1">Right-click blocked</p>
                 </div>
               </div>

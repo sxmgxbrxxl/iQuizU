@@ -404,12 +404,12 @@ export default function AssignQuizToClass() {
   }
 
   return (
-    <div className="p-4 md:p-8 font-Poppins">
+    <div className="w-full font-Poppins">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 md:p-6 rounded-xl mb-6">
         <div className="flex items-center gap-3">
           <School className="w-8 h-8" />
           <div>
-            <h2 className="text-xl md:text-2xl font-bold">Assign Quiz to {classData.name}</h2>
+            <h2 className="text-lg md:text-xl font-bold">Assign Quiz to {classData.name}</h2>
             <p className="text-white text-sm mt-1">{quiz.title}</p>
             <div className="flex items-center gap-4 mt-2">
               <p className="text-white text-xs">

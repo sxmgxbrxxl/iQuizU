@@ -193,7 +193,7 @@ export default function QuizSettings() {
         <div className="flex items-center gap-3">
           <Settings className="w-8 h-8" />
           <div>
-            <h2 className="text-2xl font-bold">Quiz Settings</h2>
+            <h2 className="text-xl md:text-2xl font-bold">Quiz Settings</h2>
             <p className="text-gray-300 text-sm mt-1">{quiz.title}</p>
             {assignmentData?.fromAssignment && (
               <div className="mt-2 flex items-center gap-4 text-sm">
