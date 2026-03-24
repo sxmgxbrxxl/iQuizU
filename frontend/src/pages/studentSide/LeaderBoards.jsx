@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { Trophy, Loader2, Medal, TrendingUp, Users, Search, Crown, Star, Zap, Radio, ChevronDown, Filter, X } from "lucide-react";
-import { ResultsTableSkeleton } from "../../components/SkeletonLoaders";
 
 export default function Leaderboards({ user, userDoc }) {
   const [loading, setLoading] = useState(true);
@@ -200,11 +199,7 @@ export default function Leaderboards({ user, userDoc }) {
   // Get top 5 students
   const top5Students = filteredLeaderboard.slice(0, 5);
 
-  if (loading) {
-    return <ResultsTableSkeleton />;
-  }
-
-  if (userClassIds.length === 0) {
+  if (!loading && userClassIds.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-components p-6 md:p-8 rounded-2xl shadow-2xl max-w-md text-center animate-fadeIn">
@@ -233,16 +228,15 @@ export default function Leaderboards({ user, userDoc }) {
   }
 
   return (
-    <div className="min-h-screen p-3 md:px-10 py-8 font-Poppins">
+    <div className="min-h-screen p-2 md:px-5 py-4 font-Poppins">
       <div className="w-full">
         {/* Header */}
         <div className="bg-components rounded-2xl md:rounded-3xl shadow-xl overflow-hidden mb-4 md:mb-6">
           <div className="bg-gradient-to-r from-green-700 to-green-500 p-4 md:p-8 text-white">
             <div className="flex items-center gap-3 md:gap-4 mb-4">
-              <Trophy className="w-8 h-8 md:w-12 md:h-12" />
               <div>
-                <h1 className="text-2xl font-bold">Class Leaderboard</h1>
-                <p className="text-md font-light">Your Class Rankings & Performance</p>
+                <h1 className="text-xl md:text-2xl font-bold">Class Leaderboard</h1>
+                <p className="text-sm font-light">Your Class Rankings & Performance</p>
               </div>
             </div>
 
@@ -252,7 +246,11 @@ export default function Leaderboards({ user, userDoc }) {
                   <Users className="w-6 h-6 md:w-8 md:h-8" />
                   <div>
                     <p className="text-xs md:text-sm opacity-90">Total Students</p>
-                    <p className="text-xl md:text-2xl font-bold">{leaderboardData.length}</p>
+                    {loading ? (
+                      <div className="h-6 md:h-7 w-12 bg-white bg-opacity-30 rounded mt-1 animate-pulse"></div>
+                    ) : (
+                      <p className="text-lg md:text-xl font-bold">{leaderboardData.length}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -261,14 +259,18 @@ export default function Leaderboards({ user, userDoc }) {
                   <TrendingUp className="w-6 h-6 md:w-8 md:h-8" />
                   <div>
                     <p className="text-xs md:text-sm opacity-90">Class Average</p>
-                    <p className="text-xl md:text-2xl font-bold">
-                      {leaderboardData.length > 0
-                        ? Math.round(
-                          leaderboardData.reduce((sum, s) => sum + s.overallAvgScore, 0) /
-                          leaderboardData.length
-                        )
-                        : 0}%
-                    </p>
+                    {loading ? (
+                      <div className="h-6 md:h-7 w-16 bg-white bg-opacity-30 rounded mt-1 animate-pulse"></div>
+                    ) : (
+                      <p className="text-lg md:text-xl font-bold">
+                        {leaderboardData.length > 0
+                          ? Math.round(
+                            leaderboardData.reduce((sum, s) => sum + s.overallAvgScore, 0) /
+                            leaderboardData.length
+                          )
+                          : 0}%
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -277,13 +279,26 @@ export default function Leaderboards({ user, userDoc }) {
                   <Star className="w-6 h-6 md:w-8 md:h-8" />
                   <div>
                     <p className="text-xs md:text-sm opacity-90">Top Score</p>
-                    <p className="text-xl md:text-2xl font-bold">
-                      {leaderboardData.length > 0 ? leaderboardData[0]?.overallBestScore : 0}%
-                    </p>
+                    {loading ? (
+                      <div className="h-6 md:h-7 w-16 bg-white bg-opacity-30 rounded mt-1 animate-pulse"></div>
+                    ) : (
+                      <p className="text-lg md:text-xl font-bold">
+                        {leaderboardData.length > 0 ? leaderboardData[0]?.overallBestScore : 0}%
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Top 5 Leaderboard */}
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl overflow-hidden animate-fadeIn">
+          <div className="p-4 md:p-6 bg-gradient-to-r from-green-700 to-green-500 text-white">
+            <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+              Top 5 Rankings
+            </h2>
           </div>
 
           {/* Filters */}
@@ -310,7 +325,7 @@ export default function Leaderboards({ user, userDoc }) {
               />
             </div>
 
-            <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 md:mt-4 ${showFilters ? 'block' : 'hidden'} md:block`}>
+            <div className={`grid-cols-1 sm:grid-cols-3 gap-4 mt-3 md:mt-5 ${showFilters ? 'grid' : 'hidden'} md:grid`}>
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
@@ -344,21 +359,59 @@ export default function Leaderboards({ user, userDoc }) {
               </select>
             </div>
           </div>
-        </div>
 
-        {/* Top 5 Leaderboard */}
-        <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl overflow-hidden animate-fadeIn">
-          <div className="p-4 md:p-6 bg-gradient-to-r from-green-700 to-green-500 text-white">
-            <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />
-              Top 5 Rankings
-            </h2>
-          </div>
+          {loading ? (
+            <div className="animate-pulse">
+              {/* Desktop/Tablet Table Skeleton */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b-2 border-gray-200">
+                    <tr>
+                      {Array.from({ length: 9 }).map((_, i) => (
+                        <th key={i} className="px-6 py-4">
+                          <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {Array.from({ length: 5 }).map((_, rowIdx) => (
+                      <tr key={rowIdx}>
+                        {Array.from({ length: 9 }).map((_, colIdx) => (
+                          <td key={colIdx} className="px-6 py-4">
+                            <div className={`h-4 bg-gray-200 rounded ${colIdx === 0 ? 'w-10 h-10 rounded-full mx-auto' : colIdx === 1 ? 'w-3/4' : 'w-full'}`}></div>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          {top5Students.length === 0 ? (
+              {/* Mobile Card Skeleton */}
+              <div className="md:hidden divide-y divide-gray-100 p-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-full"></div>
+                      <div className="flex-1 space-y-2 py-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                      <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="h-16 bg-gray-100 rounded-lg"></div>
+                      <div className="h-16 bg-gray-100 rounded-lg"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : top5Students.length === 0 ? (
             <div className="p-8 md:p-12 text-center">
               <Trophy className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-base md:text-lg">No quiz submissions yet</p>
+              <p className="text-gray-600 text-sm md:text-base">No quiz submissions yet</p>
               <p className="text-xs md:text-sm text-gray-500 mt-2">Complete quizzes to appear on the leaderboard!</p>
             </div>
           ) : (
@@ -372,16 +425,10 @@ export default function Leaderboards({ user, userDoc }) {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Class</th>
                       <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">
-                        <div className="flex items-center justify-center gap-1">
-                          <Radio className="w-4 h-4" />
-                          Live Best
-                        </div>
+                        Live Best
                       </th>
                       <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">
-                        <div className="flex items-center justify-center gap-1">
-                          <Zap className="w-4 h-4" />
-                          Self-Paced Best
-                        </div>
+                        Self-Paced Best
                       </th>
                       <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Overall Avg</th>
                       <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Live Quizzes</th>
@@ -453,7 +500,7 @@ export default function Leaderboards({ user, userDoc }) {
               </div>
 
               {/* Mobile Card View */}
-              <div className="lg:hidden divide-y divide-gray-200">
+              <div className="md:hidden divide-y divide-gray-200">
                 {top5Students.map((student, idx) => (
                   <div
                     key={student.studentId}
@@ -487,10 +534,10 @@ export default function Leaderboards({ user, userDoc }) {
 
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                          <Radio className="w-3 h-3" /> Live Best
+                        <p className="text-xs text-gray-600 mb-1 text-center">
+                          Live Best
                         </p>
-                        <p className={`text-lg font-bold ${student.synchronous.bestScore > 0
+                        <p className={`text-lg font-bold text-center ${student.synchronous.bestScore > 0
                           ? student.synchronous.bestScore >= 90 ? "text-green-600" : student.synchronous.bestScore >= 75 ? "text-green-600" : "text-yellow-600"
                           : "text-gray-400"
                           }`}>
@@ -498,10 +545,10 @@ export default function Leaderboards({ user, userDoc }) {
                         </p>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                          <Zap className="w-3 h-3" /> Self-Paced Best
+                        <p className="text-xs text-gray-600 mb-1 text-center">
+                          Self-Paced Best
                         </p>
-                        <p className={`text-lg font-bold ${student.asynchronous.bestScore > 0
+                        <p className={`text-lg font-bold text-center ${student.asynchronous.bestScore > 0
                           ? student.asynchronous.bestScore >= 90 ? "text-green-600" : student.asynchronous.bestScore >= 75 ? "text-green-600" : "text-yellow-600"
                           : "text-gray-400"
                           }`}>

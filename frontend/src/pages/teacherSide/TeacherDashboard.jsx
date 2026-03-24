@@ -390,7 +390,7 @@ export default function TeacherDashboard({ user, userDoc }) {
 
   // Full-page skeleton
   const DashboardSkeleton = () => (
-    <div className="px-2 py-6 md:p-8">
+    <div className="w-full">
       {/* Header Skeleton */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 mb-8">
         <div>
@@ -494,12 +494,12 @@ export default function TeacherDashboard({ user, userDoc }) {
         className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
-        <div className="w-full px-4 md:px-8 lg:px-10 py-6 font-Poppins">
+        <div className="w-full px-2 md:px-3 lg:px-4 py-2 font-Poppins">
           {isMainDashboard ? (
             isInitialLoading ? (
               <DashboardSkeleton />
             ) : (
-              <div className="px-2 py-6 md:p-8">
+              <div className="w-full">
                 {/* Header with greeting */}
                 {/* Header with greeting */}
                 {/* Header with greeting */}
@@ -508,11 +508,11 @@ export default function TeacherDashboard({ user, userDoc }) {
                   <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
 
                   <div className="relative z-10">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">
                       {getGreeting()},{" "}
                       {userDoc?.firstName || user?.displayName || "Teacher"}!
                     </h1>
-                    <p className="text-md md:text-lg text-blue-100 mt-1">
+                    <p className="text-sm md:text-base text-blue-100 mt-1">
                       Manage your classes, quizzes, and view student performance analytics
                     </p>
                   </div>
@@ -546,17 +546,17 @@ export default function TeacherDashboard({ user, userDoc }) {
                         <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                           <School className="w-5 h-5 text-blue-700" strokeWidth={2.5} />
                         </div>
-                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                        <h3 className="font-bold text-[#0f172a] text-base leading-tight line-clamp-2">
                           Total Classes
                         </h3>
                       </div>
 
                       <div className="flex items-baseline mt-1">
-                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
+                        <h2 className="text-3xl font-extrabold text-[#0f172a]">
                           {totalClasses}
                         </h2>
                       </div>
-                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                      <p className="text-[#475569] text-sm leading-relaxed line-clamp-2 mt-auto">
                         Active classes
                       </p>
                     </div>
@@ -570,17 +570,17 @@ export default function TeacherDashboard({ user, userDoc }) {
                         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                           <NotebookPen className="w-5 h-5 text-emerald-700" strokeWidth={2.5} />
                         </div>
-                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                        <h3 className="font-bold text-[#0f172a] text-base leading-tight line-clamp-2">
                           Total Quizzes
                         </h3>
                       </div>
 
                       <div className="flex items-baseline mt-1">
-                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
+                        <h2 className="text-3xl font-extrabold text-[#0f172a]">
                           {totalQuizzes}
                         </h2>
                       </div>
-                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                      <p className="text-[#475569] text-sm leading-relaxed line-clamp-2 mt-auto">
                         Created quizzes
                       </p>
                     </div>
@@ -594,17 +594,17 @@ export default function TeacherDashboard({ user, userDoc }) {
                         <div className="w-10 h-10 rounded-xl bg-[#f3e8ff] flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                           <Users className="w-5 h-5 text-[#6b21a8]" strokeWidth={2.5} />
                         </div>
-                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                        <h3 className="font-bold text-[#0f172a] text-base leading-tight line-clamp-2">
                           Total Students
                         </h3>
                       </div>
 
                       <div className="flex items-baseline mt-1">
-                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
+                        <h2 className="text-3xl font-extrabold text-[#0f172a]">
                           {totalStudents}
                         </h2>
                       </div>
-                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                      <p className="text-[#475569] text-sm leading-relaxed line-clamp-2 mt-auto">
                         Enrolled students
                       </p>
                     </div>
@@ -618,24 +618,24 @@ export default function TeacherDashboard({ user, userDoc }) {
                         <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                           <TrendingUp className="w-5 h-5 text-[#92400e]" strokeWidth={2.5} />
                         </div>
-                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                        <h3 className="font-bold text-[#0f172a] text-base leading-tight line-clamp-2">
                           Avg. Score
                         </h3>
                       </div>
 
                       <div className="flex items-baseline mt-1">
-                        <h2 className="text-4xl font-extrabold text-[#0f172a]">
+                        <h2 className="text-3xl font-extrabold text-[#0f172a]">
                           {averageScore !== null ? (
                             <span>
                               {averageScore}
-                              <span className="text-2xl text-gray-500 font-bold">%</span>
+                              <span className="text-xl text-gray-500 font-bold">%</span>
                             </span>
                           ) : (
-                            <span className="text-3xl text-gray-400">N/A</span>
+                            <span className="text-2xl text-gray-400">N/A</span>
                           )}
                         </h2>
                       </div>
-                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-auto">
+                      <p className="text-[#475569] text-sm leading-relaxed line-clamp-2 mt-auto">
                         Overall performance
                       </p>
                     </div>
@@ -644,7 +644,7 @@ export default function TeacherDashboard({ user, userDoc }) {
 
                 {/* Quick Actions */}
                 <div className="mt-8">
-                  <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
                     <Sparkles size={20} className="text-gray-400" />
                     Quick Actions
                   </h2>
@@ -660,8 +660,8 @@ export default function TeacherDashboard({ user, userDoc }) {
                       </div>
 
                       <div className="mt-5 z-10">
-                        <h3 className="font-bold text-gray-800 text-[17px] group-hover:text-blue-600 transition-colors">Create Quiz</h3>
-                        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Generate dynamically via AI or build manually</p>
+                        <h3 className="font-bold text-gray-800 text-base group-hover:text-blue-600 transition-colors">Create Quiz</h3>
+                        <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Generate dynamically via AI or build manually</p>
                       </div>
 
                       <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-blue-600 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
@@ -680,8 +680,8 @@ export default function TeacherDashboard({ user, userDoc }) {
                       </div>
 
                       <div className="mt-5 z-10">
-                        <h3 className="font-bold text-gray-800 text-[17px] group-hover:text-emerald-600 transition-colors">Create Class</h3>
-                        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Add a new class section and enroll students</p>
+                        <h3 className="font-bold text-gray-800 text-base group-hover:text-emerald-600 transition-colors">Create Class</h3>
+                        <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Add a new class section and enroll students</p>
                       </div>
 
                       <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-emerald-600 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
@@ -700,8 +700,8 @@ export default function TeacherDashboard({ user, userDoc }) {
                       </div>
 
                       <div className="mt-5 z-10">
-                        <h3 className="font-bold text-gray-800 text-[17px] group-hover:text-violet-600 transition-colors">View Reports</h3>
-                        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Analyze performance, scores, and growth</p>
+                        <h3 className="font-bold text-gray-800 text-base group-hover:text-violet-600 transition-colors">View Reports</h3>
+                        <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Analyze performance, scores, and growth</p>
                       </div>
 
                       <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-violet-600 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
@@ -716,7 +716,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                   {/* Recent Quizzes - takes 3/5 */}
                   <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
-                      <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-700 text-base flex items-center gap-2">
                         <FileText size={18} className="text-blue-500" />
                         Recent Quizzes
                       </h3>
@@ -774,7 +774,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                   {/* Recent Activity - takes 2/5 */}
                   <div className="lg:col-span-2 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-50">
-                      <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-700 text-base flex items-center gap-2">
                         <Clock size={18} className="text-violet-500" />
                         Recent Activity
                       </h3>

@@ -766,10 +766,10 @@ export default function ReportsAnalytics() {
 
   if (loading) {
     return (
-      <div className="py-4 px-3 md:py-6 md:px-8 font-Poppins">
+      <div className="w-full font-Poppins">
         <div className="flex items-center gap-3">
           <div className="flex flex-col mb-4 md:mb-6 w-full animate-fadeIn bg-blue-600 p-10 rounded-3xl">
-            <h1 className="text-3xl md:text-2xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
               Reports & Analytics
             </h1>
             <p className="text-md md:text-md font-light text-white">
@@ -800,7 +800,7 @@ export default function ReportsAnalytics() {
   }
 
   return (
-    <div className="py-4 px-3 md:py-6 md:px-8 font-Poppins">
+    <div className="w-full font-Poppins">
       {/* Toast Notification */}
       <Toast toast={toast} onClose={clearToast} />
 
@@ -818,7 +818,7 @@ export default function ReportsAnalytics() {
       />
       <div className="flex items-center gap-3">
         <div className="flex flex-col w-full mb-4 md:mb-6 bg-blue-600 p-10 rounded-3xl">
-          <h1 className="text-3xl md:text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
             Reports & Analytics
           </h1>
           <p className="text-md md:text-md font-light text-white">
@@ -869,7 +869,7 @@ export default function ReportsAnalytics() {
                 ← Back to Classes
               </button>
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-4 md:p-6">
-                <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-1 md:mb-2">{selectedClass.classNo && selectedClass.code ? `#${selectedClass.classNo} ${selectedClass.code}` : selectedClass.classNo ? `#${selectedClass.classNo}` : selectedClass.code || selectedClass.name}</h2>
+                <h2 className="text-base md:text-xl font-bold text-gray-800 mb-1 md:mb-2">{selectedClass.classNo && selectedClass.code ? `#${selectedClass.classNo} ${selectedClass.code}` : selectedClass.classNo ? `#${selectedClass.classNo}` : selectedClass.code || selectedClass.name}</h2>
                 <p className="text-sm md:text-base text-gray-600">Select a quiz to view analytics</p>
               </div>
             </div>
@@ -1013,7 +1013,7 @@ export default function ReportsAnalytics() {
                         )}
                         <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Quiz Mode</h2>
                       </div>
-                      <p className="text-sm md:text-2xl font-bold">
+                      <p className="text-sm md:text-xl font-bold">
                         {analytics.quizMode === "synchronous" ? "LIVE QUIZ" : "SELF-PACED"}
                       </p>
                       <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">
@@ -1026,7 +1026,7 @@ export default function ReportsAnalytics() {
                         <TrendingUp className="w-4 h-4 md:w-6 md:h-6" />
                         <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Avg Raw Score</h2>
                       </div>
-                      <p className="text-2xl md:text-4xl font-bold">{analytics.averageRawScore}%</p>
+                      <p className="text-lg md:text-xl font-bold">{analytics.averageRawScore}%</p>
                       <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">{analytics.totalStudents} students</p>
                     </div>
 
@@ -1035,7 +1035,7 @@ export default function ReportsAnalytics() {
                         <TrendingUp className="w-4 h-4 md:w-6 md:h-6" />
                         <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Avg Base-50</h2>
                       </div>
-                      <p className="text-2xl md:text-4xl font-bold">{analytics.averageBase50Score}%</p>
+                      <p className="text-lg md:text-xl font-bold">{analytics.averageBase50Score}%</p>
                       <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">Transmuted grade</p>
                     </div>
 
@@ -1044,7 +1044,7 @@ export default function ReportsAnalytics() {
                         <AlertTriangle className="w-4 h-4 md:w-6 md:h-6" />
                         <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Low Performers</h2>
                       </div>
-                      <p className="text-sm md:text-2xl font-bold break-words">
+                      <p className="text-sm md:text-xl font-bold break-words">
                         {analytics.lowPerformers.length > 0
                           ? analytics.lowPerformers.join(", ")
                           : "None"}
@@ -1057,7 +1057,7 @@ export default function ReportsAnalytics() {
                         <Trophy className="w-4 h-4 md:w-6 md:h-6" />
                         <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Top Performers</h2>
                       </div>
-                      <p className="text-sm md:text-2xl font-bold break-words">
+                      <p className="text-sm md:text-xl font-bold break-words">
                         {analytics.topPerformers.length > 0
                           ? analytics.topPerformers.join(", ")
                           : "None"}
@@ -1297,7 +1297,7 @@ export default function ReportsAnalytics() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Edit Question {editingQuestion + 1}</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800">Edit Question {editingQuestion + 1}</h2>
               <button
                 onClick={() => {
                   setShowEditModal(false);

@@ -170,12 +170,12 @@ export default function ArchivedClasses({ user }) {
 
   if (loading) {
     return (
-      <div className="py-6 px-2 md:p-8 font-Poppins animate-fadeIn">
+      <div className="w-full font-Poppins animate-fadeIn">
         <div className="w-full">
           {/* Header */}
           <div className="mb-8 flex flex-col">
             <div className="flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
-              <h1 className="text-3xl font-bold text-white">Archived Classes</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-white">Archived Classes</h1>
               <p className="text-white">
               Manage your archived classes. You can restore or permanently delete them.
             </p>
@@ -218,12 +218,12 @@ export default function ArchivedClasses({ user }) {
   }
 
   return (
-    <div className="py-6 px-2 md:p-8 font-Poppins animate-fadeIn">
+    <div className="w-full font-Poppins animate-fadeIn">
       <div className="w-full">
         {/* Header */}
         <div className="mb-8">
           <div className="flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
-            <h1 className="text-3xl font-bold text-white">Archived Classes</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-white">Archived Classes</h1>
             <p className="text-white">
               Manage your archived classes. You can restore or permanently delete them.
             </p>

@@ -257,14 +257,14 @@ export default function TeacherProfile({ user, userDoc }) {
             />
 
             {/* ─── Gradient Banner Header ─── */}
-            <div className="relative bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 rounded-2xl mx-3 md:mx-6 mt-4 px-6 py-8 md:py-10 overflow-hidden shadow-lg">
+            <div className="relative bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 rounded-2xl w-full mt-4 px-6 py-8 md:py-10 overflow-hidden shadow-lg">
                 {/* Decorative circles */}
                 <div className="absolute top-[-30px] right-[-30px] w-40 h-40 bg-white/10 rounded-full" />
                 <div className="absolute bottom-[-20px] right-[80px] w-24 h-24 bg-white/5 rounded-full" />
 
                 <div className="relative flex items-center gap-3">
                     <IdCard className="w-8 h-8 md:w-10 md:h-10 text-white/90" />
-                    <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">My Profile</h1>
+                    <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">My Profile</h1>
                 </div>
                 <p className="relative text-blue-100 text-sm md:text-base mt-1 ml-11 md:ml-[52px]">
                     Your personal teaching profile and academic details.
@@ -274,19 +274,19 @@ export default function TeacherProfile({ user, userDoc }) {
             {/* ─── Profile Photo Section ─── */}
             <div className="flex flex-col items-center mt-8 mb-2">
                 <div className="relative group">
-                    <div className="w-32 h-32 md:w-40 md:h-40 text-5xl md:text-7xl bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
+                    <div className="w-32 h-32 md:w-40 md:h-40 text-4xl md:text-6xl bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
                         {userInitial}
                     </div>
                     <button className="absolute bottom-1 right-1 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white">
                         <Pencil className="w-4 h-4 text-white" />
                     </button>
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold text-title mt-4">{fullName || displayName}</h2>
+                <h2 className="text-lg md:text-xl font-bold text-title mt-4">{fullName || displayName}</h2>
                 <p className="text-subtext text-sm">{department || "Teacher"}</p>
             </div>
 
             {/* ─── Personal Details Card ─── */}
-            <div className="mx-3 md:mx-6 mt-6 mb-6">
+            <div className="w-full mt-6 mb-6">
                 <div className="bg-components rounded-2xl shadow-md overflow-hidden">
                     {/* Card header */}
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
