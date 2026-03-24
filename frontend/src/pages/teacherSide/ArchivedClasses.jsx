@@ -246,7 +246,7 @@ export default function ArchivedClasses({ user }) {
                 key={classItem.id}
                 className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
               >
-                <div className="bg-gradient-to-r from-blue-700 to-blue-400 p-4">
+                <div className="bg-blue-700 p-6">
                   <div className="flex items-center gap-2 mb-2">
                     <BookOpen className="w-5 h-5 text-white" />
                     <h3 className="text-lg font-bold text-white truncate flex-1">
@@ -273,7 +273,7 @@ export default function ArchivedClasses({ user }) {
                     <button
                       onClick={() => handleRestore(classItem)}
                       disabled={restoring === classItem.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-xl transition-all font-medium"
+                      className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-4 rounded-xl transition-all font-medium"
                     >
                       {restoring === classItem.id ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

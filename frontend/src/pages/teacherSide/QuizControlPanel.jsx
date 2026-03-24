@@ -660,7 +660,7 @@ export default function QuizControlPanel() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2">
         <button
           onClick={() => navigate("/teacher/quizzes")}
-          className="flex items-center gap-2 text-subtext hover:text-subsubtext"
+          className="flex items-center gap-2 text-subtext hover:text-subsubtext transititon hover:duration-200 hover:scale-110 active:scale-95"
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Manage Quizzes

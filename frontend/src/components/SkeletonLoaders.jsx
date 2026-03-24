@@ -1,3 +1,5 @@
+import { Trophy } from "lucide-react";
+
 // ─── Reusable Skeleton Block ─────────────────────────────────────────────────
 const shimmerStyle = {
     background: "linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%)",
@@ -125,62 +127,80 @@ export function AnalyticsSkeleton() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function ResultsTableSkeleton() {
     return (
-        <div className="p-8 font-Poppins max-w-7xl mx-auto">
+        <div className="min-h-screen p-3 md:px-10 py-8 font-Poppins" >
             <SkeletonKeyframes />
-
-            {/* Back button + header */}
-            <div className="mb-8">
-                <SkeletonBlock width="80px" height="16px" className="mb-4" />
-                <div className="flex items-center justify-between">
-                    <div>
-                        <SkeletonBlock width="300px" height="28px" className="mb-2" />
-                        <SkeletonBlock width="200px" height="16px" delay={0.05} />
-                    </div>
-                    <SkeletonBlock width="160px" height="44px" rounded="8px" delay={0.1} />
-                </div>
-            </div>
-
-            {/* Stat cards */}
-            <div className="grid md:grid-cols-4 gap-4 mb-8">
-                {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white rounded-lg p-6 border border-gray-100">
-                        <div className="flex items-center gap-3 mb-2">
-                            <SkeletonBlock width="24px" height="24px" rounded="6px" delay={i * 0.1} />
-                            <SkeletonBlock width="90px" height="14px" delay={i * 0.1 + 0.05} />
+            <div className="w-full">
+                <div className="bg-components rounded-2xl md:rounded-3xl shadow-xl overflow-hidden mb-4 md:mb-6 animate-fadeIn">
+                    <div className="bg-gradient-to-r from-green-700 to-green-500 p-4 md:p-8 text-white">
+                        <div className="flex items-center gap-3 md:gap-4 mb-4">
+                        <Trophy className="w-8 h-8 md:w-12 md:h-12 animate-bounceIn" />
+                        <div>
+                            <h1 className="text-2xl font-bold">Class Leaderboard</h1>
+                            <p className="text-md font-light">Your Class Rankings & Performance</p>
                         </div>
-                        <SkeletonBlock width="60px" height="28px" delay={i * 0.1 + 0.08} />
                     </div>
-                ))}
-            </div>
-
-            {/* Table */}
-            <div className="bg-white rounded-xl border-2 border-gray-100 overflow-hidden">
-                {/* Table header */}
-                <div className="flex gap-4 px-6 py-4" style={{ background: "linear-gradient(90deg, #dbeafe, #ede9fe)" }}>
-                    {[120, 160, 70, 80, 90, 70, 70, 80].map((w, i) => (
-                        <SkeletonBlock key={i} width={`${w}px`} height="14px" delay={i * 0.04} />
-                    ))}
                 </div>
-
-                {/* Table rows */}
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((rowIdx) => (
-                    <div
-                        key={rowIdx}
-                        className="flex gap-4 px-6 py-4 border-t border-gray-50"
-                        style={{ background: rowIdx % 2 === 0 ? "#fff" : "#f9fafb" }}
-                    >
-                        {[120, 160, 70, 80, 90, 70, 70, 80].map((w, colIdx) => (
-                            <SkeletonBlock
-                                key={colIdx}
-                                width={`${w}px`}
-                                height="12px"
-                                delay={rowIdx * 0.06 + colIdx * 0.03}
-                            />
-                        ))}
-                    </div>
-                ))}
             </div>
         </div>
+        </div>
+
+
+        // <div className="p-8 font-Poppins max-w-7xl mx-auto">
+        //     <SkeletonKeyframes />
+
+        //     {/* Back button + header */}
+        //     <div className="mb-8">
+        //         <SkeletonBlock width="80px" height="16px" className="mb-4" />
+        //         <div className="flex items-center justify-between">
+        //             <div>
+        //                 <SkeletonBlock width="300px" height="28px" className="mb-2" />
+        //                 <SkeletonBlock width="200px" height="16px" delay={0.05} />
+        //             </div>
+        //             <SkeletonBlock width="160px" height="44px" rounded="8px" delay={0.1} />
+        //         </div>
+        //     </div>
+
+        //     {/* Stat cards */}
+        //     <div className="grid md:grid-cols-4 gap-4 mb-8">
+        //         {[0, 1, 2, 3].map((i) => (
+        //             <div key={i} className="bg-white rounded-lg p-6 border border-gray-100">
+        //                 <div className="flex items-center gap-3 mb-2">
+        //                     <SkeletonBlock width="24px" height="24px" rounded="6px" delay={i * 0.1} />
+        //                     <SkeletonBlock width="90px" height="14px" delay={i * 0.1 + 0.05} />
+        //                 </div>
+        //                 <SkeletonBlock width="60px" height="28px" delay={i * 0.1 + 0.08} />
+        //             </div>
+        //         ))}
+        //     </div>
+
+        //     {/* Table */}
+        //     <div className="bg-white rounded-xl border-2 border-gray-100 overflow-hidden">
+        //         {/* Table header */}
+        //         <div className="flex gap-4 px-6 py-4" style={{ background: "linear-gradient(90deg, #dbeafe, #ede9fe)" }}>
+        //             {[120, 160, 70, 80, 90, 70, 70, 80].map((w, i) => (
+        //                 <SkeletonBlock key={i} width={`${w}px`} height="14px" delay={i * 0.04} />
+        //             ))}
+        //         </div>
+
+        //         {/* Table rows */}
+        //         {[0, 1, 2, 3, 4, 5, 6, 7].map((rowIdx) => (
+        //             <div
+        //                 key={rowIdx}
+        //                 className="flex gap-4 px-6 py-4 border-t border-gray-50"
+        //                 style={{ background: rowIdx % 2 === 0 ? "green-500" : "green-500" }}
+        //             >
+        //                 {[120, 160, 70, 80, 90, 70, 70, 80].map((w, colIdx) => (
+        //                     <SkeletonBlock
+        //                         key={colIdx}
+        //                         width={`${w}px`}
+        //                         height="12px"
+        //                         delay={rowIdx * 0.06 + colIdx * 0.03}
+        //                     />
+        //                 ))}
+        //             </div>
+        //         ))}
+        //     </div>
+        // </div>
     );
 }
 

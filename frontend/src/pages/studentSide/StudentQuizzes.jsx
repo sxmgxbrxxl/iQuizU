@@ -21,7 +21,7 @@ import {
     RotateCcw,
     GraduationCap,
     Video,
-    Hash,
+    KeyRound,
 } from "lucide-react";
 import { QuizListSkeleton } from "../../components/SkeletonLoaders";
 
@@ -464,7 +464,7 @@ export default function StudentQuizzes({ user, userDoc }) {
 
                             {isSynchronous && quiz.quizCode && (
                                 <div className="flex items-center gap-1.5 font-semibold text-green-700">
-                                    <Hash className="w-4 h-4" />
+                                    <KeyRound className="w-4 h-4" />
                                     <span>Code: {quiz.quizCode}</span>
                                 </div>
                             )}
