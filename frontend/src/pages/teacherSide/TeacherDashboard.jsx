@@ -494,7 +494,7 @@ export default function TeacherDashboard({ user, userDoc }) {
         className="flex-1 overflow-y-auto transition-all duration-300 pt-16"
         style={{ marginLeft: window.innerWidth >= 1024 ? sidebarWidth : "0" }}
       >
-        <div className="w-full px-2 md:px-3 lg:px-4 py-2 font-Poppins">
+        <div className="w-full px-6 md:px-3 lg:px-6 py-6 font-Poppins">
           {isMainDashboard ? (
             isInitialLoading ? (
               <DashboardSkeleton />
@@ -537,7 +537,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                 </div>
 
                 {/* Stat Cards - 4 cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Classes Card */}
                   <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
                     <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
@@ -643,7 +643,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="mt-8">
+                <div className="mt-6">
                   <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
                     <Sparkles size={20} className="text-gray-400" />
                     Quick Actions
