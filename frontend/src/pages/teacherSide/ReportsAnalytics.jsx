@@ -911,7 +911,7 @@ export default function ReportsAnalytics() {
                         {quiz.quizMode === "synchronous" ? (
                           <Zap className="w-4 h-4 text-yellow-500" />
                         ) : (
-                          <Clock className="w-4 h-4 text-blue-500" />
+                          <Clock className="w-4 h-4 text-violet-500" />
                         )}
                         <span className="text-sm font-semibold text-gray-600">
                           {quiz.quizMode === "synchronous" ? "Live Quiz" : "Self-Paced"}
@@ -936,7 +936,7 @@ export default function ReportsAnalytics() {
             </>
           ) : (
             <>
-              <div className="mb-4 md:mb-8">
+              <div className="mb-4 md:mb-4">
                 <button
                   onClick={() => {
                     setSelectedQuiz(null);

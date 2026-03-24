@@ -231,7 +231,7 @@ export default function Leaderboards({ user, userDoc }) {
     <div className="min-h-screen p-2 md:px-5 py-4 font-Poppins">
       <div className="w-full">
         {/* Header */}
-        <div className="bg-components rounded-2xl md:rounded-3xl shadow-xl overflow-hidden mb-4 md:mb-6 animate-fadeIn">
+        <div className="bg-components rounded-2xl md:rounded-3xl shadow-xl overflow-hidden mb-4 md:mb-6">
           <div className="bg-gradient-to-r from-green-700 to-green-500 p-4 md:p-8 text-white">
             <div className="flex items-center gap-3 md:gap-4 mb-4">
               <div>
@@ -241,7 +241,7 @@ export default function Leaderboards({ user, userDoc }) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mt-4 md:mt-6">
-              <div className="bg-components bg-opacity-20 backdrop-blur-sm rounded-xl p-3 md:p-4 animate-slideIn stagger-1 hover:bg-opacity-30 transition transform hover:scale-105">
+              <div className="bg-components bg-opacity-20 backdrop-blur-sm rounded-xl p-3 md:p-4 stagger-1 hover:bg-opacity-30 transition transform hover:scale-105">
                 <div className="flex items-center gap-2 md:gap-3">
                   <Users className="w-6 h-6 md:w-8 md:h-8" />
                   <div>
@@ -254,7 +254,7 @@ export default function Leaderboards({ user, userDoc }) {
                   </div>
                 </div>
               </div>
-              <div className="bg-components bg-opacity-20 backdrop-blur-sm rounded-xl p-3 md:p-4 animate-slideIn stagger-2 hover:bg-opacity-30 transition transform hover:scale-105">
+              <div className="bg-components bg-opacity-20 backdrop-blur-sm rounded-xl p-3 md:p-4 stagger-2 hover:bg-opacity-30 transition transform hover:scale-105">
                 <div className="flex items-center gap-2 md:gap-3">
                   <TrendingUp className="w-6 h-6 md:w-8 md:h-8" />
                   <div>

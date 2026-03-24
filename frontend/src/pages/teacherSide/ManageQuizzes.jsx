@@ -565,7 +565,7 @@ export default function ManageQuizzes() {
 
     try {
       const res = await fetch(
-        "https://iquizu-backend-production.up.railway.app/api/quiz/generate-from-pdf",
+        "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-pdf",
         {
           method: "POST",
           body: fd,
@@ -1240,7 +1240,7 @@ export default function ManageQuizzes() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedSyncQuiz(null)}>
           <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
             {/* Dialog Header */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-amber-50/50">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-amber-50/50 rounded-t-2xl">
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-amber-500" />
                 <h3 className="text-lg font-bold text-title">{selectedSyncQuiz.title}</h3>
@@ -1414,7 +1414,7 @@ export default function ManageQuizzes() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedAsyncQuiz(null)}>
             <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
               {/* Dialog Header */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-violet-50/50">
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-violet-50/50 rounded-t-2xl">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-violet-500" />
                   <h3 className="text-lg font-bold text-title">{selectedAsyncQuiz.title}</h3>
@@ -2556,7 +2556,7 @@ export default function ManageQuizzes() {
 
                         try {
                           const res = await fetch(
-                            "https://iquizu-backend-production.up.railway.app/api/quiz/generate-from-pdf",
+                            "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-pdf",
                             {
                               method: "POST",
                               body: fd,
