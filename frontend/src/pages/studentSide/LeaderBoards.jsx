@@ -228,10 +228,10 @@ export default function Leaderboards({ user, userDoc }) {
   }
 
   return (
-    <div className="min-h-screen p-2 md:px-5 py-4 font-Poppins">
+    <div className="min-h-screen p-2 md:px-5 py-6 font-Poppins">
       <div className="w-full">
         {/* Header */}
-        <div className="bg-components rounded-2xl md:rounded-3xl shadow-xl overflow-hidden mb-4 md:mb-6">
+        <div className="bg-components rounded-2xl md:rounded-3xl shadow-xl overflow-hidden mb-4 md:mb-6 animate-fadeIn">
           <div className="bg-gradient-to-r from-green-700 to-green-500 p-4 md:p-8 text-white">
             <div className="flex items-center gap-3 md:gap-4 mb-4">
               <div>
