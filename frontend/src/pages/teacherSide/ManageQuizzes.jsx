@@ -988,41 +988,45 @@ export default function ManageQuizzes() {
               {publishedQuizzes
                 .slice((publishedPage - 1) * ITEMS_PER_PAGE, publishedPage * ITEMS_PER_PAGE)
                 .map((q) => (
-                  <div
+                  <button
                     key={q.id}
                     onClick={() => setSelectedPublishedQuiz(q)}
-                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
+                    className="w-full text-left bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group flex flex-col"
                   >
-                    {/* Background blob using blue scale */}
-                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
-
-                    <div className="relative z-10 flex flex-col h-full gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          <NotebookPen className="w-6 h-6 text-blue-700" strokeWidth={2} />
-                        </div>
-                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                    {/* Header with gradient */}
+                    <div className="w-full bg-gradient-to-r from-blue-600 to-blue-400 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <NotebookPen className="w-5 h-5 text-white flex-shrink-0" />
+                        <h3 className="text-lg font-bold text-white truncate flex-1 leading-tight">
                           {q.title}
                         </h3>
                       </div>
-
-                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
-                        Published quiz with {q.questionCount} questions totaling {q.totalPoints} points.
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
-                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-white/20 text-white border border-white/30 truncate">
                           Published
-                        </span>
-                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
-                          {q.questionCount} Questions
-                        </span>
-                        <span className="px-3.5 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
-                          {q.totalPoints} Points
                         </span>
                       </div>
                     </div>
-                  </div>
+
+                    {/* Quiz Details */}
+                    <div className="w-full p-4 space-y-3 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <NotebookPen className="w-4 h-4 flex-shrink-0" />
+                        <span>{q.questionCount || 0} questions totaling {q.totalPoints || 0} points</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                        <span>Created: {q.createdAt?.seconds ? new Date(q.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}</span>
+                      </div>
+
+                      {/* Bottom indicator */}
+                      <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-end text-blue-600 group-hover:text-blue-700 font-semibold text-sm w-full">
+                        View Details
+                        <ChevronRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
                 ))}
             </div>
             <Pagination currentPage={publishedPage} totalItems={publishedQuizzes.length} onPageChange={setPublishedPage} accentColor="blue" />
@@ -1046,113 +1050,130 @@ export default function ManageQuizzes() {
             </div>
 
             {/* Dialog Body */}
-            <div className="p-5 space-y-4">
-              {/* Info */}
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Total</span>
-                    <p className="font-semibold text-gray-800 text-lg">{selectedPublishedQuiz.questionCount} <span className="text-sm font-normal text-gray-500">Questions</span></p>
-                    <p className="font-semibold text-gray-800 text-lg">{selectedPublishedQuiz.totalPoints} <span className="text-sm font-normal text-gray-500">Points</span></p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Dates</span>
-                    <p className="text-gray-600 text-xs mt-1">
-                      Created: {selectedPublishedQuiz.createdAt?.seconds ? new Date(selectedPublishedQuiz.createdAt.seconds * 1000).toLocaleDateString("en-PH") : "N/A"}
-                    </p>
-                    <p className="text-gray-600 text-xs">
-                      Updated: {selectedPublishedQuiz.updatedAt?.seconds ? new Date(selectedPublishedQuiz.updatedAt.seconds * 1000).toLocaleDateString("en-PH") : "N/A"}
-                    </p>
+            <div className="p-5 space-y-3.5">
+              {/* Stats & Dates Row */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Total Stats */}
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Quiz Stats</p>
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-xl font-black text-slate-800 leading-none">{selectedPublishedQuiz.questionCount}</p>
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5 uppercase tracking-wide">Questions</p>
+                    </div>
+                    <div className="w-px h-6 bg-slate-200"></div>
+                    <div>
+                      <p className="text-xl font-black text-slate-800 leading-none">{selectedPublishedQuiz.totalPoints}</p>
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5 uppercase tracking-wide">Points</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Breakdowns */}
-                {selectedPublishedQuiz.questions && selectedPublishedQuiz.questions.length > 0 && (
-                  <div className="pt-3 border-t border-gray-100 grid grid-cols-2 gap-4">
-                    {/* Types */}
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 mb-1">Question Types</p>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-600">Multiple Choice</span>
-                          <span className="font-medium">{selectedPublishedQuiz.questions.filter(q => q.type === 'multiple_choice').length}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-600">True/False</span>
-                          <span className="font-medium">{selectedPublishedQuiz.questions.filter(q => q.type === 'true_false').length}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-600">Identification</span>
-                          <span className="font-medium">{selectedPublishedQuiz.questions.filter(q => q.type === 'identification').length}</span>
-                        </div>
-                      </div>
+                {/* Dates */}
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Timeline</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 text-slate-400" />
+                      <p className="text-[11px] text-slate-600 truncate"><span className="font-semibold text-slate-700">Created:</span> {selectedPublishedQuiz.createdAt?.seconds ? new Date(selectedPublishedQuiz.createdAt.seconds * 1000).toLocaleDateString("en-PH") : "N/A"}</p>
                     </div>
-
-                    {/* Difficulty */}
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 mb-1">Difficulty</p>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-green-600">Easy</span>
-                          <span className="font-medium">{selectedPublishedQuiz.questions.filter(q => q.difficulty === 'easy').length}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-yellow-600">Average</span>
-                          <span className="font-medium">{selectedPublishedQuiz.questions.filter(q => q.difficulty === 'average').length}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-red-600">Difficult</span>
-                          <span className="font-medium">{selectedPublishedQuiz.questions.filter(q => q.difficulty === 'difficult').length}</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      <p className="text-[11px] text-slate-600 truncate"><span className="font-semibold text-slate-700">Updated:</span> {selectedPublishedQuiz.updatedAt?.seconds ? new Date(selectedPublishedQuiz.updatedAt.seconds * 1000).toLocaleDateString("en-PH") : "N/A"}</p>
                     </div>
                   </div>
-                )}
-
-
-                {selectedPublishedQuiz.classificationStats && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <p className="text-xs font-semibold text-gray-500 mb-2">Bloom's Taxonomy:</p>
-                    <div className="flex gap-2">
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md font-medium">
-                        HOTS: {selectedPublishedQuiz.classificationStats.hots_count} <span className="opacity-70">({selectedPublishedQuiz.classificationStats.hots_percentage}%)</span>
-                      </span>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md font-medium">
-                        LOTS: {selectedPublishedQuiz.classificationStats.lots_count} <span className="opacity-70">({selectedPublishedQuiz.classificationStats.lots_percentage}%)</span>
-                      </span>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedPublishedQuiz(null);
-                      navigate(`/teacher/edit-quiz/${selectedPublishedQuiz.id}`);
-                    }}
-                    className="flex-1 bg-blue-50 text-blue-600 border border-blue-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-blue-100 transition"
-                  >
-                    <Pen className="w-4 h-4" /> Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedPublishedQuiz(null);
-                      navigate(`/teacher/assign-quiz/${selectedPublishedQuiz.id}`);
-                    }}
-                    className="flex-1 bg-gray-100 text-gray-700 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-gray-200 transition"
-                  >
-                    <Users className="w-4 h-4" /> Assign
-                  </button>
+              {/* Breakdowns */}
+              {selectedPublishedQuiz.questions && selectedPublishedQuiz.questions.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Types */}
+                  <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-600 flex items-center gap-1.5 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>Multiple Choice</span>
+                        <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.questions.filter(q => q.type === 'multiple_choice').length}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-600 flex items-center gap-1.5 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>True/False</span>
+                        <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.questions.filter(q => q.type === 'true_false').length}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-600 flex items-center gap-1.5 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-teal-500"></div>Identification</span>
+                        <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.questions.filter(q => q.type === 'identification').length}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Difficulty */}
+                  <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-600 flex items-center gap-1.5 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>Easy</span>
+                        <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.questions.filter(q => q.difficulty === 'easy').length}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-600 flex items-center gap-1.5 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>Average</span>
+                        <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.questions.filter(q => q.difficulty === 'average').length}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-600 flex items-center gap-1.5 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>Difficult</span>
+                        <span className="font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.questions.filter(q => q.difficulty === 'difficult').length}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              )}
+
+              {selectedPublishedQuiz.classificationStats && (
+                <div className="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100/50">
+                  <p className="text-[10px] uppercase font-bold text-indigo-400 tracking-widest mb-2 flex items-center gap-1.5"><Brain className="w-3.5 h-3.5" /> Bloom's Taxonomy</p>
+                  <div className="flex gap-2">
+                    <div className="flex-1 bg-white border border-purple-100 shadow-sm rounded-lg p-2 flex items-center justify-between">
+                      <span className="text-[11px] font-black text-purple-700 tracking-wide">HOTS</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.classificationStats.hots_count}</span>
+                        <span className="text-[10px] font-medium text-purple-400">({selectedPublishedQuiz.classificationStats.hots_percentage}%)</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 bg-white border border-blue-100 shadow-sm rounded-lg p-2 flex items-center justify-between">
+                      <span className="text-[11px] font-black text-blue-700 tracking-wide">LOTS</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md">{selectedPublishedQuiz.classificationStats.lots_count}</span>
+                        <span className="text-[10px] font-medium text-blue-400">({selectedPublishedQuiz.classificationStats.lots_percentage}%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    setSelectedPublishedQuiz(null);
+                    navigate(`/teacher/edit-quiz/${selectedPublishedQuiz.id}`);
+                  }}
+                  className="bg-white border text-blue-600 hover:bg-blue-50 border-blue-200 font-bold rounded-lg px-3 py-2 flex items-center justify-center gap-1.5 text-sm transition-all shadow-sm"
+                >
+                  <Pen className="w-4 h-4" /> Edit Quiz
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedPublishedQuiz(null);
+                    navigate(`/teacher/assign-quiz/${selectedPublishedQuiz.id}`);
+                  }}
+                  className="bg-blue-600 text-white hover:bg-blue-700 font-bold rounded-lg px-3 py-2 flex items-center justify-center gap-1.5 text-sm shadow-sm transition-all"
+                >
+                  <Users className="w-4 h-4" /> Assign Quiz
+                </button>
                 <button
                   onClick={() => {
                     setSelectedPublishedQuiz(null);
                     handleDeleteQuiz(selectedPublishedQuiz.id, selectedPublishedQuiz.title);
                   }}
-                  className="w-full bg-red-50 text-red-600 border border-red-200 px-3 py-2.5 rounded-xl hover:bg-red-100 transition flex items-center justify-center gap-2 text-sm font-semibold"
+                  className="col-span-2 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm font-bold shadow-sm"
                 >
                   <Trash2 className="w-4 h-4" /> Archive Quiz
                 </button>
@@ -1191,43 +1212,51 @@ export default function ManageQuizzes() {
               {synchronousQuizzes
                 .slice((syncPage - 1) * ITEMS_PER_PAGE, syncPage * ITEMS_PER_PAGE)
                 .map((a) => (
-                  <div
+                  <button
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedSyncQuiz(a)}
-                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
+                    className="w-full text-left bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group flex flex-col"
                   >
-                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#fef3c7] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
-
-                    <div className="relative z-10 flex flex-col h-full gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          <Zap className="w-6 h-6 text-[#92400e]" strokeWidth={2} />
-                        </div>
-                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                    {/* Header with gradient */}
+                    <div className="w-full bg-gradient-to-r from-amber-500 to-amber-400 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Zap className="w-5 h-5 text-white flex-shrink-0" />
+                        <h3 className="text-lg font-bold text-white truncate flex-1 leading-tight">
                           {a.title}
                         </h3>
                       </div>
-
-                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
-                        Assigned to {a.className} • {a.studentCount} Students
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
-                        <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#d97706] animate-pulse"></span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-white/20 text-white border border-white/30 truncate flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
                           LIVE
                         </span>
-                        <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full">
-                          Sync
+                        <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-white/20 text-white border border-white/30 truncate">
+                          Synchronous
                         </span>
-                        {a.dueDate && (
-                          <span className="px-3.5 py-1.5 bg-[#fde68a] text-[#92400e] text-sm font-medium rounded-full flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" /> Due {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
-                          </span>
-                        )}
                       </div>
                     </div>
-                  </div>
+
+                    {/* Quiz Details */}
+                    <div className="w-full p-4 space-y-3 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Users className="w-4 h-4 flex-shrink-0" />
+                        <span>Assigned to {a.className} • {a.studentCount} Students</span>
+                      </div>
+
+                      {a.dueDate && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Clock className="w-4 h-4 flex-shrink-0" />
+                          <span>Due: {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        </div>
+                      )}
+
+                      {/* Bottom indicator */}
+                      <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-end text-amber-600 group-hover:text-amber-700 font-semibold text-sm w-full">
+                        View Details
+                        <ChevronRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
                 ))}
             </div>
             <Pagination currentPage={syncPage} totalItems={synchronousQuizzes.length} onPageChange={setSyncPage} accentColor="yellow" />
@@ -1251,71 +1280,76 @@ export default function ManageQuizzes() {
             </div>
 
             {/* Dialog Body */}
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-3.5">
+              {/* Info Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Status */}
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1.5">Session Status</p>
+                  <div>
+                    <span
+                      className={`inline-flex px-2 py-1 rounded-md text-[11px] font-black uppercase tracking-wide ${selectedSyncQuiz.sessionStatus === "active"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : selectedSyncQuiz.sessionStatus === "ended"
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-slate-200 text-slate-700"
+                        }`}
+                    >
+                      {selectedSyncQuiz.sessionStatus === "active"
+                        ? "Active"
+                        : selectedSyncQuiz.sessionStatus === "ended"
+                          ? "Ended"
+                          : "Not Started"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1.5">Timeline</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 text-slate-400" />
+                      <p className="text-[11px] text-slate-600 truncate"><span className="font-semibold text-slate-700">Assigned:</span> {selectedSyncQuiz.assignedAt ? new Date(selectedSyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Quiz Code */}
               {selectedSyncQuiz.quizCode && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                  <p className="text-xs text-gray-700 font-semibold mb-2">Quiz Code:</p>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xl font-bold text-slate-800 tracking-widest">
-                      {selectedSyncQuiz.quizCode}
-                    </span>
-                    <button
-                      onClick={() => handleCopyCode(selectedSyncQuiz.quizCode, `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}`)}
-                      className={`p-2 rounded-lg transition ${copiedCodeId === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}`
-                        ? "bg-green-500 text-white"
-                        : "bg-white border border-gray-200 hover:bg-gray-100 text-gray-600"
-                        }`}
-                      title="Copy code to clipboard"
-                    >
-                      {copiedCodeId === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}` ? (
-                        <CheckCircle className="w-5 h-5" />
-                      ) : (
-                        <Copy className="w-5 h-5" />
-                      )}
-                    </button>
+                <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-100/50 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-amber-500 tracking-widest mb-0.5">Live Quiz Code</p>
+                    <p className="text-2xl font-black text-amber-700 tracking-widest">{selectedSyncQuiz.quizCode}</p>
                   </div>
+                  <button
+                    onClick={() => handleCopyCode(selectedSyncQuiz.quizCode, `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}`)}
+                    className={`p-2 rounded-lg transition-all shadow-sm ${copiedCodeId === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}`
+                      ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                      : "bg-white border border-amber-200 hover:bg-amber-50 text-amber-600"
+                      }`}
+                    title="Copy code to clipboard"
+                  >
+                    {copiedCodeId === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}` ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <Copy className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
               )}
 
-              {/* Info */}
-              <div className="flex items-center justify-between">
-                <p className="text-gray-500 text-sm">
-                  Assigned:{" "}
-                  {selectedSyncQuiz.assignedAt
-                    ? new Date(selectedSyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                    : "N/A"}
-                </p>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${selectedSyncQuiz.sessionStatus === "active"
-                    ? "bg-green-100 text-green-800"
-                    : selectedSyncQuiz.sessionStatus === "ended"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-gray-100 text-gray-800"
-                    }`}
-                >
-                  {selectedSyncQuiz.sessionStatus === "active"
-                    ? "Active"
-                    : selectedSyncQuiz.sessionStatus === "ended"
-                      ? "Ended"
-                      : "Not Started"}
-                </span>
-              </div>
-
               {/* Actions */}
-              <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
+              <div className="flex flex-col gap-2.5 pt-1">
                 <button
                   onClick={() => {
                     setSelectedSyncQuiz(null);
                     navigate(`/teacher/quiz-control/${selectedSyncQuiz.quizId}/${selectedSyncQuiz.classId}`);
                   }}
-                  className="w-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-amber-100 transition"
+                  className="w-full bg-amber-500 text-white hover:bg-amber-600 font-bold rounded-lg px-3 py-2 flex items-center justify-center gap-1.5 text-sm shadow-sm transition-all"
                 >
-                  <Zap className="w-4 h-4" /> Control
+                  <Zap className="w-4 h-4" /> Open Control Panel
                 </button>
                 <button
                   onClick={() => {
@@ -1323,17 +1357,17 @@ export default function ManageQuizzes() {
                     handleDeleteAssignment(selectedSyncQuiz, true);
                   }}
                   disabled={deletingAssignment === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}`}
-                  className="w-full bg-red-600 text-white px-3 py-2.5 rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2 text-sm font-semibold disabled:bg-gray-400"
+                  className="w-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {deletingAssignment === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}` ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Deleting...
+                      Removing...
                     </>
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Delete Assignment
+                      Remove Assignment
                     </>
                   )}
                 </button>
@@ -1368,39 +1402,47 @@ export default function ManageQuizzes() {
               {assignedQuizzes
                 .slice((asyncPage - 1) * ITEMS_PER_PAGE, asyncPage * ITEMS_PER_PAGE)
                 .map((a) => (
-                  <div
+                  <button
                     key={`${a.quizId}-${a.classId}`}
                     onClick={() => setSelectedAsyncQuiz(a)}
-                    className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all cursor-pointer overflow-hidden p-6 group"
+                    className="w-full text-left bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group flex flex-col"
                   >
-                    <div className="absolute -top-16 -right-16 w-52 h-52 bg-[#f3e8ff] rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
-
-                    <div className="relative z-10 flex flex-col h-full gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          <Calendar className="w-6 h-6 text-[#6b21a8]" strokeWidth={2} />
-                        </div>
-                        <h3 className="font-bold text-[#0f172a] text-lg leading-tight line-clamp-2">
+                    {/* Header with gradient */}
+                    <div className="w-full bg-gradient-to-r from-purple-600 to-purple-400 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-5 h-5 text-white flex-shrink-0" />
+                        <h3 className="text-lg font-bold text-white truncate flex-1 leading-tight">
                           {a.title}
                         </h3>
                       </div>
-
-                      <p className="text-[#475569] text-[15px] leading-relaxed line-clamp-2 mt-1">
-                        Assigned to {a.className} • {a.studentCount} Students
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-2 mt-auto pt-4">
-                        <span className="px-3.5 py-1.5 bg-[#e9d5ff] text-[#6b21a8] text-sm font-medium rounded-full">
-                          Async
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-white/20 text-white border border-white/30 truncate">
+                          Asynchronous
                         </span>
-                        {a.dueDate && (
-                          <span className="px-3.5 py-1.5 bg-[#e9d5ff] text-[#6b21a8] text-sm font-medium rounded-full flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" /> Due {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
-                          </span>
-                        )}
                       </div>
                     </div>
-                  </div>
+
+                    {/* Quiz Details */}
+                    <div className="w-full p-4 space-y-3 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Users className="w-4 h-4 flex-shrink-0" />
+                        <span>Assigned to {a.className} • {a.studentCount} Students</span>
+                      </div>
+
+                      {a.dueDate && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Clock className="w-4 h-4 flex-shrink-0" />
+                          <span>Due: {new Date(a.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        </div>
+                      )}
+
+                      {/* Bottom indicator */}
+                      <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-end text-purple-600 group-hover:text-purple-700 font-semibold text-sm w-full">
+                        View Details
+                        <ChevronRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
                 ))}
             </div>
             <Pagination currentPage={asyncPage} totalItems={assignedQuizzes.length} onPageChange={setAsyncPage} accentColor="purple" />
@@ -1425,46 +1467,53 @@ export default function ManageQuizzes() {
               </div>
 
               {/* Dialog Body */}
-              <div className="p-5 space-y-4">
-                {/* Info */}
-                <div className="space-y-2 text-sm">
-                  <p className="text-gray-700 font-medium">Class: {selectedAsyncQuiz.className}</p>
-                  {selectedAsyncQuiz.subject && (
-                    <p className="text-gray-600">Subject: {selectedAsyncQuiz.subject}</p>
-                  )}
-                  <p className="text-gray-600">Students: {selectedAsyncQuiz.studentCount}</p>
-                  {selectedAsyncQuiz.dueDate && (
-                    <p className="text-gray-600">
-                      Due:{" "}
-                      {new Date(selectedAsyncQuiz.dueDate).toLocaleDateString("en-PH", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-                  )}
-                  <p className="text-gray-500 text-xs">
-                    Assigned:{" "}
-                    {selectedAsyncQuiz.assignedAt
-                      ? new Date(selectedAsyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                      : "N/A"}
-                  </p>
+              <div className="p-5 space-y-3.5">
+                {/* Info Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Details */}
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Assignment</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-5 h-5 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center">
+                          <Users className="w-3 h-3" />
+                        </div>
+                        <span className="font-semibold text-slate-800">{selectedAsyncQuiz.className}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px]">
+                         <span className="font-semibold text-slate-500 ml-7">{selectedAsyncQuiz.studentCount} Students</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Timeline</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <p className="text-[11px] text-slate-600"><span className="font-semibold text-slate-700">Assigned:</span> {selectedAsyncQuiz.assignedAt ? new Date(selectedAsyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", { month: "short", day: "numeric" }) : "N/A"}</p>
+                      </div>
+                      {selectedAsyncQuiz.dueDate && (
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <p className="text-[11px] text-slate-600"><span className="font-semibold text-slate-700">Due:</span> {new Date(selectedAsyncQuiz.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
+                <div className="flex flex-col gap-2.5 pt-1">
                   <button
                     onClick={() => {
                       setSelectedAsyncQuiz(null);
                       navigate(`/teacher/quiz-results/${selectedAsyncQuiz.quizId}/${selectedAsyncQuiz.classId}`);
                     }}
-                    className="w-full bg-violet-50 text-violet-600 border border-violet-200 font-semibold rounded-xl px-3 py-2.5 flex items-center justify-center gap-1 text-sm hover:bg-violet-100 transition"
+                    className="w-full bg-violet-600 text-white hover:bg-violet-700 font-bold rounded-lg px-3 py-2 flex items-center justify-center gap-1.5 text-sm shadow-sm transition-all"
                   >
-                    <Eye className="w-4 h-4" /> Results
+                    <Eye className="w-4 h-4" /> View Results
                   </button>
                   <button
                     onClick={() => {
@@ -1472,17 +1521,17 @@ export default function ManageQuizzes() {
                       handleDeleteAssignment(selectedAsyncQuiz, false);
                     }}
                     disabled={deletingAssignment === `${selectedAsyncQuiz.quizId}-${selectedAsyncQuiz.classId}`}
-                    className="w-full bg-red-600 text-white px-3 py-2.5 rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2 text-sm font-semibold disabled:bg-gray-400"
+                    className="w-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {deletingAssignment === `${selectedAsyncQuiz.quizId}-${selectedAsyncQuiz.classId}` ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Deleting...
+                        Removing...
                       </>
                     ) : (
                       <>
                         <Trash2 className="w-4 h-4" />
-                        Delete Assignment
+                        Remove Assignment
                       </>
                     )}
                   </button>
