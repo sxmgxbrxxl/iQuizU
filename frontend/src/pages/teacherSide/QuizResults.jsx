@@ -38,6 +38,7 @@ export default function QuizResults() {
   const [quiz, setQuiz] = useState(null);
   const [students, setStudents] = useState([]);
   const [assignedStudentIds, setAssignedStudentIds] = useState(new Set());
+  const [assignmentDeadlines, setAssignmentDeadlines] = useState({});
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -99,8 +100,9 @@ export default function QuizResults() {
 
       setStudents(allStudents);
 
-      // Store assigned student IDs
+      // Store assigned student IDs and their deadlines
       const assignedIds = new Set();
+      const deadlinesMap = {};
 
       const assignmentsQuery = query(
         collection(db, "assignedQuizzes"),
@@ -116,10 +118,24 @@ export default function QuizResults() {
         assignmentIds.push(docSnap.id);
         if (data.studentId) {
           assignedIds.add(data.studentId);
+          // Store the deadline for this student (dueDate takes priority, then deadline)
+          const rawDeadline = data.dueDate || data.deadline;
+          if (rawDeadline) {
+            let deadlineDate;
+            if (rawDeadline?.toDate) {
+              deadlineDate = rawDeadline.toDate();
+            } else if (rawDeadline?.seconds) {
+              deadlineDate = new Date(rawDeadline.seconds * 1000);
+            } else {
+              deadlineDate = new Date(rawDeadline);
+            }
+            deadlinesMap[data.studentId] = deadlineDate;
+          }
         }
       });
 
       setAssignedStudentIds(assignedIds);
+      setAssignmentDeadlines(deadlinesMap);
 
       if (assignmentIds.length === 0) {
         setResults([]);
@@ -228,6 +244,7 @@ export default function QuizResults() {
     try {
       const result = getStudentResult(selectedStudentForAction.id);
 
+      const newDeadlineDate = new Date(retakeDeadline);
       const newAssignment = {
         quizId: quizId,
         classId: classId,
@@ -235,7 +252,8 @@ export default function QuizResults() {
         studentName: selectedStudentForAction.name,
         quizMode: "asynchronous",
         assignedAt: serverTimestamp(),
-        deadline: new Date(retakeDeadline),
+        dueDate: retakeDeadline,
+        deadline: newDeadlineDate,
         status: "pending",
         isRetake: true,
         originalSubmissionId: result?.id || null,
@@ -282,6 +300,7 @@ export default function QuizResults() {
 
       const assignmentDoc = assignmentsSnapshot.docs[0];
       await updateDoc(doc(db, "assignedQuizzes", assignmentDoc.id), {
+        dueDate: reschedDeadline,
         deadline: new Date(reschedDeadline),
         rescheduledAt: serverTimestamp(),
       });
@@ -297,9 +316,21 @@ export default function QuizResults() {
     }
   };
 
+  const isDeadlinePassed = (studentId) => {
+    const deadline = assignmentDeadlines[studentId];
+    if (!deadline) return false;
+    return new Date() > new Date(deadline);
+  };
+
   const calculateStats = () => {
+    const submittedIds = new Set(results.map(r => r.studentId));
+    const pendingStudents = students.filter(s => !submittedIds.has(s.id) && assignedStudentIds.has(s.id));
+    const missed = pendingStudents.filter(s => isDeadlinePassed(s.id)).length;
+    const pending = pendingStudents.length - missed;
     return {
       completed: results.length,
+      pending: pending,
+      missed: missed,
       notStarted: students.length - results.length,
       flaggedForReview: results.filter(r => r.antiCheatData?.flaggedForReview).length,
     };
@@ -313,7 +344,7 @@ export default function QuizResults() {
         "Last Name": student.lastName || "",
         "First Name": student.firstName || "",
         "Email": student.email || "",
-        "Status": result ? "Completed" : "Pending",
+        "Status": result ? "Completed" : (assignedStudentIds.has(student.id) && isDeadlinePassed(student.id) ? "Missed" : "Pending"),
         "Score": result ? `${result.correctPoints}/${result.totalPoints}` : "—",
         "Raw Score (%)": result ? result.rawScorePercentage.toFixed(2) : "—",
         "Base-50 Grade (%)": result ? result.base50ScorePercentage.toFixed(2) : "—",
@@ -389,7 +420,7 @@ export default function QuizResults() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-8">
         <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
           <div className="flex items-center justify-between">
             <Users className="w-6 h-6 md:w-8 md:h-8 text-button" />
@@ -402,10 +433,10 @@ export default function QuizResults() {
 
         <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
           <div className="flex items-center justify-between">
-            <Clock className="w-6 h-6 md:w-8 md:h-8 text-gray-400" />
+            <Clock className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
             <div className="text-right">
-              <div className="text-xl md:text-2xl font-bold text-title">{stats.notStarted}</div>
-              <div className="text-xs md:text-sm text-subtext font-semibold">Not Started</div>
+              <div className="text-xl md:text-2xl font-bold text-title">{stats.pending}</div>
+              <div className="text-xs md:text-sm text-subtext font-semibold">Pending</div>
             </div>
           </div>
         </div>
@@ -422,7 +453,17 @@ export default function QuizResults() {
 
         <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
           <div className="flex items-center justify-between">
-            <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
+            <AlertCircle className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
+            <div className="text-right">
+              <div className="text-xl md:text-2xl font-bold text-title">{stats.missed}</div>
+              <div className="text-xs md:text-sm text-subtext font-semibold">Missed</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
+          <div className="flex items-center justify-between">
+            <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-orange-500" />
             <div className="text-right">
               <div className="text-xl md:text-2xl font-bold text-title">{stats.flaggedForReview}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Flagged</div>
@@ -537,6 +578,10 @@ export default function QuizResults() {
                           <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
                             Completed
                           </span>
+                        ) : assignedStudentIds.has(student.id) && isDeadlinePassed(student.id) ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600">
+                            Missed
+                          </span>
                         ) : assignedStudentIds.has(student.id) ? (
                           <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">
                             Pending
@@ -641,6 +686,11 @@ export default function QuizResults() {
                       <span className="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" />
                         Completed
+                      </span>
+                    ) : assignedStudentIds.has(student.id) && isDeadlinePassed(student.id) ? (
+                      <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Missed
                       </span>
                     ) : assignedStudentIds.has(student.id) ? (
                       <span className="px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 flex items-center gap-1">

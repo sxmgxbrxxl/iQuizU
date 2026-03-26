@@ -15,6 +15,7 @@ import {
   Bell,
   PanelLeft,
   PanelLeftClose,
+  ChevronDown,
 } from "lucide-react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 
@@ -170,129 +171,44 @@ export default function StudentSidebar({ user, userDoc }) {
   return (
     <>
       {/* Top Bar */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-green-600 via-green-700 to-green-800 shadow-lg z-50 flex items-center justify-between px-6">
-        {/* Left Section: Mobile hamburger + Logo */}
-        <div className="flex items-center gap-4">
-          {/* Mobile hamburger only */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-green-600 via-green-700 to-green-800 shadow-lg z-50 flex items-center justify-between px-4 sm:px-6">
+        {/* Left Section: Mobile hamburger */}
+        <div className="flex lg:hidden w-10">
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105 lg:hidden"
+            className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105"
             aria-label="Toggle sidebar"
           >
             <Menu size={24} />
           </button>
-
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <img src={LOGO} alt="Logo" className="w-10 h-10" />
-            <h1 className="text-2xl font-bold font-Poppins leading-tight text-white">iQuizU</h1>
-          </div>
         </div>
 
-        {/* Right Section: Notifications & Profile */}
+        {/* Logo - Centered on mobile, left-aligned on desktop */}
+        <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex items-center gap-2 sm:gap-3">
+          <img src={LOGO} alt="Logo" className="w-8 h-8 lg:w-10 lg:h-10" />
+          <h1 className="text-xl lg:text-2xl font-bold font-Poppins leading-tight text-white">iQuizU</h1>
+        </div>
+
+        {/* Right Section: Profile Dropdown */}
         <div className="flex items-center gap-2 sm:gap-4">
-
-          {/* Notification Bell */}
-          <div className="relative" ref={notificationRef}>
-            <button
-              onClick={handleNotificationClick}
-              className="p-2 text-white hover:bg-white/10 rounded-full transition-all relative"
-            >
-              <Bell size={24} />
-
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-green-700"></span>
-              )}
-            </button>
-
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn origin-top-right overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                  <h3 className="font-Poppins font-semibold text-gray-800">Notifications</h3>
-                </div>
-
-                <div className="max-h-[60vh] overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400 flex flex-col items-center">
-                      <div className="bg-gray-100 p-3 rounded-full mb-3">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="lucide lucide-bell-off"
-                        >
-                          <path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5" />
-                          <path d="M17 17H3s3-2 3-9" />
-                          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                          <path d="m2 2 20 20" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium">No notifications yet</p>
-                    </div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={() => {
-                          if (!notif.completed) {
-                            navigate(notif.quizMode === "synchronous"
-                              ? `/student/take-sync-quiz/${notif.id}`
-                              : `/student/take-assigned-quiz/${notif.id}`
-                            );
-                            setShowNotifications(false);
-                          }
-                        }}
-                        className={`px-4 py-3 hover:bg-green-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0 relative group
-                                        ${!notif.completed ? "bg-white" : "bg-gray-50/50"}`}
-                      >
-                        <div className="flex justify-between items-start gap-3">
-                          <div className="bg-green-100 p-2 rounded-lg text-green-600 flex-shrink-0 mt-0.5">
-                            <FileText size={16} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium truncate ${notif.completed ? "text-gray-500" : "text-gray-800"}`}>
-                              {notif.quizTitle}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate mt-0.5">
-                              {notif.subject || notif.className} &bull; {notif.quizMode === "synchronous" ? "Live Quiz" : "Self-Paced"}
-                            </p>
-                            <p className="text-[10px] text-gray-400 mt-1">
-                              {notif.assignedAt?.seconds ? new Date(notif.assignedAt.seconds * 1000).toLocaleDateString() : "Just now"}
-                            </p>
-                          </div>
-                          {!notif.completed && (
-                            <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0 mt-2"></span>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="relative" ref={profileDropdownRef}>
             <button
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className={`flex items-center gap-2 p-2 pr-3 rounded-lg transition-all duration-200 hover:scale-105 ${profileDropdownOpen ? "bg-white/20" : "hover:bg-white/10"
                 }`}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/20">
+              <div className="relative w-8 h-8 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/20">
                 {userInitial}
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-green-700 animate-pulse"></span>
+                )}
               </div>
             </button>
 
             {/* Dropdown Menu */}
             {profileDropdownOpen && (
               <div
-                className="absolute right-0 mt-2 w-max bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn"
+                className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[60] animate-fadeIn"
                 style={{ animation: 'fadeIn 0.15s ease-out' }}
               >
                 {/* User Info Header */}
@@ -320,6 +236,72 @@ export default function StudentSidebar({ user, userDoc }) {
                     <User size={18} className="text-gray-400 group-hover:text-green-500 transition-colors" />
                     <span className="font-Poppins text-sm font-medium">My Profile</span>
                   </button>
+
+                  <div ref={notificationRef}>
+                    <button
+                      onClick={handleNotificationClick}
+                      className={`flex items-center justify-between gap-3 w-full px-4 py-2.5 transition-all duration-150 group ${showNotifications ? "bg-green-50 text-green-700" : "text-gray-700 hover:bg-green-50 hover:text-green-700"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Bell size={18} className={`transition-colors ${showNotifications ? "text-green-500" : "text-gray-400 group-hover:text-green-500"}`} />
+                        <span className="font-Poppins text-sm font-medium">Notifications</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {unreadCount}
+                          </span>
+                        )}
+                        <ChevronDown size={16} className={`text-gray-400 transition-transform duration-300 ${showNotifications ? "rotate-180" : ""}`} />
+                      </div>
+                    </button>
+
+                    {showNotifications && (
+                      <div className="bg-gray-50/50 border-y border-gray-100 max-h-[40vh] overflow-y-auto animate-expandDown">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-gray-400">
+                            <p className="font-Poppins text-sm">No notifications yet</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5 p-1">
+                            {notifications.map((notif) => (
+                              <button
+                                key={notif.id}
+                                onClick={() => {
+                                  if (!notif.completed) {
+                                    navigate(notif.quizMode === "synchronous"
+                                      ? `/student/take-sync-quiz/${notif.id}`
+                                      : `/student/take-assigned-quiz/${notif.id}`
+                                    );
+                                    setShowNotifications(false);
+                                    setProfileDropdownOpen(false);
+                                  }
+                                }}
+                                className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group text-left
+                                  ${!notif.completed 
+                                    ? "bg-white hover:bg-green-50 border border-transparent shadow-sm" 
+                                    : "hover:bg-gray-100"
+                                  }`}
+                              >
+                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2 transition-all duration-300 ${!notif.completed ? "bg-green-500 animate-pulse" : "bg-gray-300"}`}></div>
+                                <div className="flex flex-col flex-1 min-w-0">
+                                  <span className={`font-Poppins text-sm font-medium truncate ${!notif.completed ? "text-gray-800" : "text-gray-500"}`}>
+                                    {notif.quizTitle}
+                                  </span>
+                                  <span className="font-Poppins text-xs text-gray-500 truncate mt-0.5">
+                                    {notif.subject || notif.className} &bull; {notif.quizMode === "synchronous" ? "Live" : "Self-Paced"}
+                                  </span>
+                                  <span className="font-Poppins text-[10px] text-gray-400 mt-1">
+                                    {notif.assignedAt?.seconds ? new Date(notif.assignedAt.seconds * 1000).toLocaleDateString() : "Just now"}
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Divider + Logout */}
@@ -422,6 +404,8 @@ export default function StudentSidebar({ user, userDoc }) {
                 </span>
               </Link>
             ))}
+
+
           </div>
         </nav>
       </div>

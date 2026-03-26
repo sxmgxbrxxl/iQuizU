@@ -31,8 +31,29 @@ export default function ViewClassModal({
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    {[...Array(8)].map((_, i) => (
+                      <th key={i} className="border border-gray-300 px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, rowIndex) => (
+                    <tr key={rowIndex} className="border-b border-gray-200">
+                      {[...Array(8)].map((_, colIndex) => (
+                        <td key={colIndex} className="border border-gray-300 px-4 py-3">
+                          <div className="h-4 bg-gray-100 rounded animate-pulse w-full" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : students.length === 0 ? (
             <div className="text-center py-12 text-subtext">

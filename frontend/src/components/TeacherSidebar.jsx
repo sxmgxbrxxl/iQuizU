@@ -186,23 +186,22 @@ export default function Sidebar({ user, userDoc }) {
   return (
     <>
       {/* Top Bar */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-lg z-50 flex items-center justify-between px-6">
-        {/* Left Section: Mobile hamburger + Logo */}
-        <div className="flex items-center gap-4">
-          {/* Mobile hamburger only */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-lg z-50 flex items-center justify-between px-4 sm:px-6">
+        {/* Left Section: Mobile hamburger */}
+        <div className="flex lg:hidden w-10">
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105 lg:hidden"
+            className="text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200 hover:scale-105"
             aria-label="Toggle sidebar"
           >
             <Menu size={24} />
           </button>
+        </div>
 
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <img src={LOGO} alt="Logo" className="w-10 h-10" />
-            <h1 className="text-2xl font-bold font-Poppins leading-tight text-white">iQuizU</h1>
-          </div>
+        {/* Logo - Centered on mobile, left-aligned on desktop */}
+        <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex items-center gap-2 sm:gap-3">
+          <img src={LOGO} alt="Logo" className="w-8 h-8 lg:w-10 lg:h-10" />
+          <h1 className="text-xl lg:text-2xl font-bold font-Poppins leading-tight text-white">iQuizU</h1>
         </div>
 
 
