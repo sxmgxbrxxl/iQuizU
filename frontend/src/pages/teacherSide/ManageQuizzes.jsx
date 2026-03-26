@@ -1481,7 +1481,7 @@ export default function ManageQuizzes() {
                         <span className="font-semibold text-slate-800">{selectedAsyncQuiz.className}</span>
                       </div>
                       <div className="flex items-center gap-2 text-[11px]">
-                         <span className="font-semibold text-slate-500 ml-7">{selectedAsyncQuiz.studentCount} Students</span>
+                        <span className="font-semibold text-slate-500 ml-7">{selectedAsyncQuiz.studentCount} Students</span>
                       </div>
                     </div>
                   </div>
