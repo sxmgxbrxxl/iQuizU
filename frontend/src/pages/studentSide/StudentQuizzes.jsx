@@ -604,31 +604,28 @@ export default function StudentQuizzes({ user, userDoc }) {
             <div className="flex flex-wrap gap-2 mb-4 bg-white p-1 rounded-xl shadow-sm border border-gray-100 w-full animate-slideIn">
                 <button
                     onClick={() => setActiveTab("asynchronous")}
-                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${
-                        activeTab === "asynchronous"
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${activeTab === "asynchronous"
                             ? "bg-green-600 text-white shadow-md shadow-green-600/20"
                             : "text-gray-600 hover:bg-green-50 hover:text-green-700"
-                    }`}
+                        }`}
                 >
                     Asynchronous
                 </button>
                 <button
                     onClick={() => setActiveTab("synchronous")}
-                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${
-                        activeTab === "synchronous"
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${activeTab === "synchronous"
                             ? "bg-green-600 text-white shadow-md shadow-green-600/20"
                             : "text-gray-600 hover:bg-green-50 hover:text-green-700"
-                    }`}
+                        }`}
                 >
                     Synchronous
                 </button>
                 <button
                     onClick={() => setActiveTab("completed")}
-                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${
-                        activeTab === "completed"
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${activeTab === "completed"
                             ? "bg-green-600 text-white shadow-md shadow-green-600/20"
                             : "text-gray-600 hover:bg-green-50 hover:text-green-700"
-                    }`}
+                        }`}
                 >
                     Completed
                 </button>
