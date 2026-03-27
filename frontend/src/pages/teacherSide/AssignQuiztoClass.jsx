@@ -390,10 +390,59 @@ export default function AssignQuizToClass() {
 
   if (loading) {
     return (
-      <div className="p-8 items-center justify-center">
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin h-8 w-8 text-blue-600"></Loader2>
-          <span className="ml-3 text-gray-600">Loading...</span>
+      <div className="w-full font-Poppins animate-fadeIn">
+        {/* Header banner skeleton */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-4 md:p-6 rounded-xl mb-6 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg" />
+            <div>
+              <div className="h-5 md:h-6 w-64 md:w-80 bg-white/20 rounded-lg mb-2" />
+              <div className="h-3 md:h-4 w-40 md:w-56 bg-white/20 rounded-lg mb-2" />
+              <div className="h-3 w-32 md:w-48 bg-white/20 rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        {/* Content skeleton */}
+        <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
+          {/* Settings panel skeleton */}
+          <div className="lg:col-span-1 space-y-4 md:space-y-6">
+            <div className="border-2 border-gray-200 rounded-xl p-4 md:p-6 bg-gray-50 animate-pulse">
+              <div className="h-5 w-32 bg-gray-200 rounded-lg mb-4" />
+              <div className="space-y-4">
+                <div><div className="h-4 w-24 bg-gray-200 rounded mb-2" /><div className="h-10 w-full bg-gray-200 rounded-lg" /></div>
+                <div><div className="h-4 w-32 bg-gray-200 rounded mb-2" /><div className="h-10 w-full bg-gray-200 rounded-lg" /></div>
+                <div><div className="h-4 w-28 bg-gray-200 rounded mb-2" /><div className="h-10 w-full bg-gray-200 rounded-lg" /></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Students container skeleton */}
+          <div className="lg:col-span-2 flex flex-col min-h-[400px]">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden animate-pulse">
+              <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
+                <div className="h-5 w-40 bg-gray-200 rounded-lg" />
+                <div className="h-8 w-32 bg-gray-200 rounded-lg" />
+              </div>
+              <div className="p-4 md:p-6 space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl">
+                    <div className="w-4 h-4 rounded bg-gray-200" />
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="h-4 w-32 bg-gray-200 rounded mb-2" />
+                      <div className="h-3 w-48 bg-gray-100 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Assign button skeleton mt-4 */}
+            <div className="mt-4 md:mt-6 flex justify-end">
+              <div className="h-12 w-full md:w-auto md:w-48 bg-gray-200 rounded-xl animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
     );

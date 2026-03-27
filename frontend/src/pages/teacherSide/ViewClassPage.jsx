@@ -1209,9 +1209,9 @@ export default function ViewClassPage() {
                           {quiz.title}
                         </h4>
                         <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 mt-0.5 md:mt-1">
-                          <span className="flex flex-row gap-2"><CircleQuestionMark className="h-5 w-5 text-blue-500"/> {quiz.questionCount} questions</span>
+                          <span className="flex flex-row gap-2"><CircleQuestionMark className="h-5 w-5 text-blue-500" /> {quiz.questionCount} questions</span>
                           <span>•</span>
-                          <span className="flex flex-row gap-2"><Star className="h-5 w-5 text-yellow-300"/> {quiz.totalPoints} points</span>
+                          <span className="flex flex-row gap-2"><Star className="h-5 w-5 text-yellow-300" /> {quiz.totalPoints} points</span>
                         </div>
                       </div>
                       {selectedQuizForAssignment === quiz.id && (

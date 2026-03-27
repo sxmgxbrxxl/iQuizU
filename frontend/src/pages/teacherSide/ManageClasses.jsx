@@ -764,13 +764,18 @@ export default function ManageClasses() {
 
   return (
     <div className="w-full font-Poppins animate-fadeIn">
-      <div className="flex flex-col mb-6">
-        <h2 className="text-xl md:text-2xl font-bold text-title flex items-center gap-2">
-          Add New Class
-        </h2>
-        <p className="text-sm md:text-base font-light text-subtext">
-          Upload a classlist to create a new class ({classCount}/{MAX_CLASSES} classes)
-        </p>
+      <div className="relative bg-blue-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-blue-500 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        {/* Background blob design */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+        
+        <div className="relative z-10">
+          <h2 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
+             Add New Class
+          </h2>
+          <p className="text-sm md:text-base text-blue-100 mt-2">
+            Upload a classlist to create a new class ({classCount}/{MAX_CLASSES} classes)
+          </p>
+        </div>
       </div>
 
       {/* Class Limit Warning */}

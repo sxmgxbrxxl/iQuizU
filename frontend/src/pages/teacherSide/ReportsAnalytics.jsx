@@ -952,23 +952,20 @@ export default function ReportsAnalytics() {
                 <>
                   {/* Skeleton Stat Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-4 md:mb-8">
-                    {[
-                      "from-purple-400 to-pink-400",
-                      "from-blue-400 to-cyan-400",
-                      "from-blue-400 to-emerald-400",
-                      "from-yellow-400 to-orange-400",
-                      "from-indigo-400 to-purple-400"
-                    ].map((gradient, i) => (
+                    {[1, 2, 3, 4, 5].map((_, i) => (
                       <div
                         key={i}
-                        className={`bg-gradient-to-br ${gradient} rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg animate-pulse ${i === 4 ? "col-span-2 md:col-span-1" : ""}`}
+                        className={`relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] overflow-hidden p-4 md:p-5 animate-pulse ${i === 4 ? "col-span-2 md:col-span-1" : ""}`}
                       >
-                        <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                          <div className="w-4 h-4 md:w-6 md:h-6 bg-white/30 rounded" />
-                          <div className="h-3 md:h-4 bg-white/30 rounded-lg flex-1" />
+                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gray-100 rounded-full opacity-50" />
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 md:w-9 md:h-9 bg-gray-200 rounded-xl" />
+                            <div className="h-3 bg-gray-200 rounded-lg flex-1" />
+                          </div>
+                          <div className="h-7 md:h-8 bg-gray-200 rounded-lg w-2/3 mb-2" />
+                          <div className="h-3 bg-gray-100 rounded-lg w-1/2" />
                         </div>
-                        <div className="h-6 md:h-9 bg-white/30 rounded-lg w-2/3 mb-1" />
-                        <div className="h-3 md:h-4 bg-white/30 rounded-lg w-1/2 mt-1" />
                       </div>
                     ))}
                   </div>
@@ -1004,65 +1001,95 @@ export default function ReportsAnalytics() {
               {!loadingAnalytics && analytics && (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-4 md:mb-8">
-                    <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg text-white">
-                      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                        {analytics.quizMode === "synchronous" ? (
-                          <Zap className="w-4 h-4 md:w-6 md:h-6" />
-                        ) : (
-                          <Clock className="w-4 h-4 md:w-6 md:h-6" />
-                        )}
-                        <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Quiz Mode</h2>
+                    {/* Quiz Mode Card */}
+                    <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-4 md:p-5 group">
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-100 rounded-full opacity-50 transition-transform group-hover:scale-110 pointer-events-none" />
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2 md:mb-3">
+                          <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            {analytics.quizMode === "synchronous" ? (
+                              <Zap className="w-4 h-4 md:w-[18px] md:h-[18px] text-blue-600" />
+                            ) : (
+                              <Clock className="w-4 h-4 md:w-[18px] md:h-[18px] text-blue-600" />
+                            )}
+                          </div>
+                          <h2 className="font-bold text-[10px] md:text-xs uppercase tracking-wide text-gray-500">Quiz Mode</h2>
+                        </div>
+                        <p className="text-sm md:text-lg font-extrabold text-[#0f172a]">
+                          {analytics.quizMode === "synchronous" ? "LIVE QUIZ" : "SELF-PACED"}
+                        </p>
+                        <p className="text-[10px] md:text-xs text-[#475569] mt-0.5 md:mt-1">
+                          {analytics.quizMode === "synchronous" ? "Synchronous" : "Asynchronous"}
+                        </p>
                       </div>
-                      <p className="text-sm md:text-xl font-bold">
-                        {analytics.quizMode === "synchronous" ? "LIVE QUIZ" : "SELF-PACED"}
-                      </p>
-                      <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">
-                        {analytics.quizMode === "synchronous" ? "Synchronous" : "Asynchronous"}
-                      </p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg text-white">
-                      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                        <TrendingUp className="w-4 h-4 md:w-6 md:h-6" />
-                        <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Avg Raw Score</h2>
+                    {/* Avg Raw Score Card */}
+                    <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-4 md:p-5 group">
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-100 rounded-full opacity-50 transition-transform group-hover:scale-110 pointer-events-none" />
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2 md:mb-3">
+                          <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            <TrendingUp className="w-4 h-4 md:w-[18px] md:h-[18px] text-emerald-600" />
+                          </div>
+                          <h2 className="font-bold text-[10px] md:text-xs uppercase tracking-wide text-gray-500">Avg Raw Score</h2>
+                        </div>
+                        <p className="text-lg md:text-2xl font-extrabold text-[#0f172a]">{analytics.averageRawScore}<span className="text-sm md:text-lg text-gray-400 font-bold">%</span></p>
+                        <p className="text-[10px] md:text-xs text-[#475569] mt-0.5 md:mt-1">{analytics.totalStudents} students</p>
                       </div>
-                      <p className="text-lg md:text-xl font-bold">{analytics.averageRawScore}%</p>
-                      <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">{analytics.totalStudents} students</p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg text-white">
-                      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                        <TrendingUp className="w-4 h-4 md:w-6 md:h-6" />
-                        <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Avg Base-50</h2>
+                    {/* Avg Base-50 Card */}
+                    <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-4 md:p-5 group">
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-violet-100 rounded-full opacity-50 transition-transform group-hover:scale-110 pointer-events-none" />
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2 md:mb-3">
+                          <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            <Target className="w-4 h-4 md:w-[18px] md:h-[18px] text-violet-600" />
+                          </div>
+                          <h2 className="font-bold text-[10px] md:text-xs uppercase tracking-wide text-gray-500">Avg Base-50</h2>
+                        </div>
+                        <p className="text-lg md:text-2xl font-extrabold text-[#0f172a]">{analytics.averageBase50Score}<span className="text-sm md:text-lg text-gray-400 font-bold">%</span></p>
+                        <p className="text-[10px] md:text-xs text-[#475569] mt-0.5 md:mt-1">Transmuted grade</p>
                       </div>
-                      <p className="text-lg md:text-xl font-bold">{analytics.averageBase50Score}%</p>
-                      <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">Transmuted grade</p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg text-white">
-                      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                        <AlertTriangle className="w-4 h-4 md:w-6 md:h-6" />
-                        <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Low Performers</h2>
+                    {/* Low Performers Card */}
+                    <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-4 md:p-5 group">
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-100 rounded-full opacity-50 transition-transform group-hover:scale-110 pointer-events-none" />
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2 md:mb-3">
+                          <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            <AlertTriangle className="w-4 h-4 md:w-[18px] md:h-[18px] text-amber-600" />
+                          </div>
+                          <h2 className="font-bold text-[10px] md:text-xs uppercase tracking-wide text-gray-500">Low Performers</h2>
+                        </div>
+                        <p className="text-xs md:text-sm font-extrabold text-[#0f172a] break-words leading-relaxed">
+                          {analytics.lowPerformers.length > 0
+                            ? analytics.lowPerformers.join(", ")
+                            : "None"}
+                        </p>
+                        <p className="text-[10px] md:text-xs text-[#475569] mt-0.5 md:mt-1">Below 50% correct</p>
                       </div>
-                      <p className="text-sm md:text-xl font-bold break-words">
-                        {analytics.lowPerformers.length > 0
-                          ? analytics.lowPerformers.join(", ")
-                          : "None"}
-                      </p>
-                      <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">Below 50% correct</p>
                     </div>
 
-                    <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg text-white">
-                      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                        <Trophy className="w-4 h-4 md:w-6 md:h-6" />
-                        <h2 className="font-semibold text-[10px] md:text-sm uppercase tracking-wide">Top Performers</h2>
+                    {/* Top Performers Card */}
+                    <div className="col-span-2 md:col-span-1 relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-4 md:p-5 group">
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#fef3c7] rounded-full opacity-50 transition-transform group-hover:scale-110 pointer-events-none" />
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2 md:mb-3">
+                          <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            <Trophy className="w-4 h-4 md:w-[18px] md:h-[18px] text-[#92400e]" />
+                          </div>
+                          <h2 className="font-bold text-[10px] md:text-xs uppercase tracking-wide text-gray-500">Top Performers</h2>
+                        </div>
+                        <p className="text-xs md:text-sm font-extrabold text-[#0f172a] break-words leading-relaxed">
+                          {analytics.topPerformers.length > 0
+                            ? analytics.topPerformers.join(", ")
+                            : "None"}
+                        </p>
+                        <p className="text-[10px] md:text-xs text-[#475569] mt-0.5 md:mt-1">100% correct</p>
                       </div>
-                      <p className="text-sm md:text-xl font-bold break-words">
-                        {analytics.topPerformers.length > 0
-                          ? analytics.topPerformers.join(", ")
-                          : "None"}
-                      </p>
-                      <p className="text-[10px] md:text-sm opacity-90 mt-0.5 md:mt-1">100% correct</p>
                     </div>
                   </div>
 

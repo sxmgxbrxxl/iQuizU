@@ -34,6 +34,7 @@ export default function StudentQuizzes({ user, userDoc }) {
     const [quizCode, setQuizCode] = useState("");
     const [joiningQuiz, setJoiningQuiz] = useState(false);
     const [quizProgress, setQuizProgress] = useState({});
+    const [activeTab, setActiveTab] = useState("asynchronous");
     const [analytics, setAnalytics] = useState({
         totalQuizzes: 0,
         completedQuizzes: 0,
@@ -575,6 +576,17 @@ export default function StudentQuizzes({ user, userDoc }) {
         );
     };
 
+    const pendingAsyncQuizzes = assignedQuizzes.filter(q => !q.completed);
+    const pendingSyncQuizzes = synchronousQuizzes.filter(q => !q.completed);
+    const completedQuizzes = [...assignedQuizzes, ...synchronousQuizzes]
+        .filter(q => q.completed)
+        .sort((a, b) => {
+            if (a.submittedAt && b.submittedAt) {
+                return (b.submittedAt.seconds || 0) - (a.submittedAt.seconds || 0);
+            }
+            return 0;
+        });
+
     return (
         <div className="px-2 py-3 sm:px-3 sm:py-4 md:p-4 lg:px-5 lg:py-6 font-Poppins min-h-screen animate-fadeIn">
 
@@ -588,67 +600,135 @@ export default function StudentQuizzes({ user, userDoc }) {
                 </div>
             </div>
 
-            {/* Asynchronous Quizzes Section */}
-            <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 mb-4 animate-slideIn">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-800">
-                        Asynchronous Quizzes
-                        <span className="block sm:inline sm:ml-1 text-xs sm:text-sm text-gray-600">(Self-Paced)</span>
-                    </h3>
-                    {assignedQuizzes.length > 0 && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-bold self-start sm:self-auto whitespace-nowrap">
-                            {assignedQuizzes.filter((q) => !q.completed).length} Pending
-                        </span>
-                    )}
-                </div>
+            {/* Tabs */}
+            <div className="flex flex-wrap gap-2 mb-4 bg-white p-1 rounded-xl shadow-sm border border-gray-100 w-full animate-slideIn">
+                <button
+                    onClick={() => setActiveTab("asynchronous")}
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${activeTab === "asynchronous"
+                            ? "bg-green-600 text-white shadow-md shadow-green-600/20"
+                            : "text-gray-600 hover:bg-green-50 hover:text-green-700"
+                        }`}
+                >
+                    Asynchronous
+                </button>
+                <button
+                    onClick={() => setActiveTab("synchronous")}
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${activeTab === "synchronous"
+                            ? "bg-green-600 text-white shadow-md shadow-green-600/20"
+                            : "text-gray-600 hover:bg-green-50 hover:text-green-700"
+                        }`}
+                >
+                    Synchronous
+                </button>
+                <button
+                    onClick={() => setActiveTab("completed")}
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all ${activeTab === "completed"
+                            ? "bg-green-600 text-white shadow-md shadow-green-600/20"
+                            : "text-gray-600 hover:bg-green-50 hover:text-green-700"
+                        }`}
+                >
+                    Completed
+                </button>
+            </div>
 
-                {loading ? (
-                    <QuizListSkeleton count={3} />
-                ) : assignedQuizzes.length === 0 ? (
-                    <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
-                        <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
-                        <p className="text-gray-500 text-sm sm:text-base font-medium">No quizzes assigned yet</p>
-                        <p className="text-gray-400 text-xs sm:text-sm mt-2 px-4">
-                            Check back later for new assignments
-                        </p>
+            {/* Asynchronous Quizzes Section */}
+            {activeTab === "asynchronous" && (
+                <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 mb-4 animate-slideIn">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                            Asynchronous Quizzes
+                            <span className="block sm:inline sm:ml-1 text-xs sm:text-sm text-gray-600">(Self-Paced)</span>
+                        </h3>
+                        {pendingAsyncQuizzes.length > 0 && (
+                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-bold self-start sm:self-auto whitespace-nowrap">
+                                {pendingAsyncQuizzes.length} Pending
+                            </span>
+                        )}
                     </div>
-                ) : (
-                    <div className="space-y-3 sm:space-y-4">
-                        {assignedQuizzes.map((quiz) => renderQuizCard(quiz, false))}
-                    </div>
-                )}
-            </section>
+
+                    {loading ? (
+                        <QuizListSkeleton count={3} />
+                    ) : pendingAsyncQuizzes.length === 0 ? (
+                        <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
+                            <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                            <p className="text-gray-500 text-sm sm:text-base font-medium">No pending asynchronous quizzes</p>
+                            <p className="text-gray-400 text-xs sm:text-sm mt-2 px-4">
+                                You're all caught up!
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 sm:space-y-4">
+                            {pendingAsyncQuizzes.map((quiz) => renderQuizCard(quiz, false))}
+                        </div>
+                    )}
+                </section>
+            )}
 
             {/* Synchronous Quizzes Section */}
-            <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 animate-slideIn">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-800">
-                        Synchronous Quizzes
-                        <span className="block sm:inline sm:ml-1 text-xs sm:text-sm text-gray-600">(Real-Time)</span>
-                    </h3>
-                    {synchronousQuizzes.length > 0 && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-bold self-start sm:self-auto whitespace-nowrap">
-                            {synchronousQuizzes.filter((q) => !q.completed).length} Pending
-                        </span>
-                    )}
-                </div>
+            {activeTab === "synchronous" && (
+                <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 animate-slideIn">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                            Synchronous Quizzes
+                            <span className="block sm:inline sm:ml-1 text-xs sm:text-sm text-gray-600">(Real-Time)</span>
+                        </h3>
+                        {pendingSyncQuizzes.length > 0 && (
+                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-bold self-start sm:self-auto whitespace-nowrap">
+                                {pendingSyncQuizzes.length} Pending
+                            </span>
+                        )}
+                    </div>
 
-                {loading ? (
-                    <QuizListSkeleton count={2} />
-                ) : synchronousQuizzes.length === 0 ? (
-                    <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
-                        <Video className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
-                        <p className="text-gray-500 text-sm sm:text-base font-medium">No live quizzes assigned yet</p>
-                        <p className="text-gray-400 text-xs sm:text-sm mt-2 px-4">
-                            Your teacher will assign live quizzes for real-time participation
-                        </p>
+                    {loading ? (
+                        <QuizListSkeleton count={2} />
+                    ) : pendingSyncQuizzes.length === 0 ? (
+                        <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
+                            <Video className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                            <p className="text-gray-500 text-sm sm:text-base font-medium">No pending synchronous quizzes</p>
+                            <p className="text-gray-400 text-xs sm:text-sm mt-2 px-4">
+                                You're all caught up!
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 sm:space-y-4">
+                            {pendingSyncQuizzes.map((quiz) => renderQuizCard(quiz, true))}
+                        </div>
+                    )}
+                </section>
+            )}
+
+            {/* Completed Quizzes Section */}
+            {activeTab === "completed" && (
+                <section className="bg-components rounded-2xl border border-green-500 p-4 sm:p-5 animate-slideIn">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-800">
+                            Completed Quizzes
+                            <span className="block sm:inline sm:ml-1 text-xs sm:text-sm text-gray-600">(History)</span>
+                        </h3>
+                        {completedQuizzes.length > 0 && (
+                            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs sm:text-sm font-bold self-start sm:self-auto whitespace-nowrap">
+                                {completedQuizzes.length} Completed
+                            </span>
+                        )}
                     </div>
-                ) : (
-                    <div className="space-y-3 sm:space-y-4">
-                        {synchronousQuizzes.map((quiz) => renderQuizCard(quiz, true))}
-                    </div>
-                )}
-            </section>
+
+                    {loading ? (
+                        <QuizListSkeleton count={3} />
+                    ) : completedQuizzes.length === 0 ? (
+                        <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300">
+                            <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                            <p className="text-gray-500 text-sm sm:text-base font-medium">No completed quizzes yet</p>
+                            <p className="text-gray-400 text-xs sm:text-sm mt-2 px-4">
+                                Finish your pending quizzes to see them here
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 sm:space-y-4">
+                            {completedQuizzes.map((quiz) => renderQuizCard(quiz, quiz.quizMode === "synchronous"))}
+                        </div>
+                    )}
+                </section>
+            )}
         </div>
     );
 }
