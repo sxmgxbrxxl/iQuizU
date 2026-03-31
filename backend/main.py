@@ -15,8 +15,9 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173", 
         "http://localhost:5174",
-        "https://iquizu-29da7.firebaseapp.com",  # ADD THIS
-        "https://iquizu-29da7.web.app"           # ADD THIS (alternative Firebase domain)
+        "https://iquizu-29da7.firebaseapp.com",
+        "https://iquizu-29da7.web.app",
+        "https://iquizu.online"
     ],
     allow_credentials=True,
     allow_methods=["*"],
