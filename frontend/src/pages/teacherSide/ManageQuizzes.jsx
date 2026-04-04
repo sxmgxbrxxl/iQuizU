@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Calendar,
   Clock,
+  Archive,
 } from "lucide-react";
 import {
   collection,
@@ -2668,6 +2669,30 @@ export default function ManageQuizzes() {
           document.body
         )
       }
+
+      {/* Archive/Delete Loading Overlay */}
+      {mounted && (deletingQuiz || deletingAssignment) && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] font-Poppins animate-fadeIn">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-slideUp max-w-xs w-full mx-4">
+            <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-slate-800">
+                {deletingQuiz ? "Archiving Quiz..." : "Deleting Assignment..."}
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                {deletingQuiz ? "Moving quiz to archives" : "Removing assignment data"}
+              </p>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              <div className="bg-rose-500 h-1.5 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
       <ConfirmDialog {...confirmDialogState} />
     </div >

@@ -174,7 +174,7 @@ export default function AssignQuizToClass() {
         const data = doc.data();
         studentsList.push({
           id: doc.id,
-          authUID: data.authUID || null,
+          authUID: data.authUID || doc.id,
           name: data.name || "Unknown",
           email: data.emailAddress || "",
           studentNo: data.studentNo || "N/A",

@@ -40,6 +40,7 @@ export default function ViewClassPage() {
   const [synchronousQuizzes, setSynchronousQuizzes] = useState([]);
   const [loadingSynchronous, setLoadingSynchronous] = useState(false);
   const [deletingAssignment, setDeletingAssignment] = useState(null);
+  const [archivingClass, setArchivingClass] = useState(false);
 
   const [activeTab, setActiveTab] = useState("students");
 
@@ -694,6 +695,7 @@ export default function ViewClassPage() {
       color: "orange",
       onConfirm: async () => {
         setConfirmDialog({ isOpen: false });
+        setArchivingClass(true);
         try {
           const q = query(
             collection(db, "users"),
@@ -760,6 +762,8 @@ export default function ViewClassPage() {
         } catch (error) {
           console.error("Error archiving class:", error);
           showToast("error", "Archive Failed", "Failed to archive class: " + error.message);
+        } finally {
+          setArchivingClass(false);
         }
       },
       onCancel: () => setConfirmDialog({ isOpen: false }),
@@ -1602,6 +1606,30 @@ export default function ViewClassPage() {
         </div>,
         document.body
       )}
+
+      {/* Archive/Delete Loading Overlay */}
+      {mounted && (archivingClass || deletingAssignment) && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] font-Poppins animate-fadeIn">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-slideUp max-w-xs w-full mx-4">
+            <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-slate-800">
+                {archivingClass ? "Archiving Class..." : "Deleting Assignment..."}
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                {archivingClass ? "Moving class to archives" : "Removing assignment data"}
+              </p>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              <div className="bg-rose-500 h-1.5 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
       <ConfirmDialog {...confirmDialog} />
     </div>
