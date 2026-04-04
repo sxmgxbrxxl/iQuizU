@@ -128,6 +128,9 @@ export default function TeacherProfile({ user, userDoc }) {
     // Confirm dialog state
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
 
+    // Saved profile state — keeps the latest saved values so we don't depend on stale props
+    const [savedProfile, setSavedProfile] = useState(null);
+
     // form state (initialized from user / userDoc)
     const [fullName, setFullName] = useState("");
     const [department, setDepartment] = useState("");
@@ -135,19 +138,23 @@ export default function TeacherProfile({ user, userDoc }) {
     const [phone, setPhone] = useState("");
     const [bio, setBio] = useState("");
 
-    // readonly info
-    const displayName = userDoc?.firstName || user?.displayName || "Teacher";
+    // readonly info — prefer savedProfile over stale userDoc prop
+    const profile = savedProfile || userDoc;
+    const displayName = profile?.firstName || user?.displayName || "Teacher";
     const userInitial = (displayName && displayName.charAt(0).toUpperCase()) || "T";
-    const userDocId = userDoc?.id || user?.uid || null;
+    const userDocId = profile?.id || userDoc?.id || user?.uid || null;
 
     useEffect(() => {
-        setFullName(userDoc?.firstName || user?.displayName || "");
-        setDepartment(userDoc?.department || "");
-        setEmailAddr(userDoc?.email || user?.email || "");
-        setPhone(userDoc?.phone || "");
-        setBio(userDoc?.bio || "");
+        // Only initialize from userDoc if we haven't saved locally yet
+        if (!savedProfile) {
+            setFullName(userDoc?.firstName || user?.displayName || "");
+            setDepartment(userDoc?.department || "");
+            setEmailAddr(userDoc?.email || user?.email || "");
+            setPhone(userDoc?.phone || "");
+            setBio(userDoc?.bio || "");
+        }
         setLoading(false);
-    }, [user, userDoc]);
+    }, [user, userDoc, savedProfile]);
 
     // Handle password reset email
     const handleChangePassword = () => {
@@ -209,12 +216,22 @@ export default function TeacherProfile({ user, userDoc }) {
                 throw new Error("User document not found");
             }
 
-            await updateDoc(userDocRef, {
+            const updatedData = {
                 firstName: fullName,
                 department: department,
                 email: emailAddr,
                 phone: phone,
                 bio: bio,
+            };
+
+            await updateDoc(userDocRef, updatedData);
+
+            // Update local saved profile so UI reflects the new values
+            // and doesn't revert to stale userDoc prop
+            setSavedProfile({
+                ...docSnap.data(),
+                ...updatedData,
+                id: userDocId,
             });
 
             showToast("success", "Profile updated successfully!");
@@ -310,7 +327,7 @@ export default function TeacherProfile({ user, userDoc }) {
                                     <label className="sm:w-40 text-subtext text-sm font-medium">Full Name</label>
                                     <input
                                         type="text"
-                                        value={fullName || displayName}
+                                        value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
                                         className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
                                     />
@@ -366,11 +383,13 @@ export default function TeacherProfile({ user, userDoc }) {
                                     <button
                                         onClick={() => {
                                             setEditing(false);
-                                            setFullName(userDoc?.firstName || user?.displayName || "");
-                                            setDepartment(userDoc?.department || "");
-                                            setEmailAddr(userDoc?.email || user?.email || "");
-                                            setPhone(userDoc?.phone || "");
-                                            setBio(userDoc?.bio || "");
+                                            // Revert to savedProfile (latest saved) or original userDoc
+                                            const src = savedProfile || userDoc;
+                                            setFullName(src?.firstName || user?.displayName || "");
+                                            setDepartment(src?.department || "");
+                                            setEmailAddr(src?.email || user?.email || "");
+                                            setPhone(src?.phone || "");
+                                            setBio(src?.bio || "");
                                         }}
                                         className="px-5 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-100 transition text-sm"
                                     >
@@ -382,7 +401,7 @@ export default function TeacherProfile({ user, userDoc }) {
                             <div className="space-y-5">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                                     <span className="sm:w-40 text-subtext text-sm font-medium">Full Name</span>
-                                    <span className="font-semibold text-title">{fullName || displayName}</span>
+                                    <span className="font-semibold text-title">{fullName || displayName || "-"}</span>
                                 </div>
                                 <div className="border-b border-gray-50" />
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
