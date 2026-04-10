@@ -462,6 +462,15 @@ export default function ViewClassPage() {
             }));
             console.log(`✅ New account: ${student.name}`);
 
+            // Send welcome email (fire-and-forget, won't block account creation)
+            const studentPassword = generateCustomPassword(student.name, student.studentNo);
+            sendWelcomeEmail(
+              student.emailAddress,
+              student.name,
+              studentPassword,
+              classData?.className || classData?.name || ""
+            );
+
           } else if (result.status === "EXISTING_ACCOUNT" || result.status === "EXISTING_AUTH") {
             if (!student.hasAccount) {
               await updateDoc(doc(db, "users", student.id), {
@@ -602,6 +611,27 @@ export default function ViewClassPage() {
     } catch (error) {
       console.error("Error generating custom password:", error);
       return "123456";
+    }
+  };
+
+  const sendWelcomeEmail = async (email, studentName, password, className = "") => {
+    try {
+      const response = await fetch(
+        "http://localhost:4000/api/email/send-welcome",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, studentName, password, className }),
+        }
+      );
+      if (response.ok) {
+        console.log(`📧 Welcome email sent to ${email}`);
+      } else {
+        const err = await response.json().catch(() => ({}));
+        console.warn(`📧 Email send failed for ${email}:`, err.detail || response.statusText);
+      }
+    } catch (error) {
+      console.warn(`📧 Could not send welcome email to ${email}:`, error.message);
     }
   };
 
