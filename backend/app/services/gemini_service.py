@@ -18,11 +18,25 @@ def _configure_gemini():
 _configure_gemini()
 
 
+def sanitize_text(text: str) -> str:
+    """
+    Remove surrogate characters and any other characters that cannot be
+    encoded as UTF-8. This must be called before sending text to Gemini.
+    """
+    # Encode with surrogatepass to handle lone surrogates, then decode ignoring errors
+    text = text.encode('utf-16', 'surrogatepass').decode('utf-16')
+    text = text.encode('utf-8', errors='ignore').decode('utf-8')
+    return text
+
+
 def clean_pdf_text(text: str) -> str:
     """
     Remove metadata, headings, figure labels from PDF text.
     Keep only the actual content/concepts.
     """
+    # ✅ Strip surrogate/non-UTF-8 characters first
+    text = sanitize_text(text)
+
     # Remove common metadata patterns
     text = re.sub(r'(Lesson|Module|Chapter|Unit)\s+\d+[:\-\.]?\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'(Figure|Fig\.|Table|Diagram)\s+\d+\.?\d*[:\-\.]?\s*', '', text, flags=re.IGNORECASE)
@@ -51,7 +65,6 @@ def validate_question_quality(question: str, choices: list = None) -> tuple:
     Check if question is about content, not metadata.
     Returns (is_valid, reason)
     """
-    # Metadata keywords to avoid
     metadata_patterns = [
         (r'\blesson\s+\d+\b', "References lesson number"),
         (r'\bmodule\s+\d+\b', "References module number"),
@@ -67,12 +80,10 @@ def validate_question_quality(question: str, choices: list = None) -> tuple:
     
     question_lower = question.lower()
     
-    # Check question
     for pattern, reason in metadata_patterns:
         if re.search(pattern, question_lower):
             return False, f"Question: {reason}"
     
-    # Check choices if provided
     if choices:
         for i, choice in enumerate(choices):
             choice_lower = str(choice).lower()
@@ -92,7 +103,7 @@ def calculate_blooms_distribution(total_questions: int) -> dict:
     - Analysis: 15% (AVERAGE)
     - Evaluation: 15% (AVERAGE)
     - Creating: 10% (DIFFICULTY)
-    
+
     LOTS = Remembering + Understanding + Application = 60%
     HOTS = Analysis + Evaluation + Creating = 40%
     """
@@ -116,21 +127,21 @@ def generate_quiz_from_text(
     Generates a balanced quiz following Bloom's Taxonomy distribution.
     60% LOTS (Easy) / 40% HOTS (Average-Difficulty)
     """
-    # ✅ CLEAN THE TEXT FIRST
+    # ✅ CLEAN AND SANITIZE THE TEXT FIRST
     print("🧹 Cleaning PDF text...")
     cleaned_text = clean_pdf_text(text)
     print(f"✅ Text cleaned: {len(text)} → {len(cleaned_text)} characters")
-    
+
     total_questions = num_multiple_choice + num_true_false + num_identification
     distribution = calculate_blooms_distribution(total_questions)
-    
+
     attempt = 0
     max_attempts = len(settings.api_keys)
     max_generation_attempts = 3
 
     for generation_attempt in range(max_generation_attempts):
         attempt = 0
-        
+
         while attempt < max_attempts:
             try:
                 model = genai.GenerativeModel("gemini-2.5-flash")
@@ -236,6 +247,9 @@ IMPORTANT:
 - ALL questions and choices must be about CONTENT/CONCEPTS only
 """
 
+                # ✅ SANITIZE PROMPT BEFORE SENDING TO GEMINI
+                prompt = sanitize_text(prompt)
+
                 generation_config = {
                     "temperature": 0.7,
                     "top_p": 0.95,
@@ -282,7 +296,7 @@ IMPORTANT:
                 print(f"✅ Quiz generated with distribution:")
                 print(f"   LOTS (60%): Remembering={actual_dist['remembering']}, Understanding={actual_dist['understanding']}, Application={actual_dist['application']}")
                 print(f"   HOTS (40%): Analysis={actual_dist['analysis']}, Evaluation={actual_dist['evaluation']}, Creating={actual_dist['creating']}")
-                
+
                 return quiz_data
 
             except json.JSONDecodeError as e:
@@ -314,10 +328,9 @@ def validate_and_filter_questions(quiz_data: dict) -> dict:
         "true_false": [],
         "identification": []
     }
-    
+
     rejected_count = 0
-    
-    # Validate Multiple Choice
+
     for mc in quiz_data.get("multiple_choice", []):
         is_valid, reason = validate_question_quality(mc["question"], mc["choices"])
         if is_valid:
@@ -325,8 +338,7 @@ def validate_and_filter_questions(quiz_data: dict) -> dict:
         else:
             print(f"⚠️ Rejected MC: {mc['question'][:60]}... ({reason})")
             rejected_count += 1
-    
-    # Validate True/False
+
     for tf in quiz_data.get("true_false", []):
         is_valid, reason = validate_question_quality(tf["question"])
         if is_valid:
@@ -334,8 +346,7 @@ def validate_and_filter_questions(quiz_data: dict) -> dict:
         else:
             print(f"⚠️ Rejected T/F: {tf['question'][:60]}... ({reason})")
             rejected_count += 1
-    
-    # Validate Identification
+
     for id_q in quiz_data.get("identification", []):
         is_valid, reason = validate_question_quality(id_q["question"])
         if is_valid:
@@ -343,10 +354,10 @@ def validate_and_filter_questions(quiz_data: dict) -> dict:
         else:
             print(f"⚠️ Rejected ID: {id_q['question'][:60]}... ({reason})")
             rejected_count += 1
-    
+
     if rejected_count > 0:
         print(f"⚠️ Total rejected: {rejected_count} low-quality questions")
-    
+
     return validated_data
 
 
@@ -360,13 +371,13 @@ def count_cognitive_levels(quiz_data: dict) -> dict:
         "evaluation": 0,
         "creating": 0
     }
-    
+
     for q_type in ["multiple_choice", "true_false", "identification"]:
         for q in quiz_data.get(q_type, []):
             level = q.get("cognitive_level", "remembering").lower()
             if level in counts:
                 counts[level] += 1
-    
+
     return counts
 
 
@@ -375,54 +386,45 @@ def verify_and_rebalance_questions(quiz_data: dict, target_distribution: dict) -
     Verify cognitive levels using BERT classifier and adjust if needed.
     Maps BERT's LOTS/HOTS to specific Bloom's levels.
     """
-    # Collect all questions for batch classification
     all_questions = []
     question_metadata = []
-    
+
     for q_type in ["multiple_choice", "true_false", "identification"]:
         for idx, q in enumerate(quiz_data.get(q_type, [])):
             all_questions.append(q["question"])
             question_metadata.append({
-                "type": q_type, 
+                "type": q_type,
                 "index": idx,
                 "declared_level": q.get("cognitive_level", "remembering")
             })
-    
-    # Classify all questions using BERT
+
+    # ✅ Guard: skip classification if no questions survived filtering
+    if not all_questions:
+        print("⚠️ No questions to classify after filtering.")
+        return quiz_data
+
     classifications = classify_multiple_questions(all_questions)
-    
-    # Update cognitive levels based on BERT + declared level
+
     for i, (classification, confidence) in enumerate(classifications):
         meta = question_metadata[i]
         q_type = meta["type"]
         q_idx = meta["index"]
         declared_level = meta["declared_level"].lower()
-        
-        # Map BERT classification to Bloom's level
+
         if classification == "LOTS":
-            # Keep declared level if it's LOTS, otherwise adjust
-            if declared_level in ["remembering", "understanding", "application"]:
-                adjusted_level = declared_level
-            else:
-                adjusted_level = "application"  # Default LOTS
+            adjusted_level = declared_level if declared_level in ["remembering", "understanding", "application"] else "application"
         else:  # HOTS
-            # Keep declared level if it's HOTS, otherwise adjust
-            if declared_level in ["analysis", "evaluation", "creating"]:
-                adjusted_level = declared_level
-            else:
-                adjusted_level = "analysis"  # Default HOTS
-        
-        # Update the question
+            adjusted_level = declared_level if declared_level in ["analysis", "evaluation", "creating"] else "analysis"
+
         quiz_data[q_type][q_idx]["cognitive_level"] = adjusted_level
-        
-        # Update difficulty based on level
+
         if adjusted_level in ["remembering", "understanding", "application"]:
             quiz_data[q_type][q_idx]["difficulty"] = "easy"
         elif adjusted_level in ["analysis", "evaluation"]:
             quiz_data[q_type][q_idx]["difficulty"] = "average"
-        else:  # creating
+        else:
             quiz_data[q_type][q_idx]["difficulty"] = "difficult"
-    
+
     return quiz_data
 
 

@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import quiz_routes
@@ -8,28 +9,36 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Configuration - UPDATED FOR PRODUCTION
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://iquizu-29da7.firebaseapp.com",
+    "https://iquizu-29da7.web.app",
+    "https://iquizu.online",
+    "https://www.iquizu.online",
+]
+
+extra_origin = os.getenv("FRONTEND_URL", "").strip()
+if extra_origin and extra_origin not in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS.append(extra_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173", 
-        "http://localhost:5174",
-        "https://iquizu-29da7.firebaseapp.com",  # ADD THIS
-        "https://iquizu-29da7.web.app"           # ADD THIS (alternative Firebase domain)
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
 
-# Include routers
 app.include_router(quiz_routes.router, prefix="/api/quiz", tags=["Quiz"])
 
 @app.get("/")
 async def root():
-    return {
-        "message": "Quiz Generator API",
-        "status": "running",
-        "docs": "/docs"
-    }
+    return {"message": "Quiz Generator API", "status": "running", "docs": "/docs"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
