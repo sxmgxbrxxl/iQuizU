@@ -939,8 +939,11 @@ export default function ManageQuizzes() {
   return (
     <div className="w-full font-Poppins animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-6 bg-blue-600 p-10 rounded-3xl">
-        <div className="flex flex-col">
+      <div className="relative group flex flex-col md:flex-row gap-3 items-start md:items-center mb-6 bg-blue-600 p-10 rounded-3xl">
+        {/*BLOBBBB */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
+        <div className="flex flex-col z-10">
           <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
             Manage Quizzes
           </h2>

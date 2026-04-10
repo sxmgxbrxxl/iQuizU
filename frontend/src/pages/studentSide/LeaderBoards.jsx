@@ -228,7 +228,7 @@ export default function Leaderboards({ user, userDoc }) {
   }
 
   return (
-    <div className="min-h-screen p-2 md:px-5 py-6 font-Poppins">
+    <div className="min-h-screen px-4 md:px-5 lg:px-6 py-4 font-Poppins">
       <div className="w-full">
         {/* Header */}
         <div className="bg-components rounded-2xl md:rounded-3xl shadow-xl overflow-hidden mb-4 md:mb-6 animate-fadeIn">

@@ -342,7 +342,7 @@ export default function StudentQuizzes({ user, userDoc }) {
             return (
                 <span className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full whitespace-nowrap">
                     <CheckCircle className="w-3 h-3" />
-                    <span className="hidden sm:inline">Completed</span>
+                    <span className="hidden sm:inline">Done</span>
                     <span className="sm:hidden">Done</span>
                 </span>
             );
@@ -588,7 +588,7 @@ export default function StudentQuizzes({ user, userDoc }) {
         });
 
     return (
-        <div className="px-2 py-3 sm:px-3 sm:py-4 md:p-4 lg:px-5 lg:py-6 font-Poppins min-h-screen animate-fadeIn">
+        <div className="px-4 py-4 sm:px-3 sm:py-4 md:p-4 lg:px-5 lg:py-6 font-Poppins min-h-screen animate-fadeIn">
 
             {/* Header Card */}
             <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-5 md:p-6 group text-white border border-green-500 mb-4">

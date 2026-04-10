@@ -8,9 +8,7 @@ import {
     AlertTriangle,
     X,
     Mail,
-    IdCard,
     Pencil,
-    CircleUserRound
 } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
@@ -288,6 +286,7 @@ export default function StudentProfile({ user, userDoc }) {
             confirmLabel: "Send Reset Link",
             cancelLabel: "Cancel",
             color: "orange",
+            font: "Poppins",
             icon: <KeyRound className="w-6 h-6 text-orange-600" />,
             onConfirm: async () => {
                 setConfirmDialog({ isOpen: false });
@@ -323,10 +322,11 @@ export default function StudentProfile({ user, userDoc }) {
                 onCancel={confirmDialog.onCancel}
                 icon={confirmDialog.icon}
                 color={confirmDialog.color}
+                font={confirmDialog.font}
             />
 
             {/* ─── Header Card (Green Theme) ─── */}
-            <div className="relative bg-green-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden mx-1 md:mx-2 mt-2 px-5 py-6 md:p-6 group text-white border border-green-500">
+            <div className="relative bg-green-600 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden mx-1 md:mx-2 mt-2 px-5 py-6 md:p-6 group text-white border border-green-500">
                 {/* Background blob */}
                 <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
 
@@ -367,7 +367,7 @@ export default function StudentProfile({ user, userDoc }) {
                         className="hidden"
                     />
                 </div>
-                <h2 className="text-lg md:text-xl font-bold text-gray-800 mt-4">{fullName || displayName}</h2>
+                <h2 className="text-lg md:text-xl font-bold text-center text-gray-800 mt-4">{fullName || displayName}</h2>
                 <p className="text-gray-500 text-sm">{department || "Student"}</p>
             </div>
 
