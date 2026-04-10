@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, CircleQuestionMark, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen, Star } from "lucide-react";
+import { Loader2, CircleQuestionMark, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen, Star, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2, XCircle, AlertTriangle, Shield } from "lucide-react";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import PasswordConfirmModal from './PasswordConfirmModal';
@@ -20,14 +20,27 @@ export default function ViewClassPage() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [creatingAccounts, setCreatingAccounts] = useState(false);
   const [accountCreationProgress, setAccountCreationProgress] = useState("");
+  const [accountCreationDetails, setAccountCreationDetails] = useState({
+    total: 0,
+    current: 0,
+    currentName: "",
+    successCount: 0,
+    existingCount: 0,
+    errorCount: 0,
+    errors: [],
+    phase: "", // 'validating' | 'creating' | 'finalizing' | 'done'
+  });
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const mountedRef = useRef(true);
+  const creatingAccountsRef = useRef(false);
 
   const [assignedQuizzes, setAssignedQuizzes] = useState([]);
   const [loadingAssigned, setLoadingAssigned] = useState(false);
   const [synchronousQuizzes, setSynchronousQuizzes] = useState([]);
   const [loadingSynchronous, setLoadingSynchronous] = useState(false);
   const [deletingAssignment, setDeletingAssignment] = useState(null);
+  const [archivingClass, setArchivingClass] = useState(false);
 
   const [activeTab, setActiveTab] = useState("students");
 
@@ -43,6 +56,11 @@ export default function ViewClassPage() {
   }, []);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
 
+  // Search & Pagination state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   useEffect(() => {
     fetchClassData();
     fetchStudents();
@@ -52,6 +70,24 @@ export default function ViewClassPage() {
 
   useEffect(() => {
     setMounted(true);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Block browser close/refresh during account creation
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (creatingAccountsRef.current) {
+        e.preventDefault();
+        e.returnValue = 'Account creation is still in progress. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   const fetchClassData = async () => {
@@ -354,35 +390,62 @@ export default function ViewClassPage() {
 
     console.log("🔒 Setting account creation flags...");
     setAccountCreationFlag(true);
+    creatingAccountsRef.current = true;
+
+    // Helper to safely set state only if component is still mounted
+    const safeSetState = (setter, value) => {
+      if (mountedRef.current) {
+        if (typeof value === 'function') setter(value);
+        else setter(value);
+      }
+    };
 
     try {
-      setAccountCreationProgress("Validating credentials...");
+      safeSetState(setAccountCreationProgress, "Validating credentials...");
+      safeSetState(setAccountCreationDetails, prev => ({ ...prev, phase: 'validating' }));
       const passwordValidation = await validateTeacherPassword(currentUser.email, adminPassword);
 
       if (!passwordValidation.valid) {
+        safeSetState(setAccountCreationProgress, "");
+        safeSetState(setAccountCreationDetails, prev => ({ ...prev, phase: '' }));
         showToast("error", "Invalid Password", "Account creation cancelled. Please try again with the correct password.");
-        setAccountCreationProgress("");
         setAccountCreationFlag(false);
+        creatingAccountsRef.current = false;
         return;
       }
 
       const teacherEmail = currentUser.email;
       const teacherUID = currentUser.uid;
 
-      setCreatingAccounts(true);
-      setAccountCreationProgress("Initializing account creation...");
+      safeSetState(setCreatingAccounts, true);
+      safeSetState(setAccountCreationProgress, "Initializing account creation...");
 
       const studentsWithoutAccounts = students.filter(s => !s.hasAccount);
       let successCount = 0;
       let existingCount = 0;
       let errorCount = 0;
       const errors = [];
-      const skippedStudents = [];
+
+      safeSetState(setAccountCreationDetails, {
+        total: studentsWithoutAccounts.length,
+        current: 0,
+        currentName: "",
+        successCount: 0,
+        existingCount: 0,
+        errorCount: 0,
+        errors: [],
+        phase: 'creating',
+      });
 
       for (let i = 0; i < studentsWithoutAccounts.length; i++) {
         try {
           const student = studentsWithoutAccounts[i];
-          setAccountCreationProgress(`Creating accounts: ${i + 1}/${studentsWithoutAccounts.length} - ${student.name}`);
+          safeSetState(setAccountCreationProgress, `Creating accounts: ${i + 1}/${studentsWithoutAccounts.length} - ${student.name}`);
+          safeSetState(setAccountCreationDetails, prev => ({
+            ...prev,
+            current: i + 1,
+            currentName: student.name,
+          }));
           console.log(`📝 Processing: ${student.name} (${i + 1}/${studentsWithoutAccounts.length})`);
 
           const result = await createAccountInFirebase(student, teacherEmail, adminPassword, teacherUID);
@@ -393,6 +456,10 @@ export default function ViewClassPage() {
               authUID: result.authUID
             });
             successCount++;
+            safeSetState(setAccountCreationDetails, prev => ({
+              ...prev,
+              successCount: prev.successCount + 1,
+            }));
             console.log(`✅ New account: ${student.name}`);
 
           } else if (result.status === "EXISTING_ACCOUNT" || result.status === "EXISTING_AUTH") {
@@ -403,17 +470,27 @@ export default function ViewClassPage() {
               });
             }
             existingCount++;
-            skippedStudents.push(student.name);
+            safeSetState(setAccountCreationDetails, prev => ({
+              ...prev,
+              existingCount: prev.existingCount + 1,
+            }));
             console.log(`⚠️ Already exists: ${student.name}`);
           }
         } catch (error) {
           console.error("❌ Error creating account:", error);
           errorCount++;
-          errors.push(`${studentsWithoutAccounts[i].name}: ${error.message}`);
+          const errMsg = `${studentsWithoutAccounts[i].name}: ${error.message}`;
+          errors.push(errMsg);
+          safeSetState(setAccountCreationDetails, prev => ({
+            ...prev,
+            errorCount: prev.errorCount + 1,
+            errors: [...prev.errors, errMsg],
+          }));
         }
       }
 
-      setAccountCreationProgress("Finalizing...");
+      safeSetState(setAccountCreationProgress, "Finalizing...");
+      safeSetState(setAccountCreationDetails, prev => ({ ...prev, phase: 'finalizing' }));
 
       console.log("🔍 Final teacher verification...");
       const finalUser = auth.currentUser;
@@ -439,6 +516,8 @@ export default function ViewClassPage() {
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      safeSetState(setAccountCreationDetails, prev => ({ ...prev, phase: 'done' }));
+
       let summaryParts = [`New accounts: ${successCount}`, `Already had accounts: ${existingCount}`];
       if (errorCount > 0) summaryParts.push(`Failed: ${errorCount}`);
       if (successCount > 0) summaryParts.push("Password: LASTNAME + STUDENT NUMBER");
@@ -449,14 +528,24 @@ export default function ViewClassPage() {
         summaryParts.join(" • ")
       );
 
-      await fetchStudents();
+      if (mountedRef.current) {
+        await fetchStudents();
+      }
 
     } catch (error) {
       console.error("❌ Error creating accounts:", error);
-      showToast("error", "Account Creation Failed", error.message);
+      if (mountedRef.current) {
+        showToast("error", "Account Creation Failed", error.message);
+      }
     } finally {
-      setCreatingAccounts(false);
-      setAccountCreationProgress("");
+      creatingAccountsRef.current = false;
+      safeSetState(setCreatingAccounts, false);
+      safeSetState(setAccountCreationProgress, "");
+      safeSetState(setAccountCreationDetails, {
+        total: 0, current: 0, currentName: "",
+        successCount: 0, existingCount: 0, errorCount: 0,
+        errors: [], phase: '',
+      });
 
       console.log("🔓 Clearing account creation flags...");
       setAccountCreationFlag(false);
@@ -606,6 +695,7 @@ export default function ViewClassPage() {
       color: "orange",
       onConfirm: async () => {
         setConfirmDialog({ isOpen: false });
+        setArchivingClass(true);
         try {
           const q = query(
             collection(db, "users"),
@@ -672,6 +762,8 @@ export default function ViewClassPage() {
         } catch (error) {
           console.error("Error archiving class:", error);
           showToast("error", "Archive Failed", "Failed to archive class: " + error.message);
+        } finally {
+          setArchivingClass(false);
         }
       },
       onCancel: () => setConfirmDialog({ isOpen: false }),
@@ -693,13 +785,118 @@ export default function ViewClassPage() {
   return (
     <div className="w-full font-Poppins animate-fadeIn">
 
-      {accountCreationProgress && creatingAccounts && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-          <p className="text-blue-800 font-medium flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            {accountCreationProgress}
-          </p>
-        </div>
+      {/* ===== FULL-SCREEN BLOCKING OVERLAY DURING ACCOUNT CREATION ===== */}
+      {creatingAccounts && mounted && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => { if (e.key === 'Escape') e.preventDefault(); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden animate-slideUp">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+              <div className="flex items-center gap-3 mb-2">
+                <Shield className="w-7 h-7" />
+                <h2 className="text-xl font-bold">Creating Student Accounts</h2>
+              </div>
+              <p className="text-blue-100 text-sm">
+                Please don't close this page or navigate away.
+              </p>
+            </div>
+
+            {/* Progress Content */}
+            <div className="p-6">
+              {/* Progress Bar */}
+              <div className="mb-5">
+                <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                  <span>Progress</span>
+                  <span>
+                    {accountCreationDetails.current} / {accountCreationDetails.total}
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: accountCreationDetails.total > 0
+                        ? `${(accountCreationDetails.current / accountCreationDetails.total) * 100}%`
+                        : '0%'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Current Student */}
+              {accountCreationDetails.currentName && (
+                <div className="mb-5 flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider">Currently Processing</p>
+                    <p className="text-sm font-medium text-gray-800 truncate">{accountCreationDetails.currentName}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Status */}
+              {accountCreationDetails.phase === 'validating' && (
+                <div className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <Loader2 className="w-5 h-5 animate-spin text-yellow-600 flex-shrink-0" />
+                  <p className="text-sm font-medium text-yellow-800">Validating teacher credentials...</p>
+                </div>
+              )}
+
+              {accountCreationDetails.phase === 'finalizing' && (
+                <div className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                  <Loader2 className="w-5 h-5 animate-spin text-indigo-600 flex-shrink-0" />
+                  <p className="text-sm font-medium text-indigo-800">Finalizing and verifying teacher session...</p>
+                </div>
+              )}
+
+              {/* Counters */}
+              {accountCreationDetails.phase === 'creating' && (
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-green-700">{accountCreationDetails.successCount}</p>
+                    <p className="text-xs text-green-600 font-medium">Created</p>
+                  </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center">
+                    <AlertTriangle className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-yellow-700">{accountCreationDetails.existingCount}</p>
+                    <p className="text-xs text-yellow-600 font-medium">Existing</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+                    <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-red-700">{accountCreationDetails.errorCount}</p>
+                    <p className="text-xs text-red-600 font-medium">Failed</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Details */}
+              {accountCreationDetails.errors.length > 0 && (
+                <div className="mt-4 max-h-24 overflow-y-auto bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-xs font-semibold text-red-700 mb-1">Errors:</p>
+                  {accountCreationDetails.errors.map((err, idx) => (
+                    <p key={idx} className="text-xs text-red-600 truncate">• {err}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer warning */}
+            <div className="px-6 pb-6">
+              <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-xl">
+                <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                <p className="text-xs text-orange-700 font-medium">
+                  Do NOT navigate away, close the tab, or click the sidebar. This process must complete fully.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* CLASS INFO SECTION */}
@@ -773,91 +970,242 @@ export default function ViewClassPage() {
       {activeTab === "students" ? (
         <div className="bg-white border border-blue-500 rounded-2xl shadow-sm overflow-hidden animate-slideIn">
           <div className="p-4 md:p-6 border-b border-blue-500 bg-gradient-to-r from-green-50 to-blue-50">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <span className="text-lg md:text-xl font-bold text-title">Students List</span>
                 <span className="text-sm md:text-base font-normal text-subtext ml-2">
                   ({students.length} total)
                 </span>
               </div>
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search students..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition bg-white placeholder:text-gray-400"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 rounded-full transition"
+                  >
+                    <X className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          {loadingStudents ? (
-            <div className="flex items-center justify-center py-8 animate-slideIn">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-              <span className="ml-3 text-subtext">Loading students...</span>
-            </div>
-          ) : students.length === 0 ? (
-            <div className="text-center py-8 text-subtext">
-              <p>No students found in this class</p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Student No.</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Program</th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Account</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {students.map((student, index) => (
-                      <tr key={student.id} className={`hover:bg-gray-50 transition ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
-                        <td className="px-6 py-4 text-sm text-gray-800 font-medium">{student.studentNo}</td>
-                        <td className="px-6 py-4 text-sm text-gray-800 font-medium">{student.name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{student.emailAddress || "N/A"}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{student.program || "N/A"}</td>
-                        <td className="px-6 py-4 text-center">
-                          {student.hasAccount ? (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                              <Circle className="w-3 h-3 fill-current" /> Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                              <Circle className="w-3 h-3" /> No Account
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {(() => {
+            // Filter students by search query
+            const filteredStudents = students.filter((student) => {
+              if (!searchQuery.trim()) return true;
+              const q = searchQuery.toLowerCase();
+              return (
+                (student.name || "").toLowerCase().includes(q) ||
+                (student.studentNo || "").toLowerCase().includes(q) ||
+                (student.emailAddress || "").toLowerCase().includes(q) ||
+                (student.program || "").toLowerCase().includes(q)
+              );
+            });
 
-              {/* Mobile Card View */}
-              <div className="md:hidden divide-y divide-gray-100">
-                {students.map((student, index) => (
-                  <div key={student.id} className="p-4 hover:bg-gray-50 transition">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-gray-800 truncate">{student.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{student.studentNo}</p>
-                      </div>
-                      {student.hasAccount ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex-shrink-0">
-                          <Circle className="w-2.5 h-2.5 fill-current" /> Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold flex-shrink-0">
-                          <Circle className="w-2.5 h-2.5" /> None
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-400">
-                      <span className="truncate">{student.emailAddress || "No email"}</span>
-                      <span>{student.program || "N/A"}</span>
-                    </div>
+            const totalPages = Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage));
+            const safePage = Math.min(currentPage, totalPages);
+            const startIndex = (safePage - 1) * rowsPerPage;
+            const paginatedStudents = filteredStudents.slice(startIndex, startIndex + rowsPerPage);
+
+            // Generate page numbers to show
+            const getPageNumbers = () => {
+              const pages = [];
+              const maxVisible = 5;
+              let startPage = Math.max(1, safePage - Math.floor(maxVisible / 2));
+              let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+              }
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(i);
+              }
+              return pages;
+            };
+
+            return (
+              <>
+                {loadingStudents ? (
+                  <div className="flex items-center justify-center py-8 animate-slideIn">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <span className="ml-3 text-subtext">Loading students...</span>
                   </div>
-                ))}
-              </div>
-            </>
-          )}
+                ) : filteredStudents.length === 0 ? (
+                  <div className="text-center py-12 text-subtext">
+                    {searchQuery ? (
+                      <div className="space-y-2">
+                        <Search className="w-10 h-10 text-gray-300 mx-auto" />
+                        <p className="font-medium text-gray-500">No students match "{searchQuery}"</p>
+                        <p className="text-sm text-gray-400">Try a different search term</p>
+                      </div>
+                    ) : (
+                      <p>No students found in this class</p>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop Table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Student No.</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Program</th>
+                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Account</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {paginatedStudents.map((student, index) => (
+                            <tr key={student.id} className={`hover:bg-gray-50 transition ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
+                              <td className="px-6 py-4 text-sm text-gray-800 font-medium">{student.studentNo}</td>
+                              <td className="px-6 py-4 text-sm text-gray-800 font-medium">{student.name}</td>
+                              <td className="px-6 py-4 text-sm text-gray-600">{student.emailAddress || "N/A"}</td>
+                              <td className="px-6 py-4 text-sm text-gray-600">{student.program || "N/A"}</td>
+                              <td className="px-6 py-4 text-center">
+                                {student.hasAccount ? (
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                    <Circle className="w-3 h-3 fill-current" /> Active
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                                    <Circle className="w-3 h-3" /> No Account
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden divide-y divide-gray-100">
+                      {paginatedStudents.map((student, index) => (
+                        <div key={student.id} className="p-4 hover:bg-gray-50 transition">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-gray-800 truncate">{student.name}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{student.studentNo}</p>
+                            </div>
+                            {student.hasAccount ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex-shrink-0">
+                                <Circle className="w-2.5 h-2.5 fill-current" /> Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold flex-shrink-0">
+                                <Circle className="w-2.5 h-2.5" /> None
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-400">
+                            <span className="truncate">{student.emailAddress || "No email"}</span>
+                            <span>{student.program || "N/A"}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Pagination Controls (shadcn-style) */}
+                    {filteredStudents.length > 0 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 md:px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                        {/* Left: Rows per page + info */}
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-2">
+                            <span className="hidden sm:inline">Rows per page</span>
+                            <select
+                              value={rowsPerPage}
+                              onChange={(e) => {
+                                setRowsPerPage(Number(e.target.value));
+                                setCurrentPage(1);
+                              }}
+                              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 cursor-pointer"
+                            >
+                              {[5, 10, 20, 50].map((size) => (
+                                <option key={size} value={size}>{size}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <span className="text-gray-400">
+                            {startIndex + 1}-{Math.min(startIndex + rowsPerPage, filteredStudents.length)} of {filteredStudents.length}
+                          </span>
+                        </div>
+
+                        {/* Right: Page navigation */}
+                        <div className="flex items-center gap-1">
+                          {/* First page */}
+                          <button
+                            onClick={() => setCurrentPage(1)}
+                            disabled={safePage === 1}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition"
+                            title="First page"
+                          >
+                            <ChevronsLeft className="w-4 h-4" />
+                          </button>
+                          {/* Previous page */}
+                          <button
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={safePage === 1}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition"
+                            title="Previous page"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+
+                          {/* Page numbers */}
+                          {getPageNumbers().map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`w-9 h-9 flex items-center justify-center rounded-lg border text-sm font-medium transition ${
+                                pageNum === safePage
+                                  ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+
+                          {/* Next page */}
+                          <button
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={safePage === totalPages}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition"
+                            title="Next page"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                          {/* Last page */}
+                          <button
+                            onClick={() => setCurrentPage(totalPages)}
+                            disabled={safePage === totalPages}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition"
+                            title="Last page"
+                          >
+                            <ChevronsRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           <div className="flex flex-col sm:flex-row justify-between gap-3 p-4 md:mx-8 md:my-4 md:mb-6">
             <button
@@ -1258,6 +1606,30 @@ export default function ViewClassPage() {
         </div>,
         document.body
       )}
+
+      {/* Archive/Delete Loading Overlay */}
+      {mounted && (archivingClass || deletingAssignment) && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] font-Poppins animate-fadeIn">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-slideUp max-w-xs w-full mx-4">
+            <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-slate-800">
+                {archivingClass ? "Archiving Class..." : "Deleting Assignment..."}
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                {archivingClass ? "Moving class to archives" : "Removing assignment data"}
+              </p>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              <div className="bg-rose-500 h-1.5 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
       <ConfirmDialog {...confirmDialog} />
     </div>

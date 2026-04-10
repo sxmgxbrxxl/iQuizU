@@ -60,6 +60,10 @@ export function setAccountCreationFlag(value) {
   console.log(`🔧 Account creation flag set to: ${value}`);
 }
 
+export function isAccountCreationActive() {
+  return isAccountCreationInProgress;
+}
+
 // ✅ STUDENT LAYOUT WRAPPER WITH SIDEBAR
 function StudentLayout({ user, userDoc, children }) {
   const [sidebarWidth, setSidebarWidth] = useState("288px");

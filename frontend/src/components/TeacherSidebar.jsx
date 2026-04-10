@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
+import { isAccountCreationActive } from "../App";
 import LOGO from "../assets/iQuizU.svg";
 import {
   Menu,
@@ -36,6 +37,16 @@ export default function Sidebar({ user, userDoc }) {
   const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Helper: block navigation during account creation
+  const guardedNavigate = (to, callback) => {
+    if (isAccountCreationActive()) {
+      console.warn('⛔ Navigation blocked: account creation in progress');
+      return;
+    }
+    if (callback) callback();
+    if (to) navigate(to);
+  };
 
   // On mobile, always show expanded. On desktop, respect collapse state.
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
@@ -242,6 +253,7 @@ export default function Sidebar({ user, userDoc }) {
                 <div className="py-1">
                   <button
                     onClick={() => {
+                      if (isAccountCreationActive()) return;
                       setProfileDropdownOpen(false);
                       navigate('/teacher/profile');
                     }}
@@ -256,6 +268,7 @@ export default function Sidebar({ user, userDoc }) {
                 <div className="border-t border-gray-100 pt-1">
                   <button
                     onClick={() => {
+                      if (isAccountCreationActive()) return;
                       setProfileDropdownOpen(false);
                       setShowConfirm(true);
                     }}
@@ -323,8 +336,12 @@ export default function Sidebar({ user, userDoc }) {
             {menuItems.map((item, index) => (
               <Link
                 key={item.to}
-                to={item.to}
-                onClick={() => {
+                to={isAccountCreationActive() ? '#' : item.to}
+                onClick={(e) => {
+                  if (isAccountCreationActive()) {
+                    e.preventDefault();
+                    return;
+                  }
                   setIsMobileOpen(false);
                   if (isActive(item.to)) {
                     window.dispatchEvent(new Event('refreshPage'));
@@ -404,8 +421,14 @@ export default function Sidebar({ user, userDoc }) {
                 <div className="mt-1 ml-3 border-l-2 border-blue-200 pl-3 animate-expandDown overflow-hidden">
                   {/* Add Class Button */}
                   <Link
-                    to="/teacher/classes/add"
-                    onClick={() => setIsMobileOpen(false)}
+                    to={isAccountCreationActive() ? '#' : "/teacher/classes/add"}
+                    onClick={(e) => {
+                      if (isAccountCreationActive()) {
+                        e.preventDefault();
+                        return;
+                      }
+                      setIsMobileOpen(false);
+                    }}
                     className="flex items-center gap-3 px-3 py-2.5 my-1 rounded-lg text-blue-600 hover:bg-blue-50 hover:shadow-sm transition-all duration-200 group animate-popIn"
                   >
                     <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 group-hover:rotate-90 transition-all duration-300 flex-shrink-0">
@@ -443,8 +466,12 @@ export default function Sidebar({ user, userDoc }) {
                           onMouseLeave={() => setHoveredClass(null)}
                         >
                           <Link
-                            to={`/teacher/class/${cls.id}`}
-                            onClick={() => {
+                            to={isAccountCreationActive() ? '#' : `/teacher/class/${cls.id}`}
+                            onClick={(e) => {
+                              if (isAccountCreationActive()) {
+                                e.preventDefault();
+                                return;
+                              }
                               setIsMobileOpen(false);
                               setHoveredClass(null);
                             }}
@@ -482,8 +509,12 @@ export default function Sidebar({ user, userDoc }) {
             {otherMenuItems.map((item, index) => (
               <Link
                 key={item.to}
-                to={item.to}
-                onClick={() => {
+                to={isAccountCreationActive() ? '#' : item.to}
+                onClick={(e) => {
+                  if (isAccountCreationActive()) {
+                    e.preventDefault();
+                    return;
+                  }
                   setIsMobileOpen(false);
                   if (isActive(item.to)) {
                     window.dispatchEvent(new Event('refreshPage'));
@@ -552,8 +583,14 @@ export default function Sidebar({ user, userDoc }) {
               {shouldExpand && archiveOpen && (
                 <div className="mt-1 ml-3 space-y-1 border-l-2 border-blue-200 pl-3 animate-expandDown overflow-hidden">
                   <Link
-                    to="/teacher/archives/classes"
-                    onClick={() => setIsMobileOpen(false)}
+                    to={isAccountCreationActive() ? '#' : "/teacher/archives/classes"}
+                    onClick={(e) => {
+                      if (isAccountCreationActive()) {
+                        e.preventDefault();
+                        return;
+                      }
+                      setIsMobileOpen(false);
+                    }}
                     style={staggerDelay(0)}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/classes' ? 'bg-blue-50 text-blue-700' : ''
                       }`}
@@ -563,8 +600,14 @@ export default function Sidebar({ user, userDoc }) {
                   </Link>
 
                   <Link
-                    to="/teacher/archives/quizzes"
-                    onClick={() => setIsMobileOpen(false)}
+                    to={isAccountCreationActive() ? '#' : "/teacher/archives/quizzes"}
+                    onClick={(e) => {
+                      if (isAccountCreationActive()) {
+                        e.preventDefault();
+                        return;
+                      }
+                      setIsMobileOpen(false);
+                    }}
                     style={staggerDelay(1)}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/archives/quizzes' ? 'bg-blue-50 text-blue-700' : ''
                       }`}
