@@ -27,6 +27,7 @@ export default function ConfirmDialog({
     onConfirm,
     onCancel,
     icon,
+    font = "Poppins",
     color = "blue",
     loading = false,
     showCancel = true,

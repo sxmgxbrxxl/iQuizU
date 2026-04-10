@@ -767,16 +767,17 @@ export default function ReportsAnalytics() {
   if (loading) {
     return (
       <div className="w-full font-Poppins">
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col mb-4 md:mb-6 w-full animate-fadeIn bg-blue-600 p-10 rounded-3xl">
-            <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-              Reports & Analytics
-            </h1>
-            <p className="text-md md:text-md font-light text-white">
-              View detailed quiz details and student performance and insights.
-            </p>
-          </div>
-        </div>
+        <div className="relative group flex flex-col mb-4 md:mb-6 w-full animate-fadeIn bg-blue-600 p-10 rounded-3xl overflow-hidden">
+        {/* BLOB */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
+        <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 z-10">
+          Reports & Analytics
+        </h1>
+        <p className="text-md font-light text-white z-10">
+          View detailed quiz details and student performance and insights.
+        </p>
+      </div>
 
         {/* Skeleton Class Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -816,15 +817,16 @@ export default function ReportsAnalytics() {
         icon={confirmDialog.icon}
         color={confirmDialog.color}
       />
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col w-full mb-4 md:mb-6 bg-blue-600 p-10 rounded-3xl">
-          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-            Reports & Analytics
-          </h1>
-          <p className="text-md md:text-md font-light text-white">
-            View detailed quiz details and student performance and insights.
-          </p>
-        </div>
+      <div className="relative group flex flex-col mb-4 md:mb-6 w-full bg-blue-600 p-10 rounded-3xl overflow-hidden">
+        {/* BLOB */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
+        <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 z-10">
+          Reports & Analytics
+        </h1>
+        <p className="text-md font-light text-white z-10">
+          View detailed quiz details and student performance and insights.
+        </p>
       </div>
 
       {!selectedClass ? (

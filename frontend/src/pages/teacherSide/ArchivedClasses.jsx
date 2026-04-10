@@ -174,7 +174,10 @@ export default function ArchivedClasses({ user }) {
         <div className="w-full">
           {/* Header */}
           <div className="mb-8 flex flex-col">
-            <div className="flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
+            <div className="relative group flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
+              {/*BLOBBBB */}
+              <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
               <h1 className="text-xl md:text-2xl font-bold text-white">Archived Classes</h1>
               <p className="text-white">
               Manage your archived classes. You can restore or permanently delete them.
@@ -222,7 +225,11 @@ export default function ArchivedClasses({ user }) {
       <div className="w-full">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
+          <div className="relative group flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
+
+            {/*BLOBBBB */}
+            <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
             <h1 className="text-xl md:text-2xl font-bold text-white">Archived Classes</h1>
             <p className="text-white">
               Manage your archived classes. You can restore or permanently delete them.
