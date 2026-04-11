@@ -173,9 +173,6 @@ export default function QuizResults() {
             assignmentId: data.assignmentId,
             antiCheatData: data.antiCheatData || {
               tabSwitchCount: 0,
-              fullscreenExitCount: 0,
-              copyAttempts: 0,
-              rightClickAttempts: 0,
               suspiciousActivities: [],
               totalSuspiciousActivities: 0,
               quizDuration: 0,
@@ -353,9 +350,6 @@ export default function QuizResults() {
           : "—",
         "Flagged for Review": result?.antiCheatData?.flaggedForReview ? "Yes" : "No",
         "Tab Switches": result?.antiCheatData?.tabSwitchCount || 0,
-        "Fullscreen Exits": result?.antiCheatData?.fullscreenExitCount || 0,
-        "Copy Attempts": result?.antiCheatData?.copyAttempts || 0,
-        "Right-Click Attempts": result?.antiCheatData?.rightClickAttempts || 0,
       };
     });
 
@@ -363,7 +357,7 @@ export default function QuizResults() {
     worksheet["!cols"] = [
       { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 12 },
       { wch: 10 }, { wch: 15 }, { wch: 18 }, { wch: 20 },
-      { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
+      { wch: 15 }, { wch: 12 },
     ];
 
     const workbook = XLSX.utils.book_new();
@@ -826,29 +820,11 @@ export default function QuizResults() {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="grid md:grid-cols-1 gap-4 mb-6">
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">🔄 Tab Switches</p>
                   <p className="text-xl md:text-2xl font-bold text-blue-700">{selectedAntiCheatData?.tabSwitchCount || 0}</p>
                   <p className="text-xs text-gray-500 mt-2">Total times student left the quiz</p>
-                </div>
-
-                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                  <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">📺 Fullscreen Exits</p>
-                  <p className="text-xl md:text-2xl font-bold text-purple-700">{selectedAntiCheatData?.fullscreenExitCount || 0}</p>
-                  <p className="text-xs text-gray-500 mt-2">Times exited fullscreen mode</p>
-                </div>
-
-                <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                  <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">📋 Copy Attempts</p>
-                  <p className="text-xl md:text-2xl font-bold text-orange-700">{selectedAntiCheatData?.copyAttempts || 0}</p>
-                  <p className="text-xs text-gray-500 mt-2">Copy/paste blocked</p>
-                </div>
-
-                <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                  <p className="text-xs md:text-sm font-semibold text-gray-600 mb-1">🖱️ Right-Click Attempts</p>
-                  <p className="text-xl md:text-2xl font-bold text-red-700">{selectedAntiCheatData?.rightClickAttempts || 0}</p>
-                  <p className="text-xs text-gray-500 mt-2">Right-click blocked</p>
                 </div>
               </div>
 
@@ -856,7 +832,7 @@ export default function QuizResults() {
                 <p className="text-sm font-semibold text-gray-700 mb-3">📋 Detailed Activity Timeline</p>
                 {selectedAntiCheatData?.suspiciousActivities && selectedAntiCheatData.suspiciousActivities.length > 0 ? (
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {selectedAntiCheatData.suspiciousActivities.map((activity, idx) => {
+                    {[...selectedAntiCheatData.suspiciousActivities].reverse().map((activity, idx) => {
                       const activityTime = new Date(activity.timestamp);
                       const activityHour = activityTime.getHours().toString().padStart(2, '0');
                       const activityMin = activityTime.getMinutes().toString().padStart(2, '0');
@@ -870,18 +846,6 @@ export default function QuizResults() {
                         icon = '🔄';
                         bgColor = 'bg-blue-50 border-blue-200';
                         textColor = 'text-blue-700';
-                      } else if (activity.type === 'fullscreen_exit') {
-                        icon = '📺';
-                        bgColor = 'bg-purple-50 border-purple-200';
-                        textColor = 'text-purple-700';
-                      } else if (activity.type === 'copy_attempt') {
-                        icon = '📋';
-                        bgColor = 'bg-orange-50 border-orange-200';
-                        textColor = 'text-orange-700';
-                      } else if (activity.type === 'right_click') {
-                        icon = '🖱️';
-                        bgColor = 'bg-red-50 border-red-200';
-                        textColor = 'text-red-700';
                       } else if (activity.type === 'dev_tools_attempt') {
                         icon = '🛠️';
                         bgColor = 'bg-red-50 border-red-200';

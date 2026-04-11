@@ -2,14 +2,14 @@ import { Zap, AlertCircle, Loader } from "lucide-react";
 
 export default function WaitingRoom({ quiz, assignment, questions, onNavigate }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 flex items-center justify-center p-3 sm:p-4 md:p-6 font-Poppins">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-pink-50 to-green-100 flex items-center justify-center p-3 sm:p-4 md:p-6 font-Poppins">
       <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-500 hover:shadow-3xl animate-fadeIn">
         <div className="text-center">
           {/* Header Section */}
           <div className="mb-6 sm:mb-8">
             <div className="relative inline-block mb-4">
-              <Zap className="w-16 h-16 sm:w-20 sm:h-20 text-purple-600 mx-auto animate-pulse" />
-              <div className="absolute inset-0 w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-purple-300 rounded-full blur-xl opacity-50 animate-ping" />
+              <Zap className="w-16 h-16 sm:w-20 sm:h-20 text-green-600 mx-auto animate-pulse" />
+              <div className="absolute inset-0 w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-green-300 rounded-full blur-xl opacity-50 animate-ping" />
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2 animate-slideDown">
               Waiting Room
@@ -20,32 +20,32 @@ export default function WaitingRoom({ quiz, assignment, questions, onNavigate })
           </div>
 
           {/* Quiz Details Card */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 transform transition-all duration-300 hover:scale-105 hover:shadow-lg animate-slideUp">
-            <h3 className="text-lg sm:text-xl font-bold text-purple-900 mb-3 sm:mb-4">
+          <div className="bg-gradient-to-br from-green-50 to-pink-50 border-2 border-green-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 transform transition-all duration-300 hover:scale-105 hover:shadow-lg animate-slideUp">
+            <h3 className="text-lg sm:text-xl font-bold text-green-900 mb-3 sm:mb-4">
               Quiz Details
             </h3>
             <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-gray-700">
-              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-purple-100">
-                <strong className="text-purple-800">Quiz:</strong>
+              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-green-100">
+                <strong className="text-green-800">Quiz:</strong>
                 <span className="text-gray-900">{quiz?.title || "Loading..."}</span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-purple-100">
-                <strong className="text-purple-800">Class:</strong>
+              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-green-100">
+                <strong className="text-green-800">Class:</strong>
                 <span className="text-gray-900">{assignment?.className || "Loading..."}</span>
               </div>
               {assignment?.subject && (
-                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-purple-100">
-                  <strong className="text-purple-800">Subject:</strong>
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-green-100">
+                  <strong className="text-green-800">Subject:</strong>
                   <span className="text-gray-900">{assignment.subject}</span>
                 </div>
               )}
-              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-purple-100">
-                <strong className="text-purple-800">Questions:</strong>
+              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-green-100">
+                <strong className="text-green-800">Questions:</strong>
                 <span className="text-gray-900">{questions?.length || 0}</span>
               </div>
               {assignment?.settings?.timeLimit && (
-                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-purple-100">
-                  <strong className="text-purple-800">Time Limit:</strong>
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-green-100">
+                  <strong className="text-green-800">Time Limit:</strong>
                   <span className="text-gray-900">{assignment.settings.timeLimit} minutes</span>
                 </div>
               )}

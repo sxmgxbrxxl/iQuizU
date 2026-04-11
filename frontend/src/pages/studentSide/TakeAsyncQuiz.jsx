@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   doc,
@@ -59,34 +59,63 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   // Anti-cheating state
   const [suspiciousActivities, setSuspiciousActivities] = useState([]);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [fullscreenExits, setFullscreenExitCount] = useState(0);
-  const [copyAttempts, setCopyAttempts] = useState(0);
-  const [rightClickAttempts, setRightClickAttempts] = useState(0);
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [quizStartTime, setQuizStartTime] = useState(null);
 
+  // Refs to persist across useEffect re-runs (prevents stale closures)
+  const tabSwitchOutTimeRef = useRef(null);
+  const tabCountRef = useRef(0);
+  const activitiesRef = useRef([]);
+  const quizStartedRef = useRef(false);
+  const quizStartTimeRef = useRef(null);
+
+  // Keep refs in sync with state
+  useEffect(() => { quizStartedRef.current = isQuizStarted; }, [isQuizStarted]);
+  useEffect(() => { quizStartTimeRef.current = quizStartTime; }, [quizStartTime]);
+
   const isAssignedQuiz = !!assignmentId;
 
-  // Track tab visibility changes
+  // Track tab visibility changes - REAL-TIME to Firestore (using refs to avoid stale closures)
   useEffect(() => {
-    let tabSwitchOutTime = null;
+    const handleVisibilityChange = async () => {
+      if (!quizStartedRef.current) return;
 
-    const handleVisibilityChange = () => {
-      if (document.hidden && isQuizStarted) {
+      if (document.hidden) {
         // Student switched AWAY from tab
-        tabSwitchOutTime = new Date();
-        setTabSwitchCount(prev => prev + 1);
+        tabSwitchOutTimeRef.current = new Date();
+        tabCountRef.current += 1;
+        setTabSwitchCount(tabCountRef.current);
+
         const activity = {
           type: "tab_switch",
           timestamp: new Date().toISOString(),
           details: "⚠️ Student switched AWAY from quiz tab",
-          switchedOutAt: tabSwitchOutTime.toISOString()
+          switchedOutAt: tabSwitchOutTimeRef.current.toISOString()
         };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      } else if (!document.hidden && tabSwitchOutTime && isQuizStarted) {
+        activitiesRef.current = [...activitiesRef.current, activity];
+        setSuspiciousActivities([...activitiesRef.current]);
+
+        // Real-time write to Firestore
+        if (assignmentId) {
+          try {
+            const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
+            await updateDoc(assignmentRef, {
+              antiCheatData: {
+                tabSwitchCount: tabCountRef.current,
+                suspiciousActivities: activitiesRef.current,
+                totalSuspiciousActivities: activitiesRef.current.length,
+                flaggedForReview: true,
+                quizDuration: quizStartTimeRef.current ? Math.round((new Date() - quizStartTimeRef.current) / 1000) : 0,
+              }
+            });
+          } catch (err) {
+            console.error("Error writing real-time anti-cheat data:", err);
+          }
+        }
+      } else if (tabSwitchOutTimeRef.current) {
         // Student switched BACK to tab
         const now = new Date();
-        const durationAway = Math.floor((now - tabSwitchOutTime) / 1000); // in seconds
+        const durationAway = Math.floor((now - tabSwitchOutTimeRef.current) / 1000);
 
         const activity = {
           type: "tab_switch",
@@ -95,87 +124,33 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           duration: durationAway,
           returnedAt: now.toISOString()
         };
-        setSuspiciousActivities(prev => [...prev, activity]);
-        tabSwitchOutTime = null;
+        activitiesRef.current = [...activitiesRef.current, activity];
+        setSuspiciousActivities([...activitiesRef.current]);
+        tabSwitchOutTimeRef.current = null;
+
+        // Real-time write to Firestore
+        if (assignmentId) {
+          try {
+            const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
+            await updateDoc(assignmentRef, {
+              antiCheatData: {
+                tabSwitchCount: tabCountRef.current,
+                suspiciousActivities: activitiesRef.current,
+                totalSuspiciousActivities: activitiesRef.current.length,
+                flaggedForReview: activitiesRef.current.length > 0,
+                quizDuration: quizStartTimeRef.current ? Math.round((new Date() - quizStartTimeRef.current) / 1000) : 0,
+              }
+            });
+          } catch (err) {
+            console.error("Error writing real-time anti-cheat data:", err);
+          }
+        }
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isQuizStarted]);
-
-  // Track fullscreen exit attempts
-  useEffect(() => {
-    let fullscreenExitTime = null;
-
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && isQuizStarted) {
-        fullscreenExitTime = new Date();
-        setFullscreenExitCount(prev => prev + 1);
-        const activity = {
-          type: "fullscreen_exit",
-          timestamp: new Date().toISOString(),
-          details: "⚠️ Student EXITED fullscreen mode",
-          exitedAt: fullscreenExitTime.toISOString()
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      } else if (document.fullscreenElement && fullscreenExitTime && isQuizStarted) {
-        const now = new Date();
-        const durationOutOfFullscreen = Math.floor((now - fullscreenExitTime) / 1000);
-
-        const activity = {
-          type: "fullscreen_exit",
-          timestamp: now.toISOString(),
-          details: `✅ Student RETURNED to fullscreen (was out for ${durationOutOfFullscreen}s)`,
-          duration: durationOutOfFullscreen,
-          returnedAt: now.toISOString()
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-        fullscreenExitTime = null;
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [isQuizStarted]);
-
-  // Track copy attempts
-  useEffect(() => {
-    const handleCopy = (e) => {
-      if (isQuizStarted) {
-        e.preventDefault();
-        setCopyAttempts(prev => prev + 1);
-        const activity = {
-          type: "copy_attempt",
-          timestamp: new Date().toISOString(),
-          details: "Student attempted to copy content"
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      }
-    };
-
-    document.addEventListener("copy", handleCopy);
-    return () => document.removeEventListener("copy", handleCopy);
-  }, [isQuizStarted]);
-
-  // Track right-click attempts
-  useEffect(() => {
-    const handleRightClick = (e) => {
-      if (isQuizStarted) {
-        e.preventDefault();
-        setRightClickAttempts(prev => prev + 1);
-        const activity = {
-          type: "right_click",
-          timestamp: new Date().toISOString(),
-          details: "Student attempted to right-click (possible inspection)"
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      }
-    };
-
-    document.addEventListener("contextmenu", handleRightClick);
-    return () => document.removeEventListener("contextmenu", handleRightClick);
-  }, [isQuizStarted]);
+  }, [assignmentId]);
 
   // Disable developer tools
   useEffect(() => {
@@ -429,6 +404,15 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       }
       setAssignment({ id: assignmentSnap.id, ...assignmentData });
 
+      // Load existing anti-cheat data to prevent duplicates on refresh
+      if (assignmentData.antiCheatData) {
+        const existingData = assignmentData.antiCheatData;
+        tabCountRef.current = existingData.tabSwitchCount || 0;
+        activitiesRef.current = existingData.suspiciousActivities || [];
+        setTabSwitchCount(tabCountRef.current);
+        setSuspiciousActivities([...activitiesRef.current]);
+      }
+
       const quizRef = doc(db, "quizzes", assignmentData.quizId);
       const quizSnap = await getDoc(quizRef);
 
@@ -669,9 +653,6 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         // Anti-cheating data
         antiCheatData: {
           tabSwitchCount: tabSwitchCount,
-          fullscreenExitCount: fullscreenExits,
-          copyAttempts: copyAttempts,
-          rightClickAttempts: rightClickAttempts,
           suspiciousActivities: suspiciousActivities,
           totalSuspiciousActivities: suspiciousActivities.length,
           quizDuration: quizStartTime ? Math.round((new Date() - quizStartTime) / 1000) : 0,
@@ -752,7 +733,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       case "multiple_choice":
         return "bg-purple-100 text-purple-700 border-purple-300";
       case "true_false":
-        return "bg-green-100 text-green-700 border-green-300";
+        return "bg-emerald-100 text-emerald-700 border-emerald-300";
       case "identification":
         return "bg-blue-100 text-blue-700 border-blue-300";
       default:
@@ -764,7 +745,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center font-Poppins p-4">
         <div className="bg-components p-6 rounded-3xl shadow-md">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-4" />
+          <Loader2 className="w-10 h-10 animate-spin text-green-500 mx-auto mb-4" />
           <p className="text-gray-600 text-sm sm:text-base">Loading quiz...</p>
         </div>
       </div>
@@ -773,7 +754,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
         <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md max-w-md w-full text-center">
           <XCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
@@ -782,7 +763,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           <p className="text-sm sm:text-base text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => navigate("/student")}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-sm sm:text-base"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition text-sm sm:text-base"
           >
             Back to Dashboard
           </button>
@@ -812,7 +793,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const hasWarnings = suspiciousActivities.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 font-Poppins">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-Poppins">
       <div className="bg-components shadow-md sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
@@ -830,7 +811,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                 <div
                   className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-bold text-sm sm:text-base ${timeLeft <= 300
                     ? "bg-red-100 text-red-700"
-                    : "bg-blue-100 text-blue-700"
+                    : "bg-green-100 text-green-700"
                     }`}
                 >
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -854,9 +835,6 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                 <p className="text-xs sm:text-sm text-red-700 mt-1">
                   The following activities have been detected and recorded:
                   {tabSwitchCount > 0 && ` Tab switches: ${tabSwitchCount}`}
-                  {fullscreenExits > 0 && `${tabSwitchCount > 0 ? ',' : ''} Fullscreen exits: ${fullscreenExits}`}
-                  {copyAttempts > 0 && `${tabSwitchCount > 0 || fullscreenExits > 0 ? ',' : ''} Copy attempts: ${copyAttempts}`}
-                  {rightClickAttempts > 0 && `${tabSwitchCount > 0 || fullscreenExits > 0 || copyAttempts > 0 ? ',' : ''} Right-click attempts: ${rightClickAttempts}`}
                 </p>
               </div>
             </div>
@@ -870,7 +848,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
             {quiz.title}
           </h1>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
-            <span className="font-semibold text-blue-700 flex flex-row gap-2 items-center justify-center">
+            <span className="font-semibold text-green-700 flex flex-row gap-2 items-center justify-center">
               <BookOpen className="w-4 h-4" /> {assignment.className}
             </span>
             {assignment.subject && <span>• {assignment.subject}</span>}
@@ -879,7 +857,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           </div>
 
           {assignment.instructions && (
-            <div className="mt-4 p-3 sm:p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+            <div className="mt-4 p-3 sm:p-4 bg-green-50 border-l-4 border-green-500 rounded">
               <p className="text-xs sm:text-sm text-gray-700">
                 <strong>Instructions:</strong> {assignment.instructions}
               </p>
@@ -900,13 +878,13 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs sm:text-sm font-semibold text-gray-700">Progress</span>
-            <span className="text-xs sm:text-sm font-semibold text-blue-600">
+            <span className="text-xs sm:text-sm font-semibold text-green-600">
               {Object.keys(answers).length} / {questions.length} answered
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
             <div
-              className="bg-blue-600 h-2 sm:h-3 rounded-full transition-all duration-300"
+              className="bg-green-600 h-2 sm:h-3 rounded-full transition-all duration-300"
               style={{
                 width: `${(Object.keys(answers).length / questions.length) * 100}%`,
               }}
@@ -914,9 +892,9 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-md p-4 sm:p-8 border-2 border-blue-200 mb-4 sm:mb-6">
+        <div className="bg-white rounded-2xl shadow-md p-4 sm:p-8 border-2 border-green-200 mb-4 sm:mb-6">
           <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <span className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-base sm:text-lg">
+            <span className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-base sm:text-lg">
               {currentQuestionIndex + 1}
             </span>
             <div className="flex-1">
@@ -939,8 +917,8 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                   <label
                     key={choiceIndex}
                     className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${isChoiceSelected(currentQuestionIndex, choice.text, choiceIndex)
-                      ? "border-blue-500 bg-blue-50 shadow-md"
-                      : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-sm"
+                      ? "border-green-500 bg-green-50 shadow-md"
+                      : "border-gray-200 hover:border-green-300 bg-white hover:shadow-sm"
                       }`}
                   >
                     <input
@@ -951,7 +929,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                       onChange={(e) =>
                         handleAnswerChange(currentQuestionIndex, e.target.value, choiceIndex)
                       }
-                      className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"
+                      className="w-5 h-5 sm:w-6 sm:h-6 text-green-600"
                     />
                     <span className="flex-1 text-gray-800 text-sm sm:text-lg" style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
                       {choice.text}
@@ -967,8 +945,8 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                   <label
                     key={option}
                     className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl border-2 cursor-pointer transition ${answers[currentQuestionIndex] === option
-                      ? "border-blue-500 bg-blue-50 shadow-md"
-                      : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-sm"
+                      ? "border-green-500 bg-green-50 shadow-md"
+                      : "border-gray-200 hover:border-green-300 bg-white hover:shadow-sm"
                       }`}
                   >
                     <input
@@ -979,7 +957,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                       onChange={(e) =>
                         handleAnswerChange(currentQuestionIndex, e.target.value)
                       }
-                      className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"
+                      className="w-5 h-5 sm:w-6 sm:h-6 text-green-600"
                     />
                     <span className="flex-1 text-gray-800 font-semibold text-sm sm:text-lg" style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
                       {option}
@@ -994,7 +972,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
                 <select
                   value={answers[currentQuestionIndex] || ""}
                   onChange={(e) => handleAnswerChange(currentQuestionIndex, e.target.value)}
-                  className="w-full px-4 sm:px-5 py-3 sm:py-4 pr-10 sm:pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-gray-800 cursor-pointer hover:border-blue-300 transition text-sm sm:text-lg"
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 pr-10 sm:pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none bg-white text-gray-800 cursor-pointer hover:border-green-300 transition text-sm sm:text-lg"
                 >
                   <option value="" disabled>
                     Select your answer...
@@ -1035,7 +1013,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
               onClick={goToNextQuestion}
               disabled={!isCurrentQuestionAnswered()}
               className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${isCurrentQuestionAnswered()
-                ? "bg-blue-600 text-white hover:bg-blue-700"
+                ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
             >

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   doc,
@@ -168,13 +168,29 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   // Anti-cheating state
   const [suspiciousActivities, setSuspiciousActivities] = useState([]);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [fullscreenExitCount, setFullscreenExitCount] = useState(0);
-  const [copyAttempts, setCopyAttempts] = useState(0);
-  const [rightClickAttempts, setRightClickAttempts] = useState(0);
   const [quizStartTime, setQuizStartTime] = useState(null);
+
+  // Refs to persist across useEffect re-runs (prevents stale closures)
+  const tabSwitchOutTimeRef = useRef(null);
+  const tabCountRef = useRef(0);
+  const activitiesRef = useRef([]);
+  const quizStartedRef = useRef(false);
+  const quizStartTimeRef = useRef(null);
+
+  // Keep refs in sync with state
+  useEffect(() => { quizStartedRef.current = quizStarted; }, [quizStarted]);
+  useEffect(() => { quizStartTimeRef.current = quizStartTime; }, [quizStartTime]);
 
   // Track pending saves
   const [pendingSaveTimeout, setPendingSaveTimeout] = useState(null);
+  const pendingSaveRef = useRef(null);
+  const answersRef = useRef({});
+  const currentQuestionIndexRef = useRef(0);
+
+  // Keep save-related refs in sync
+  useEffect(() => { pendingSaveRef.current = pendingSaveTimeout; }, [pendingSaveTimeout]);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+  useEffect(() => { currentQuestionIndexRef.current = currentQuestionIndex; }, [currentQuestionIndex]);
 
   useEffect(() => {
     fetchQuizData();
@@ -216,24 +232,45 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     return () => clearInterval(timer);
   }, [questionTimeLeft, sessionStatus, quizStarted, currentQuestionIndex, answers]);
 
-  // Track tab visibility changes
+  // Track tab visibility changes - REAL-TIME to Firestore (using refs to avoid stale closures)
   useEffect(() => {
-    let tabSwitchOutTime = null;
+    const handleVisibilityChange = async () => {
+      if (!quizStartedRef.current) return;
 
-    const handleVisibilityChange = () => {
-      if (document.hidden && quizStarted) {
-        tabSwitchOutTime = new Date();
-        setTabSwitchCount(prev => prev + 1);
+      if (document.hidden) {
+        // Student switched AWAY from tab
+        tabSwitchOutTimeRef.current = new Date();
+        tabCountRef.current += 1;
+        setTabSwitchCount(tabCountRef.current);
+
         const activity = {
           type: "tab_switch",
           timestamp: new Date().toISOString(),
           details: "⚠️ Student switched AWAY from quiz tab",
-          switchedOutAt: tabSwitchOutTime.toISOString()
+          switchedOutAt: tabSwitchOutTimeRef.current.toISOString()
         };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      } else if (!document.hidden && tabSwitchOutTime && quizStarted) {
+        activitiesRef.current = [...activitiesRef.current, activity];
+        setSuspiciousActivities([...activitiesRef.current]);
+
+        // Real-time write to Firestore
+        try {
+          const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
+          await updateDoc(assignmentRef, {
+            antiCheatData: {
+              tabSwitchCount: tabCountRef.current,
+              suspiciousActivities: activitiesRef.current,
+              totalSuspiciousActivities: activitiesRef.current.length,
+              flaggedForReview: true,
+              quizDuration: quizStartTimeRef.current ? Math.round((new Date() - quizStartTimeRef.current) / 1000) : 0,
+            }
+          });
+        } catch (err) {
+          console.error("Error writing real-time anti-cheat data:", err);
+        }
+      } else if (tabSwitchOutTimeRef.current) {
+        // Student switched BACK to tab
         const now = new Date();
-        const durationAway = Math.floor((now - tabSwitchOutTime) / 1000);
+        const durationAway = Math.floor((now - tabSwitchOutTimeRef.current) / 1000);
 
         const activity = {
           type: "tab_switch",
@@ -242,95 +279,39 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           duration: durationAway,
           returnedAt: now.toISOString()
         };
-        setSuspiciousActivities(prev => [...prev, activity]);
+        activitiesRef.current = [...activitiesRef.current, activity];
+        setSuspiciousActivities([...activitiesRef.current]);
+
+        tabSwitchOutTimeRef.current = null;
 
         // Force save progress when returning to tab
-        if (pendingSaveTimeout) {
-          clearTimeout(pendingSaveTimeout);
+        if (pendingSaveRef.current) {
+          clearTimeout(pendingSaveRef.current);
           setPendingSaveTimeout(null);
         }
-        saveQuizProgress(answers, currentQuestionIndex);
+        saveQuizProgress(answersRef.current, currentQuestionIndexRef.current);
 
-        tabSwitchOutTime = null;
+        // Real-time write to Firestore
+        try {
+          const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
+          await updateDoc(assignmentRef, {
+            antiCheatData: {
+              tabSwitchCount: tabCountRef.current,
+              suspiciousActivities: activitiesRef.current,
+              totalSuspiciousActivities: activitiesRef.current.length,
+              flaggedForReview: activitiesRef.current.length > 0,
+              quizDuration: quizStartTimeRef.current ? Math.round((new Date() - quizStartTimeRef.current) / 1000) : 0,
+            }
+          });
+        } catch (err) {
+          console.error("Error writing real-time anti-cheat data:", err);
+        }
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [quizStarted, answers, currentQuestionIndex, pendingSaveTimeout]);
-
-  // Track fullscreen exit attempts
-  useEffect(() => {
-    let fullscreenExitTime = null;
-
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && quizStarted) {
-        fullscreenExitTime = new Date();
-        setFullscreenExitCount(prev => prev + 1);
-        const activity = {
-          type: "fullscreen_exit",
-          timestamp: new Date().toISOString(),
-          details: "⚠️ Student EXITED fullscreen mode",
-          exitedAt: fullscreenExitTime.toISOString()
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      } else if (document.fullscreenElement && fullscreenExitTime && quizStarted) {
-        const now = new Date();
-        const durationOutOfFullscreen = Math.floor((now - fullscreenExitTime) / 1000);
-
-        const activity = {
-          type: "fullscreen_exit",
-          timestamp: now.toISOString(),
-          details: `✅ Student RETURNED to fullscreen (was out for ${durationOutOfFullscreen}s)`,
-          duration: durationOutOfFullscreen,
-          returnedAt: now.toISOString()
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-        fullscreenExitTime = null;
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [quizStarted]);
-
-  // Track copy attempts
-  useEffect(() => {
-    const handleCopy = (e) => {
-      if (quizStarted) {
-        e.preventDefault();
-        setCopyAttempts(prev => prev + 1);
-        const activity = {
-          type: "copy_attempt",
-          timestamp: new Date().toISOString(),
-          details: "Student attempted to copy content"
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      }
-    };
-
-    document.addEventListener("copy", handleCopy);
-    return () => document.removeEventListener("copy", handleCopy);
-  }, [quizStarted]);
-
-  // Track right-click attempts
-  useEffect(() => {
-    const handleRightClick = (e) => {
-      if (quizStarted) {
-        e.preventDefault();
-        setRightClickAttempts(prev => prev + 1);
-        const activity = {
-          type: "right_click",
-          timestamp: new Date().toISOString(),
-          details: "Student attempted to right-click (possible inspection)"
-        };
-        setSuspiciousActivities(prev => [...prev, activity]);
-      }
-    };
-
-    document.addEventListener("contextmenu", handleRightClick);
-    return () => document.removeEventListener("contextmenu", handleRightClick);
-  }, [quizStarted]);
+  }, [assignmentId]);
 
   // Disable developer tools
   useEffect(() => {
@@ -575,6 +556,15 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           setCurrentQuestionIndex(assignmentData.currentQuestionIndex);
           const timeData = times[assignmentData.currentQuestionIndex];
           setQuestionTimeLeft(timeData.time);
+        }
+
+        // Load existing anti-cheat data to prevent duplicates on refresh
+        if (assignmentData.antiCheatData) {
+          const existingData = assignmentData.antiCheatData;
+          tabCountRef.current = existingData.tabSwitchCount || 0;
+          activitiesRef.current = existingData.suspiciousActivities || [];
+          setTabSwitchCount(tabCountRef.current);
+          setSuspiciousActivities([...activitiesRef.current]);
         }
       }
     } catch (error) {
@@ -831,9 +821,6 @@ export default function TakeSyncQuiz({ user, userDoc }) {
         // Anti-cheating data
         antiCheatData: {
           tabSwitchCount: tabSwitchCount,
-          fullscreenExitCount: fullscreenExitCount,
-          copyAttempts: copyAttempts,
-          rightClickAttempts: rightClickAttempts,
           suspiciousActivities: suspiciousActivities,
           totalSuspiciousActivities: suspiciousActivities.length,
           quizDuration: quizStartTime ? Math.round((new Date() - quizStartTime) / 1000) : 0,
@@ -920,7 +907,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
       case "multiple_choice":
         return "bg-purple-100 text-purple-700 border-purple-300";
       case "true_false":
-        return "bg-green-100 text-green-700 border-green-300";
+        return "bg-emerald-100 text-emerald-700 border-emerald-300";
       case "identification":
         return "bg-blue-100 text-blue-700 border-blue-300";
       default:
@@ -936,9 +923,9 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-md">
-          <Loader className="w-10 h-10 md:w-12 md:h-12 animate-spin text-purple-600 mx-auto mb-4" />
+          <Loader className="w-10 h-10 md:w-12 md:h-12 animate-spin text-green-600 mx-auto mb-4" />
           <p className="text-gray-600 text-sm md:text-base">Loading live quiz...</p>
         </div>
       </div>
@@ -947,7 +934,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-md max-w-md w-full text-center">
           <XCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">
@@ -956,7 +943,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           <p className="text-sm md:text-base text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => navigate("/student")}
-            className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition text-sm md:text-base"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition text-sm md:text-base"
           >
             Back to Dashboard
           </button>
@@ -978,7 +965,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   if (sessionStatus === "ended") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-md max-w-md w-full text-center">
           <XCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">
@@ -989,7 +976,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           </p>
           <button
             onClick={() => navigate("/student")}
-            className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition text-sm md:text-base"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition text-sm md:text-base"
           >
             Back to Dashboard
           </button>
@@ -1000,7 +987,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   if (sessionStatus === "active" && !quizStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg max-w-2xl w-full">
           <div className="text-center">
             <div className="mb-6">
@@ -1013,7 +1000,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-4 md:p-6 mb-6">
+            <div className="bg-green-600 text-white rounded-xl p-4 md:p-6 mb-6">
               <h3 className="text-xl md:text-2xl font-bold mb-4">{quiz?.title}</h3>
               <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
                 <div className="bg-white bg-opacity-20 rounded-lg p-2 md:p-3">
@@ -1032,7 +1019,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
             </div>
 
             {assignment?.instructions && (
-              <div className="mb-6 p-3 md:p-4 bg-blue-50 border-l-4 border-blue-500 rounded text-left">
+              <div className="mb-6 p-3 md:p-4 bg-green-50 border-l-4 border-green-500 rounded text-left">
                 <p className="text-xs md:text-sm text-gray-700">
                   <strong>Instructions:</strong> {assignment.instructions}
                 </p>
@@ -1054,7 +1041,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
             <button
               onClick={handleStartQuiz}
               disabled={startingQuiz}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-bold text-base md:text-xl hover:from-purple-700 hover:to-pink-700 transition transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+              className="w-full bg-green-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-bold text-base md:text-xl hover:bg-green-700 transition transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
             >
               {startingQuiz ? (
                 <>
@@ -1104,9 +1091,9 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   const hasWarnings = suspiciousActivities.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 font-Poppins">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-Poppins">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg sticky top-0 z-10">
+      <div className="bg-green-600 text-white shadow-lg sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -1126,7 +1113,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                 <div
                   className={`flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 rounded-lg font-bold text-sm md:text-base ${questionTimeLeft <= 10
                     ? "bg-red-500 text-white animate-pulse"
-                    : "bg-white text-purple-700"
+                    : "bg-white text-green-700"
                     }`}
                 >
                   <Clock className="w-4 h-4 md:w-5 md:h-5" />
@@ -1150,9 +1137,6 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                 <p className="text-xs text-red-700 mt-1">
                   Activities recorded:
                   {tabSwitchCount > 0 && ` Tab switches: ${tabSwitchCount}`}
-                  {fullscreenExitCount > 0 && `${tabSwitchCount > 0 ? ',' : ''} Fullscreen exits: ${fullscreenExitCount}`}
-                  {copyAttempts > 0 && `${tabSwitchCount > 0 || fullscreenExitCount > 0 ? ',' : ''} Copy attempts: ${copyAttempts}`}
-                  {rightClickAttempts > 0 && `${tabSwitchCount > 0 || fullscreenExitCount > 0 || copyAttempts > 0 ? ',' : ''} Right-clicks: ${rightClickAttempts}`}
                 </p>
               </div>
             </div>
@@ -1167,7 +1151,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
             {quiz.title}
           </h1>
           <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600">
-            <span className="font-semibold text-purple-700">
+            <span className="font-semibold text-green-700">
               📚 {assignment.className}
             </span>
             {assignment.subject && <span>• {assignment.subject}</span>}
@@ -1180,7 +1164,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           </div>
 
           {assignment.instructions && (
-            <div className="mt-4 p-3 md:p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+            <div className="mt-4 p-3 md:p-4 bg-green-50 border-l-4 border-green-500 rounded">
               <p className="text-xs md:text-sm text-gray-700">
                 <strong>Instructions:</strong> {assignment.instructions}
               </p>
@@ -1207,7 +1191,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                 className="w-full flex items-center justify-between text-left"
               >
                 <div className="flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-purple-600" />
+                  <Brain className="w-5 h-5 text-green-600" />
                   <span className="font-semibold text-gray-800 text-sm md:text-base">
                     ⏱️ Time Allocated: {currentTimeData.time}s
                   </span>
@@ -1218,7 +1202,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                     </span>
                   )}
                   {currentTimeData.breakdown.hasComputation && (
-                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-300">
+                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-300">
                       <Calculator className="w-3 h-3 inline mr-1" />
                       {currentTimeData.breakdown.computationLevel}
                     </span>
@@ -1267,9 +1251,9 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                   {currentTimeData.breakdown.hasComputation && (
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">➗ Computation Factor:</span>
-                      <span className="font-semibold text-blue-600">
+                      <span className="font-semibold text-green-600">
                         +{currentTimeData.breakdown.computationFactor}s
-                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
                           {currentTimeData.breakdown.computationLevel}
                         </span>
                       </span>
@@ -1285,7 +1269,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                     </div>
                   )}
                   <div className="pt-2 border-t">
-                    <div className="flex justify-between font-bold text-purple-700">
+                    <div className="flex justify-between font-bold text-green-700">
                       <span>🧮 TOTAL TIME:</span>
                       <span>
                         {currentTimeData.breakdown.baseTime} +
@@ -1308,13 +1292,13 @@ export default function TakeSyncQuiz({ user, userDoc }) {
         <div className="mb-4 md:mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs md:text-sm font-semibold text-gray-700">Progress</span>
-            <span className="text-xs md:text-sm font-semibold text-purple-600">
+            <span className="text-xs md:text-sm font-semibold text-green-600">
               {Object.keys(answers).length} / {questions.length} answered
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 md:h-3">
             <div
-              className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 md:h-3 rounded-full transition-all duration-300"
+              className="bg-green-600 h-2 md:h-3 rounded-full transition-all duration-300"
               style={{
                 width: `${(Object.keys(answers).length / questions.length) * 100}%`,
               }}
@@ -1323,9 +1307,9 @@ export default function TakeSyncQuiz({ user, userDoc }) {
         </div>
 
         {/* Current Question */}
-        <div className="bg-white rounded-2xl shadow-md p-4 md:p-8 border-2 border-purple-200 mb-4 md:mb-6">
+        <div className="bg-white rounded-2xl shadow-md p-4 md:p-8 border-2 border-green-200 mb-4 md:mb-6">
           <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
-            <span className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full flex items-center justify-center font-bold text-base md:text-lg">
+            <span className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-base md:text-lg">
               {currentQuestionIndex + 1}
             </span>
             <div className="flex-1">
@@ -1348,8 +1332,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                   <label
                     key={choiceIndex}
                     className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${isChoiceSelected(currentQuestionIndex, choice.text, choiceIndex)
-                      ? "border-purple-500 bg-purple-50 shadow-md"
-                      : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
+                      ? "border-green-500 bg-green-50 shadow-md"
+                      : "border-gray-200 hover:border-green-300 bg-white hover:shadow-sm"
                       }`}
                   >
                     <input
@@ -1360,7 +1344,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                       onChange={(e) =>
                         handleAnswerChange(currentQuestionIndex, e.target.value, choiceIndex)
                       }
-                      className="w-5 h-5 md:w-6 md:h-6 text-purple-600 flex-shrink-0"
+                      className="w-5 h-5 md:w-6 md:h-6 text-green-600 flex-shrink-0"
                     />
                     <span className="flex-1 text-gray-800 text-sm md:text-lg" style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
                       {choice.text}
@@ -1376,8 +1360,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                   <label
                     key={option}
                     className={`flex items-center gap-3 md:gap-4 p-3 md:p-5 rounded-xl border-2 cursor-pointer transition ${answers[currentQuestionIndex] === option
-                      ? "border-purple-500 bg-purple-50 shadow-md"
-                      : "border-gray-200 hover:border-purple-300 bg-white hover:shadow-sm"
+                      ? "border-green-500 bg-green-50 shadow-md"
+                      : "border-gray-200 hover:border-green-300 bg-white hover:shadow-sm"
                       }`}
                   >
                     <input
@@ -1388,7 +1372,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                       onChange={(e) =>
                         handleAnswerChange(currentQuestionIndex, e.target.value)
                       }
-                      className="w-5 h-5 md:w-6 md:h-6 text-purple-600 flex-shrink-0"
+                      className="w-5 h-5 md:w-6 md:h-6 text-green-600 flex-shrink-0"
                     />
                     <span className="flex-1 text-gray-800 font-semibold text-sm md:text-lg" style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
                       {option}
@@ -1403,7 +1387,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
                 <select
                   value={answers[currentQuestionIndex] || ""}
                   onChange={(e) => handleAnswerChange(currentQuestionIndex, e.target.value)}
-                  className="w-full px-4 md:px-5 py-3 md:py-4 pr-10 md:pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white text-gray-800 cursor-pointer hover:border-purple-300 transition text-sm md:text-lg"
+                  className="w-full px-4 md:px-5 py-3 md:py-4 pr-10 md:pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none bg-white text-gray-800 cursor-pointer hover:border-green-300 transition text-sm md:text-lg"
                 >
                   <option value="" disabled>
                     Select your answer...
@@ -1446,7 +1430,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
               onClick={goToNextQuestion}
               disabled={!isCurrentQuestionAnswered()}
               className={`flex items-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-lg font-semibold text-sm md:text-base transition ${isCurrentQuestionAnswered()
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
+                ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
             >
