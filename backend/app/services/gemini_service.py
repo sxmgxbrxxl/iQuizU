@@ -6,10 +6,6 @@ import time
 import sys
 import os
 
-# Import the classifier
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from services.bert_classifier import classify_multiple_questions
-
 def _configure_gemini():
     """Internal helper to reconfigure Gemini with the current active API key."""
     genai.configure(api_key=settings.get_current_key())
@@ -383,47 +379,26 @@ def count_cognitive_levels(quiz_data: dict) -> dict:
 
 def verify_and_rebalance_questions(quiz_data: dict, target_distribution: dict) -> dict:
     """
-    Verify cognitive levels using BERT classifier and adjust if needed.
-    Maps BERT's LOTS/HOTS to specific Bloom's levels.
+    Verify cognitive levels based on Gemini's output and adjust difficulty.
+    Bypasses the slow local BERT classifier and relies on the LLM's inherently good classification.
     """
-    all_questions = []
-    question_metadata = []
-
     for q_type in ["multiple_choice", "true_false", "identification"]:
         for idx, q in enumerate(quiz_data.get(q_type, [])):
-            all_questions.append(q["question"])
-            question_metadata.append({
-                "type": q_type,
-                "index": idx,
-                "declared_level": q.get("cognitive_level", "remembering")
-            })
+            declared_level = q.get("cognitive_level", "remembering").lower()
 
-    # ✅ Guard: skip classification if no questions survived filtering
-    if not all_questions:
-        print("⚠️ No questions to classify after filtering.")
-        return quiz_data
+            # Ensure the level is one of the 6 standard ones
+            valid_levels = ["remembering", "understanding", "application", "analysis", "evaluation", "creating"]
+            if declared_level not in valid_levels:
+                declared_level = "remembering"
+                
+            quiz_data[q_type][idx]["cognitive_level"] = declared_level
 
-    classifications = classify_multiple_questions(all_questions)
-
-    for i, (classification, confidence) in enumerate(classifications):
-        meta = question_metadata[i]
-        q_type = meta["type"]
-        q_idx = meta["index"]
-        declared_level = meta["declared_level"].lower()
-
-        if classification == "LOTS":
-            adjusted_level = declared_level if declared_level in ["remembering", "understanding", "application"] else "application"
-        else:  # HOTS
-            adjusted_level = declared_level if declared_level in ["analysis", "evaluation", "creating"] else "analysis"
-
-        quiz_data[q_type][q_idx]["cognitive_level"] = adjusted_level
-
-        if adjusted_level in ["remembering", "understanding", "application"]:
-            quiz_data[q_type][q_idx]["difficulty"] = "easy"
-        elif adjusted_level in ["analysis", "evaluation"]:
-            quiz_data[q_type][q_idx]["difficulty"] = "average"
-        else:
-            quiz_data[q_type][q_idx]["difficulty"] = "difficult"
+            if declared_level in ["remembering", "understanding", "application"]:
+                quiz_data[q_type][idx]["difficulty"] = "easy"
+            elif declared_level in ["analysis", "evaluation"]:
+                quiz_data[q_type][idx]["difficulty"] = "average"
+            else:
+                quiz_data[q_type][idx]["difficulty"] = "difficult"
 
     return quiz_data
 

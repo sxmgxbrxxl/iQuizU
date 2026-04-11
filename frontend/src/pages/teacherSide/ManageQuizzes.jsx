@@ -540,12 +540,12 @@ export default function ManageQuizzes() {
   // -----------------------------------------------------------------
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
-    if (file && file.type === "application/pdf") setSelectedFile(file);
-    else showToast("error", "Invalid File", "Please select a PDF file");
+    if (file && file.name.match(/\.(pdf|doc|docx|ppt|pptx)$/i)) setSelectedFile(file);
+    else showToast("error", "Invalid File", "Please select a PDF, Word, or PPT file");
   };
 
   const handleGenerateQuiz = async () => {
-    if (!selectedFile) return showToast("warning", "Missing File", "Please select a PDF file");
+    if (!selectedFile) return showToast("warning", "Missing File", "Please select a document file");
     if (!quizTitle.trim()) return showToast("warning", "Missing Title", "Please enter a quiz title");
 
     const mc = numMC === "" ? 0 : numMC;
@@ -963,7 +963,7 @@ export default function ManageQuizzes() {
             onClick={() => setShowPdfModal(true)}
             className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 md:py-2 rounded-lg hover:bg-blue-700 transition w-full md:w-auto"
           >
-            <FileUp className="w-5 h-5" /> Upload PDF (AI Generate)
+            <FileUp className="w-5 h-5" /> Upload File (AI Generate)
           </button>
           <button
             onClick={openManualModal}
@@ -1924,7 +1924,7 @@ export default function ManageQuizzes() {
                 <div className="flex items-center gap-3">
                   <FileUp className="w-8 h-8" />
                   <div>
-                    <h3 className="text-xl font-bold">Upload PDF</h3>
+                    <h3 className="text-xl font-bold">Upload Document</h3>
                     <p className="text-sm text-green-100">Create your quiz using artificial intelligence</p>
                   </div>
                 </div>
@@ -1952,11 +1952,11 @@ export default function ManageQuizzes() {
 
                 <div>
                   <label className="block text-sm font-semibold mb-2">
-                    Upload PDF
+                    Upload Document (PDF, Word, or PPT)
                   </label>
                   <input
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx"
                     onChange={handleFileSelect}
                     className="w-full px-4 py-2 border rounded-lg"
                   />
@@ -2133,10 +2133,6 @@ export default function ManageQuizzes() {
                   <X className="w-6 h-6" />
                 </button>
               </div>
-
-
-
-              // ... (inside Preview Modal JSX)
 
               {/* Classification Filter Tabs & Question Type Tabs */}
               <div className="px-4 pt-4 pb-0 md:px-6 md:pt-6 bg-gray-50 border-b flex flex-col gap-4">
@@ -2593,7 +2589,7 @@ export default function ManageQuizzes() {
                       onConfirm: async () => {
                         setConfirmDialogState({ isOpen: false });
                         if (!selectedFile) {
-                          showToast("warning", "Missing File", "No PDF file found. Please upload again.");
+                          showToast("warning", "Missing File", "No document file found. Please upload again.");
                           setShowPreviewModal(false);
                           setShowPdfModal(true);
                           return;
@@ -2609,7 +2605,7 @@ export default function ManageQuizzes() {
 
                         try {
                           const res = await fetch(
-                            "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-pdf",
+                            "http://localhost:8000/api/quiz/generate-from-file",
                             {
                               method: "POST",
                               body: fd,
