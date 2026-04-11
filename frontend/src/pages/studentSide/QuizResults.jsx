@@ -116,7 +116,7 @@ export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignmen
 
   const getGradeRemark = (base50ScorePercentage) => {
     if (base50ScorePercentage >= 90) return { text: "Excellent!", color: "text-green-600" };
-    if (base50ScorePercentage >= 85) return { text: "Very Good!", color: "text-blue-600" };
+    if (base50ScorePercentage >= 85) return { text: "Very Good!", color: "text-green-600" };
     if (base50ScorePercentage >= 80) return { text: "Good!", color: "text-indigo-600" };
     if (base50ScorePercentage >= 75) return { text: "Passed", color: "text-yellow-600" };
     return { text: "Needs Improvement", color: "text-red-600" };
@@ -339,9 +339,9 @@ Now generate recommendations for this student:`;
   const getScoreLevel = () => {
     const score = quizResults.base50ScorePercentage || 75;
     if (score >= 90) return { level: "Master", color: "from-yellow-400 to-yellow-600", icon: "🏆", bg: "bg-yellow-50", border: "border-yellow-300" };
-    if (score >= 80) return { level: "Expert", color: "from-blue-400 to-blue-600", icon: "⭐", bg: "bg-blue-50", border: "border-blue-300" };
+    if (score >= 80) return { level: "Expert", color: "from-green-400 to-green-600", icon: "⭐", bg: "bg-green-50", border: "border-green-300" };
     if (score >= 70) return { level: "Proficient", color: "from-green-400 to-green-600", icon: "✓", bg: "bg-green-50", border: "border-green-300" };
-    if (score >= 60) return { level: "Developing", color: "from-purple-400 to-purple-600", icon: "📚", bg: "bg-purple-50", border: "border-purple-300" };
+    if (score >= 60) return { level: "Developing", color: "from-green-400 to-green-600", icon: "📚", bg: "bg-green-50", border: "border-green-300" };
     return { level: "Beginner", color: "from-orange-400 to-orange-600", icon: "💡", bg: "bg-orange-50", border: "border-orange-300" };
   };
 
@@ -445,7 +445,7 @@ Now generate recommendations for this student:`;
 
         {/* Recommendations Section */}
         <div className={`bg-white rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden mb-4 sm:mb-6 transition-all duration-700 ${showRecommendations ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 text-white relative overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-green-600 p-4 sm:p-6 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white opacity-10 rounded-full -mr-12 -mt-12 animate-pulse"></div>
             <div className="flex items-center gap-2 sm:gap-3 relative z-10">
               <Brain className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse" />
@@ -469,10 +469,10 @@ Now generate recommendations for this student:`;
                   recommendations.map((rec, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-2 sm:gap-4 p-3 sm:p-5 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-lg sm:rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-300 animate-slideInRight"
+                      className="flex items-start gap-2 sm:gap-4 p-3 sm:p-5 bg-gradient-to-r from-indigo-50 to-green-50 border-2 border-indigo-200 rounded-lg sm:rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-300 animate-slideInRight"
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
-                      <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-none">
+                      <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-indigo-600 to-green-600 text-white rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-none">
                         {index + 1}
                       </div>
                       <div className="flex-1 pt-0.5 sm:pt-1 min-w-0">
@@ -495,8 +495,8 @@ Now generate recommendations for this student:`;
         {/* Info Note */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 animate-fadeIn">
           <div className="flex items-start gap-2 sm:gap-3">
-            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center flex-none">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center flex-none">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-gray-800 mb-1 text-sm sm:text-base">About Your Grade</h3>
@@ -518,7 +518,7 @@ Now generate recommendations for this student:`;
         {/* Action Button */}
         <button
           onClick={() => navigate("/student")}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] animate-fadeIn flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-indigo-600 to-green-600 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-indigo-700 hover:to-green-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] animate-fadeIn flex items-center justify-center gap-2"
         >
           Back to Dashboard
           <ChevronRight className="w-5 h-5" />

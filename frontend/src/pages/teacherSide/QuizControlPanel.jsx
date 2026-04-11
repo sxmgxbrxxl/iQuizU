@@ -208,11 +208,8 @@ export default function QuizControlPanel() {
           attempts: data.attempts || 0,
           startedAt: data.startedAt || null,
           submittedAt: data.submittedAt || null,
-          antiCheatData: submissionData?.antiCheatData || {
+          antiCheatData: submissionData?.antiCheatData || data.antiCheatData || {
             tabSwitchCount: 0,
-            fullscreenExitCount: 0,
-            copyAttempts: 0,
-            rightClickAttempts: 0,
             suspiciousActivities: [],
             totalSuspiciousActivities: 0,
             quizDuration: 0,
@@ -297,11 +294,8 @@ export default function QuizControlPanel() {
             attempts: data.attempts || 0,
             startedAt: data.startedAt || null,
             submittedAt: data.submittedAt || null,
-            antiCheatData: submissionData?.antiCheatData || {
+            antiCheatData: submissionData?.antiCheatData || data.antiCheatData || {
               tabSwitchCount: 0,
-              fullscreenExitCount: 0,
-              copyAttempts: 0,
-              rightClickAttempts: 0,
               suspiciousActivities: [],
               totalSuspiciousActivities: 0,
               quizDuration: 0,
@@ -573,9 +567,6 @@ export default function QuizControlPanel() {
             : "",
           student.antiCheatData?.flaggedForReview ? "Yes" : "No",
           student.antiCheatData?.tabSwitchCount || 0,
-          student.antiCheatData?.fullscreenExitCount || 0,
-          student.antiCheatData?.copyAttempts || 0,
-          student.antiCheatData?.rightClickAttempts || 0,
         ];
       });
 
@@ -591,7 +582,7 @@ export default function QuizControlPanel() {
 
       // Student results sheet
       const ws2 = XLSX.utils.aoa_to_sheet([
-        ["Last Name", "First Name", "Student Number", "Status", "Score", "Raw Score (%)", "Base-50 Grade (%)", "Result", "Time Taken", "Submitted At", "Flagged", "Tab Switches", "Fullscreen Exits", "Copy Attempts", "Right-Click Attempts"],
+        ["Last Name", "First Name", "Student Number", "Status", "Score", "Raw Score (%)", "Base-50 Grade (%)", "Result", "Time Taken", "Submitted At", "Flagged", "Tab Switches"],
         ...studentData
       ]);
       ws2['!cols'] = [
@@ -607,9 +598,6 @@ export default function QuizControlPanel() {
         { wch: 22 },  // Submitted At
         { wch: 10 },  // Flagged
         { wch: 12 },  // Tab Switches
-        { wch: 15 },  // Fullscreen Exits
-        { wch: 12 },  // Copy Attempts
-        { wch: 18 },  // Right-Click Attempts
       ];
       XLSX.utils.book_append_sheet(wb, ws2, "Student Results");
 
@@ -975,17 +963,25 @@ export default function QuizControlPanel() {
                           {timeDifference !== null ? formatTime(timeDifference) : <span className="text-gray-400">—</span>}
                         </td>
                         <td className="px-6 py-3 text-center">
-                          {student.completed ? (
+                          {student.completed || (student.status === "in_progress" && student.antiCheatData) ? (
                             <button
                               onClick={(e) => handleViewAntiCheat(e, student)}
-                              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-semibold transition mx-auto ${student.antiCheatData?.flaggedForReview
-                                ? "bg-red-500 hover:bg-red-600"
-                                : "bg-accent hover:bg-accentHover"
-                                }`}
+                              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-semibold transition mx-auto ${
+                                student.antiCheatData?.flaggedForReview || (student.antiCheatData?.tabSwitchCount > 0)
+                                  ? "bg-red-500 hover:bg-red-600 animate-pulse"
+                                  : "bg-accent hover:bg-accentHover"
+                              }`}
                             >
                               <Shield className="w-4 h-4" />
-                              {student.antiCheatData?.flaggedForReview ? "Flagged" : "Clean"}
+                              {student.antiCheatData?.tabSwitchCount > 0
+                                ? `🔄 ${student.antiCheatData.tabSwitchCount} Tab${student.antiCheatData.tabSwitchCount > 1 ? 's' : ''}`
+                                : student.antiCheatData?.flaggedForReview ? "Flagged" : "Clean"}
                             </button>
+                          ) : student.status === "in_progress" ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-semibold">
+                              <Shield className="w-4 h-4" />
+                              Clean
+                            </span>
                           ) : (
                             <span className="text-gray-400 text-xs">N/A</span>
                           )}
@@ -1053,16 +1049,19 @@ export default function QuizControlPanel() {
                       <span className="text-xs text-subsubtext">
                         {timeDifference !== null ? `⏱ ${formatTime(timeDifference)}` : ""}
                       </span>
-                      {student.completed && (
+                      {(student.completed || student.status === "in_progress") && (
                         <button
                           onClick={(e) => handleViewAntiCheat(e, student)}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-white text-xs font-semibold ${student.antiCheatData?.flaggedForReview
-                            ? "bg-red-500"
-                            : "bg-accent"
-                            }`}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-white text-xs font-semibold ${
+                            student.antiCheatData?.flaggedForReview || (student.antiCheatData?.tabSwitchCount > 0)
+                              ? "bg-red-500 animate-pulse"
+                              : "bg-accent"
+                          }`}
                         >
                           <Shield className="w-3 h-3" />
-                          {student.antiCheatData?.flaggedForReview ? "Flagged" : "Clean"}
+                          {student.antiCheatData?.tabSwitchCount > 0
+                            ? `🔄 ${student.antiCheatData.tabSwitchCount}`
+                            : student.antiCheatData?.flaggedForReview ? "Flagged" : "Clean"}
                         </button>
                       )}
                     </div>
@@ -1133,29 +1132,11 @@ export default function QuizControlPanel() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4 md:mb-6">
+              <div className="grid grid-cols-1 gap-3 mb-4 md:mb-6">
                 <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
                   <p className="text-xs md:text-sm font-semibold text-subtext mb-1">🔄 Tab Switches</p>
                   <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.tabSwitchCount || 0}</p>
                   <p className="text-xs text-subsubtext mt-1">Times left the quiz</p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
-                  <p className="text-xs md:text-sm font-semibold text-subtext mb-1">📺 Fullscreen Exits</p>
-                  <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.fullscreenExitCount || 0}</p>
-                  <p className="text-xs text-subsubtext mt-1">Exited fullscreen</p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
-                  <p className="text-xs md:text-sm font-semibold text-subtext mb-1">📋 Copy Attempts</p>
-                  <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.copyAttempts || 0}</p>
-                  <p className="text-xs text-subsubtext mt-1">Copy/paste blocked</p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
-                  <p className="text-xs md:text-sm font-semibold text-subtext mb-1">🖱️ Right-Click</p>
-                  <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.rightClickAttempts || 0}</p>
-                  <p className="text-xs text-subsubtext mt-1">Right-click blocked</p>
                 </div>
               </div>
 
@@ -1163,7 +1144,7 @@ export default function QuizControlPanel() {
                 <p className="text-xs md:text-sm font-semibold text-subtext mb-3">📋 Detailed Activity Timeline</p>
                 {selectedAntiCheatData?.suspiciousActivities && selectedAntiCheatData.suspiciousActivities.length > 0 ? (
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {selectedAntiCheatData.suspiciousActivities.map((activity, idx) => {
+                    {[...selectedAntiCheatData.suspiciousActivities].reverse().map((activity, idx) => {
                       const activityTime = new Date(activity.timestamp);
                       const activityHour = activityTime.getHours().toString().padStart(2, '0');
                       const activityMin = activityTime.getMinutes().toString().padStart(2, '0');
@@ -1177,18 +1158,6 @@ export default function QuizControlPanel() {
                         icon = '🔄';
                         bgColor = 'bg-blue-50 border-blue-200';
                         textColor = 'text-blue-700';
-                      } else if (activity.type === 'fullscreen_exit') {
-                        icon = '📺';
-                        bgColor = 'bg-purple-50 border-purple-200';
-                        textColor = 'text-purple-700';
-                      } else if (activity.type === 'copy_attempt') {
-                        icon = '📋';
-                        bgColor = 'bg-orange-50 border-orange-200';
-                        textColor = 'text-orange-700';
-                      } else if (activity.type === 'right_click') {
-                        icon = '🖱️';
-                        bgColor = 'bg-red-50 border-red-200';
-                        textColor = 'text-red-700';
                       } else if (activity.type === 'dev_tools_attempt') {
                         icon = '🛠️';
                         bgColor = 'bg-red-50 border-red-200';
