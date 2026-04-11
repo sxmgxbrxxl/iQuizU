@@ -33,14 +33,7 @@ transporter.verify((error, success) => {
 /**
  * Build a styled HTML welcome email
  */
-function buildWelcomeEmailHTML(studentName, email, password, className) {
-  const classRow = className
-    ? `<tr>
-        <td style="padding:8px 16px;color:#64748b;font-size:14px;border-bottom:1px solid #f1f5f9;">Class</td>
-        <td style="padding:8px 16px;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #f1f5f9;">${className}</td>
-       </tr>`
-    : "";
-
+function buildWelcomeEmailHTML(studentName, email, password, studentNo) {
   return `
   <!DOCTYPE html>
   <html>
@@ -81,16 +74,15 @@ function buildWelcomeEmailHTML(studentName, email, password, className) {
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding:12px 16px;color:#64748b;font-size:14px;border-bottom:1px solid #f1f5f9;width:100px;">Email</td>
-                    <td style="padding:12px 16px;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #f1f5f9;">${email}</td>
+                    <td style="padding:12px 16px;color:#64748b;font-size:14px;border-bottom:1px solid #f1f5f9;width:100px;">Student No.</td>
+                    <td style="padding:12px 16px;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #f1f5f9;">${studentNo}</td>
                   </tr>
                   <tr>
                     <td style="padding:12px 16px;color:#64748b;font-size:14px;border-bottom:1px solid #f1f5f9;">Password</td>
-                    <td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:12px 16px;border-bottom:none;">
                       <code style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:14px;font-weight:700;letter-spacing:0.5px;">${password}</code>
                     </td>
                   </tr>
-                  ${classRow}
                 </table>
 
                 <!-- Login Button -->
@@ -145,7 +137,7 @@ app.get("/", (req, res) => {
 
 // Send welcome email
 app.post("/api/email/send-welcome", async (req, res) => {
-  const { email, studentName, password, className } = req.body;
+  const { email, studentName, password, studentNo } = req.body;
 
   if (!email || !studentName || !password) {
     return res.status(400).json({
@@ -155,13 +147,13 @@ app.post("/api/email/send-welcome", async (req, res) => {
   }
 
   try {
-    const htmlContent = buildWelcomeEmailHTML(studentName, email, password, className || "");
+    const htmlContent = buildWelcomeEmailHTML(studentName, email, password, studentNo || "");
 
     const info = await transporter.sendMail({
       from: "iQuizU <no-reply@iquizu.online>",
       to: email,
       subject: "Welcome to iQuizU! Your Account is Ready 🎓",
-      text: `Hi ${studentName},\n\nYour iQuizU account has been created.\n\nEmail: ${email}\nPassword: ${password}\n${className ? `Class: ${className}\n` : ""}\nLog in at: https://iquizu.online\n\nPlease change your password after your first login.\n\n- iQuizU Team`,
+      text: `Hi ${studentName},\n\nYour iQuizU account has been created.\n\nStudent No.: ${studentNo}\nPassword: ${password}\nLog in at: https://iquizu.online\n\nPlease change your password after your first login.\n\n- iQuizU Team`,
       html: htmlContent,
     });
 
