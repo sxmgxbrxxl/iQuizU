@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import os
 import shutil
 from app.config.settings import settings
-from app.utils.pdf_extractor import extract_text_from_pdf
+from app.utils.file_extractor import extract_text_from_file
 from app.services.gemini_service import generate_quiz_from_text, format_quiz_for_frontend
 from app.services.bert_classifier import classify_multiple_questions, get_detailed_classification
 
@@ -14,8 +14,8 @@ router = APIRouter()
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 
-@router.post("/generate-from-pdf")
-async def generate_quiz_from_pdf(
+@router.post("/generate-from-file")
+async def generate_quiz_from_file(
     file: UploadFile = File(...),
     title: str = Form("Generated Quiz"),
     num_multiple_choice: int = Form(5),
@@ -23,13 +23,14 @@ async def generate_quiz_from_pdf(
     num_identification: int = Form(5)
 ):
     """
-    Generate quiz from uploaded PDF using Gemini AI with BERT LOTS/HOTS classification.
+    Generate quiz from uploaded document (PDF, DOCX, PPTX) using Gemini AI with BERT LOTS/HOTS classification.
     """
     file_path = None
     try:
         # Validate file type
-        if not file.filename.endswith('.pdf'):
-            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+        valid_extensions = ['.pdf', '.docx', '.pptx']
+        if not any(file.filename.lower().endswith(ext) for ext in valid_extensions):
+            raise HTTPException(status_code=400, detail=f"Only {', '.join(valid_extensions)} files are allowed")
         
         print(f"📄 Processing file: {file.filename}")
         
@@ -38,12 +39,12 @@ async def generate_quiz_from_pdf(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Extract text from PDF
-        print("📖 Extracting text from PDF...")
-        extracted_text = extract_text_from_pdf(file_path)
+        # Extract text from file
+        print("📖 Extracting text from file...")
+        extracted_text = extract_text_from_file(file_path)
         
         if not extracted_text:
-            raise HTTPException(status_code=400, detail="Failed to extract text from PDF")
+            raise HTTPException(status_code=400, detail="Failed to extract text from file")
         
         print(f"✓ Extracted {len(extracted_text)} characters")
         
