@@ -17,20 +17,36 @@ from utils.blooms_taxonomy import (
     get_lots_keywords, get_hots_keywords, get_difficulty_mapping, get_lots_hots_mapping
 )
 
-# Load BERT model
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# Globals for lazy loading
+model = None
+remembering_embeddings = None
+understanding_embeddings = None
+application_embeddings = None
+analysis_embeddings = None
+evaluation_embeddings = None
+creating_embeddings = None
+lots_embeddings = None
+hots_embeddings = None
 
-# Precompute embeddings for all 6 levels
-remembering_embeddings = model.encode(get_remembering_keywords(), convert_to_numpy=True)
-understanding_embeddings = model.encode(get_understanding_keywords(), convert_to_numpy=True)
-application_embeddings = model.encode(get_application_keywords(), convert_to_numpy=True)
-analysis_embeddings = model.encode(get_analysis_keywords(), convert_to_numpy=True)
-evaluation_embeddings = model.encode(get_evaluation_keywords(), convert_to_numpy=True)
-creating_embeddings = model.encode(get_creating_keywords(), convert_to_numpy=True)
-
-# Also keep LOTS/HOTS embeddings for backwards compatibility
-lots_embeddings = model.encode(get_lots_keywords(), convert_to_numpy=True)
-hots_embeddings = model.encode(get_hots_keywords(), convert_to_numpy=True)
+def _ensure_model_loaded():
+    """Lazily load the SentenceTransformer model and precompute embeddings only when first requested."""
+    global model, remembering_embeddings, understanding_embeddings, application_embeddings
+    global analysis_embeddings, evaluation_embeddings, creating_embeddings, lots_embeddings, hots_embeddings
+    
+    if model is None:
+        print("Lazy loading SentenceTransformer 'all-MiniLM-L6-v2'...")
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        remembering_embeddings = model.encode(get_remembering_keywords(), convert_to_numpy=True)
+        understanding_embeddings = model.encode(get_understanding_keywords(), convert_to_numpy=True)
+        application_embeddings = model.encode(get_application_keywords(), convert_to_numpy=True)
+        analysis_embeddings = model.encode(get_analysis_keywords(), convert_to_numpy=True)
+        evaluation_embeddings = model.encode(get_evaluation_keywords(), convert_to_numpy=True)
+        creating_embeddings = model.encode(get_creating_keywords(), convert_to_numpy=True)
+        
+        lots_embeddings = model.encode(get_lots_keywords(), convert_to_numpy=True)
+        hots_embeddings = model.encode(get_hots_keywords(), convert_to_numpy=True)
+        print("SentenceTransformer loaded and embeddings cached.")
 
 
 def classify_question_detailed(question_text):
@@ -40,6 +56,8 @@ def classify_question_detailed(question_text):
     """
     if not question_text or not question_text.strip():
         return "remembering", "easy", "LOTS", 0.5, {}
+
+    _ensure_model_loaded()
 
     question_embedding = model.encode([question_text], convert_to_numpy=True)[0]
 
@@ -75,6 +93,8 @@ def classify_question(question_text):
     if not question_text or not question_text.strip():
         return "LOTS", 0.5
 
+    _ensure_model_loaded()
+
     question_embedding = model.encode([question_text], convert_to_numpy=True)[0]
 
     lots_score = np.mean(cosine_similarity([question_embedding], lots_embeddings))
@@ -92,6 +112,8 @@ def classify_multiple_questions(questions_list):
     """
     if not questions_list:
         return []
+
+    _ensure_model_loaded()
 
     question_embeddings = model.encode(questions_list, convert_to_numpy=True)
 

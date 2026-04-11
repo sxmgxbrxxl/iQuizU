@@ -6,7 +6,8 @@ import shutil
 from app.config.settings import settings
 from app.utils.file_extractor import extract_text_from_file
 from app.services.gemini_service import generate_quiz_from_text, format_quiz_for_frontend
-from app.services.bert_classifier import classify_multiple_questions, get_detailed_classification
+from app.services.bert_classifier import get_detailed_classification
+from app.utils.blooms_taxonomy import get_lots_hots_mapping
 
 router = APIRouter()
 
@@ -60,22 +61,19 @@ async def generate_quiz_from_file(
         # Format for frontend
         formatted_quiz = format_quiz_for_frontend(quiz_data, title)
         
-        # ⭐ NEW: Classify questions using BERT ⭐
-        print("🧠 Classifying questions with BERT (LOTS/HOTS)...")
+        # ⭐ Fast Classification based on Gemini output ⭐
+        print("🧠 Classifying questions (LOTS/HOTS via LLM Output)...")
         questions = formatted_quiz.get('questions', [])
         
         if questions:
-            # Extract question texts
-            question_texts = [q['question'] for q in questions]
-            
-            # Batch classify all questions (efficient)
-            classifications = classify_multiple_questions(question_texts)
-            
+            mapping = get_lots_hots_mapping()
             # Add classification to each question
             for i, question in enumerate(questions):
-                classification, confidence = classifications[i]
+                cog_level = question.get('cognitive_level', 'remembering').lower()
+                classification = mapping.get(cog_level, 'LOTS')
+                
                 question['bloom_classification'] = classification
-                question['classification_confidence'] = round(confidence, 4)
+                question['classification_confidence'] = 0.99  # Static confidence
             
             # Calculate statistics
             lots_count = sum(1 for q in questions if q.get('bloom_classification') == 'LOTS')
@@ -95,7 +93,7 @@ async def generate_quiz_from_file(
         return JSONResponse(content={
             "success": True,
             "quiz": formatted_quiz,
-            "message": "Quiz generated successfully with BERT classification"
+            "message": "Quiz generated successfully with LLM classification"
         })
         
     except HTTPException as he:
