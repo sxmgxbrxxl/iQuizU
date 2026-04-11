@@ -454,13 +454,13 @@ export default function StudentPerformance({ user, userDoc }) {
 
             {/* Detailed Quiz Modal */}
             {mounted && showDetailModal && selectedQuiz && createPortal(
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm animate-fadeIn font-Poppins">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm animate-overlayFade font-Poppins">
                     <div
                         style={{
                             scrollbarWidth: 'none',
                             msOverflowStyle: 'none'
                         }}
-                        className="bg-white animate-slideUp rounded-2xl shadow-2xl w-[98vw] sm:w-[95vw] md:w-full md:max-w-4xl max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden"
+                        className="bg-white animate-popIn rounded-2xl shadow-2xl w-[98vw] sm:w-[95vw] md:w-full md:max-w-4xl max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden"
                     >
                         {/* Modal Header */}
                         <div className="bg-gradient-to-r from-green-800 to-green-500 p-6 text-white sticky top-0 z-10 flex items-center justify-between">

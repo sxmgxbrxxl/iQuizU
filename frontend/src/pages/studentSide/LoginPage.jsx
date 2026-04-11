@@ -188,20 +188,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-background via-background to-green-200 relative h-screen w-full flex items-center justify-center font-Poppins px-10">
+    <div className="bg-gradient-to-b from-background via-background to-green-200 relative h-screen w-full flex items-center justify-center font-Poppins px-6">
       {/* Back button */}
       <Link
         to="/"
-        className="flex flex-row items-center justify-center absolute top-10 left-10 text-black bg-components px-6 py-4 rounded-full shadow-md transition transform duration-200 ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none hover:shadow-lg font-bold"
+        className="flex flex-row items-center justify-center absolute top-6 left-4 md:top-10 md:left-10 text-black bg-components px-6 py-4 rounded-full shadow-md transition transform duration-200 ease-out hover:scale-105 active:scale-95 motion-reduce:transform-none hover:shadow-lg font-bold"
       >
         <ChevronLeft className="w-5 h-5 mr-2" />
         Back
       </Link>
 
       {/* Login Card */}
-      <div className="bg-components p-10 rounded-3xl shadow-lg w-96">
+      <div className="bg-components p-10 rounded-3xl shadow-lg md:w-96 w-full border-2 border-green-200">
         <form onSubmit={handleSubmit}>
-          <img src={LOGO} alt="Logo" className="h-16 w-16 mx-auto mb-4 rounded-full outline-dotted outline-accent" />
+          <img src={LOGO} alt="Logo" className="h-16 w-16 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-6 text-center">Log In to iQuizU</h2>
 
           {error && (
@@ -284,8 +284,8 @@ export default function LoginPage() {
 
       {/* Password Recovery Modal */}
       {showRecoveryModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4 overflow-y-auto">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl my-auto">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4 overflow-y-auto" animate-overlayFade>
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl my-auto animate-popIn">
             {/* Close button */}
             <button
               onClick={handleCloseRecoveryModal}
@@ -330,7 +330,7 @@ export default function LoginPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleRecoverAccount}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 duration-200 font-bold flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 duration-200 font-bold flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 disabled={recoveryLoading || !recoveryEmail.trim()}
               >
                 {recoveryLoading ? (
