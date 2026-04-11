@@ -468,7 +468,7 @@ export default function ViewClassPage() {
               student.emailAddress,
               student.name,
               studentPassword,
-              classData?.className || classData?.name || ""
+              student.studentNo
             );
 
           } else if (result.status === "EXISTING_ACCOUNT" || result.status === "EXISTING_AUTH") {
@@ -614,14 +614,15 @@ export default function ViewClassPage() {
     }
   };
 
-  const sendWelcomeEmail = async (email, studentName, password, className = "") => {
+  const sendWelcomeEmail = async (email, studentName, password, studentNo = "") => {
     try {
+      const baseUrl = process.env.REACT_APP_EMAIL_SERVER_URL || "http://localhost:4000";
       const response = await fetch(
-        "http://localhost:4000/api/email/send-welcome",
+        `${baseUrl}/api/email/send-welcome`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, studentName, password, className }),
+          body: JSON.stringify({ email, studentName, password, studentNo }),
         }
       );
       if (response.ok) {
