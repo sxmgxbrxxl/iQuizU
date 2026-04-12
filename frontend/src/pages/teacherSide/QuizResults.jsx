@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -25,6 +25,7 @@ import {
   updateDoc,
   addDoc,
   serverTimestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import * as XLSX from "xlsx";
@@ -60,8 +61,13 @@ export default function QuizResults() {
     setToast({ show: true, type, title, message });
   }, []);
 
+  const unsubsRef = useRef([]);
+
   useEffect(() => {
     fetchData();
+    return () => {
+      unsubsRef.current.forEach(unsub => unsub());
+    };
   }, [quizId, classId]);
 
   const fetchData = async () => {
@@ -93,16 +99,20 @@ export default function QuizResults() {
           docId: docSnap.id,
           firstName: data.name?.split(" ")[0] || "",
           lastName: data.name?.split(" ").slice(1).join(" ") || "",
+          studentNo: data.studentNo || "",
           email: data.emailAddress || "",
           name: data.name || "Unknown",
         });
       });
+
+      allStudents.sort((a, b) => a.name.localeCompare(b.name));
 
       setStudents(allStudents);
 
       // Store assigned student IDs and their deadlines
       const assignedIds = new Set();
       const deadlinesMap = {};
+      const studentNoFallback = {};
 
       const assignmentsQuery = query(
         collection(db, "assignedQuizzes"),
@@ -118,6 +128,9 @@ export default function QuizResults() {
         assignmentIds.push(docSnap.id);
         if (data.studentId) {
           assignedIds.add(data.studentId);
+          if (data.studentNo) {
+            studentNoFallback[data.studentId] = data.studentNo;
+          }
           // Store the deadline for this student (dueDate takes priority, then deadline)
           const rawDeadline = data.dueDate || data.deadline;
           if (rawDeadline) {
@@ -137,52 +150,72 @@ export default function QuizResults() {
       setAssignedStudentIds(assignedIds);
       setAssignmentDeadlines(deadlinesMap);
 
+      // Update students with fallback studentNo from assignment data if missing from user account
+      setStudents(allStudents.map(student => ({
+        ...student,
+        studentNo: student.studentNo || studentNoFallback[student.id] || ""
+      })));
+
       if (assignmentIds.length === 0) {
         setResults([]);
+        setLoading(false);
         return;
       }
 
-      const submissionsData = [];
+      // Clear previous listeners
+      unsubsRef.current.forEach(unsub => unsub());
+      unsubsRef.current = [];
+
       const batchSize = 10;
-      for (let i = 0; i < assignmentIds.length; i += batchSize) {
-        const batch = assignmentIds.slice(i, i + batchSize);
+      let allSubmissions = new Map();
+      const numBatches = Math.ceil(assignmentIds.length / batchSize);
 
-        const submissionsQuery = query(
-          collection(db, "quizSubmissions"),
-          where("assignmentId", "in", batch),
-          where("quizMode", "==", "asynchronous")
-        );
-        const submissionsSnapshot = await getDocs(submissionsQuery);
+      await Promise.all(
+        Array.from({ length: numBatches }).map((_, idx) => {
+          return new Promise((resolve) => {
+            const batch = assignmentIds.slice(idx * batchSize, (idx + 1) * batchSize);
+            const submissionsQuery = query(
+              collection(db, "quizSubmissions"),
+              where("assignmentId", "in", batch),
+              where("quizMode", "==", "asynchronous")
+            );
 
-        submissionsSnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          const studentInClass = allStudents.find(s => s.id === data.studentId);
+            const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
+              snapshot.docs.forEach((docSnap) => {
+                const data = docSnap.data();
+                const studentInClass = allStudents.find(s => s.id === data.studentId);
 
-          console.log("Anti-cheat data:", data.antiCheatData); // Debug log
+                allSubmissions.set(docSnap.id, {
+                  id: docSnap.id,
+                  studentId: data.studentId,
+                  studentName: data.studentName || studentInClass?.name || "Unknown",
+                  correctPoints: data.correctPoints || 0,
+                  totalPoints: data.totalPoints || quizData.totalPoints || 0,
+                  rawScorePercentage: data.rawScorePercentage || 0,
+                  base50ScorePercentage: data.base50ScorePercentage || 0,
+                  submittedAt: data.submittedAt,
+                  answers: data.answers || {},
+                  assignmentId: data.assignmentId,
+                  antiCheatData: data.antiCheatData || {
+                    tabSwitchCount: 0,
+                    suspiciousActivities: [],
+                    totalSuspiciousActivities: 0,
+                    quizDuration: 0,
+                    flaggedForReview: false,
+                  },
+                });
+              });
+              setResults(Array.from(allSubmissions.values()));
+              resolve();
+            }, (error) => {
+              console.error("Error listening to submissions:", error);
+              resolve();
+            });
 
-          submissionsData.push({
-            id: docSnap.id,
-            studentId: data.studentId,
-            studentName: data.studentName || studentInClass?.name || "Unknown",
-            correctPoints: data.correctPoints || 0,
-            totalPoints: data.totalPoints || quizData.totalPoints || 0,
-            rawScorePercentage: data.rawScorePercentage || 0,
-            base50ScorePercentage: data.base50ScorePercentage || 0,
-            submittedAt: data.submittedAt,
-            answers: data.answers || {},
-            assignmentId: data.assignmentId,
-            antiCheatData: data.antiCheatData || {
-              tabSwitchCount: 0,
-              suspiciousActivities: [],
-              totalSuspiciousActivities: 0,
-              quizDuration: 0,
-              flaggedForReview: false,
-            },
+            unsubsRef.current.push(unsubscribe);
           });
-        });
-      }
-
-      setResults(submissionsData);
+        })
+      );
 
     } catch (e) {
       console.error("Error fetching data:", e);
@@ -340,7 +373,7 @@ export default function QuizResults() {
       return {
         "Last Name": student.lastName || "",
         "First Name": student.firstName || "",
-        "Email": student.email || "",
+        "Student No.": student.studentNo || "",
         "Status": result ? "Completed" : (assignedStudentIds.has(student.id) && isDeadlinePassed(student.id) ? "Missed" : "Pending"),
         "Score": result ? `${result.correctPoints}/${result.totalPoints}` : "—",
         "Raw Score (%)": result ? result.rawScorePercentage.toFixed(2) : "—",
@@ -488,7 +521,7 @@ export default function QuizResults() {
             <thead className="bg-blue-600 text-white rounded-lg">
               <tr>
                 <th className="px-6 py-4 text-left font-bold rounded-l-lg">Student</th>
-                <th className="px-6 py-4 text-left font-bold">Email</th>
+                <th className="px-6 py-4 text-left font-bold">Student No.</th>
                 <th className="px-6 py-4 text-center font-bold">Score</th>
                 <th className="px-6 py-4 text-center font-bold">Raw Score</th>
                 <th className="px-6 py-4 text-center font-bold">Base-50 Grade</th>
@@ -526,7 +559,7 @@ export default function QuizResults() {
                         className="px-6 py-4 text-subtext cursor-pointer"
                         onClick={() => submitted && handleViewDetails(student.id)}
                       >
-                        {student.email}
+                        {student.studentNo || "—"}
                       </td>
                       <td
                         className="px-6 py-4 text-center cursor-pointer"
@@ -617,24 +650,21 @@ export default function QuizResults() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           {submitted ? (
-                            <span className="text-sm text-gray-500 italic">No actions</span>
+                            <button
+                              onClick={(e) => handleOpenRetakeModal(student, e)}
+                              className="flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                              Retake
+                            </button>
                           ) : assignedStudentIds.has(student.id) ? (
-                            <>
-                              <button
-                                onClick={(e) => handleOpenRetakeModal(student, e)}
-                                className="flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                                Access
-                              </button>
-                              <button
-                                onClick={(e) => handleOpenReschedModal(student, e)}
-                                className="flex items-center gap-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition"
-                              >
-                                <Calendar className="w-4 h-4" />
-                                Extend
-                              </button>
-                            </>
+                            <button
+                              onClick={(e) => handleOpenReschedModal(student, e)}
+                              className="flex items-center gap-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition"
+                            >
+                              <Calendar className="w-4 h-4" />
+                              Reschedule
+                            </button>
                           ) : (
                             <span className="text-xs text-red-500 font-semibold">
                               {student.id === student.docId ? "No Account" : "Not Assigned"}
@@ -674,7 +704,7 @@ export default function QuizResults() {
                       <h3 className="font-bold text-title text-lg">
                         {student.firstName} {student.lastName}
                       </h3>
-                      <p className="text-xs text-subsubtext">{student.email}</p>
+                      <p className="text-xs text-subsubtext">{student.studentNo || "—"}</p>
                     </div>
                     {submitted ? (
                       <span className="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 flex items-center gap-1">
@@ -725,68 +755,45 @@ export default function QuizResults() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1">
-                      {submitted && result.antiCheatData ? (
+                  <div className="flex w-full items-center justify-between gap-2">
+                    {submitted ? (
+                      <div className="flex w-full gap-2">
                         <button
                           onClick={(e) => handleViewAntiCheat(e, result)}
-                          className={`w-full flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-white text-xs font-semibold transition ${result.antiCheatData.flaggedForReview
+                          className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-white text-xs font-semibold transition ${result.antiCheatData?.flaggedForReview
                             ? "bg-red-500 hover:bg-red-600"
                             : "bg-accent hover:bg-accentHover"
                             }`}
                         >
                           <Shield className="w-3 h-3" />
-                          {result.antiCheatData.flaggedForReview ? "Flagged" : "Clean"}
-                        </button>
-                      ) : submitted ? (
-                        <button
-                          onClick={(e) => handleViewAntiCheat(e, result)}
-                          className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-white text-xs font-semibold transition bg-gray-400"
-                        >
-                          <Shield className="w-3 h-3" />
                           Anti-Cheat
                         </button>
-                      ) : (
-                        <div className="text-center text-xs text-gray-400 py-2">
-                          No Data
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions for Pending Students */}
-                    {!submitted && (
-                      <div className="flex gap-2 flex-1">
-                        {assignedStudentIds.has(student.id) ? (
-                          <>
-                            <button
-                              onClick={(e) => handleOpenRetakeModal(student, e)}
-                              className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition"
-                            >
-                              <RefreshCw className="w-3 h-3" />
-                              Access
-                            </button>
-                            <button
-                              onClick={(e) => handleOpenReschedModal(student, e)}
-                              className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition"
-                            >
-                              <Calendar className="w-3 h-3" />
-                              Extend
-                            </button>
-                          </>
-                        ) : (
-                          <div className="w-full text-center py-2 bg-gray-50 rounded-lg border border-gray-100">
-                            <span className="text-xs text-red-500 font-semibold flex items-center justify-center gap-1">
-                              <AlertCircle className="w-3 h-3" />
-                              {student.id === student.docId ? "Account Required" : "Not Assigned"}
-                            </span>
-                          </div>
-                        )}
+                        <button
+                          onClick={(e) => handleOpenRetakeModal(student, e)}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          Retake
+                        </button>
+                      </div>
+                    ) : assignedStudentIds.has(student.id) ? (
+                      <div className="flex w-full gap-2">
+                        <button
+                          onClick={(e) => handleOpenReschedModal(student, e)}
+                          className="w-full flex items-center justify-center gap-1 px-2 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition"
+                        >
+                          <Calendar className="w-3 h-3" />
+                          Reschedule
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-full text-center py-2 bg-gray-50 rounded-lg border border-gray-100">
+                        <span className="text-xs text-red-500 font-semibold flex items-center justify-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {student.id === student.docId ? "Account Required" : "Not Assigned"}
+                        </span>
                       </div>
                     )}
-
-                    {/* Visual fix for completed students to not have empty space if they don't have actions, 
-                      but typically they don't have actions here in the table version either. 
-                      However, keeping structure consistent. */}
                   </div>
                 </div>
               );
