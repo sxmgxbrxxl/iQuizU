@@ -619,7 +619,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                           <TrendingUp className="w-5 h-5 text-[#92400e]" strokeWidth={2.5} />
                         </div>
                         <h3 className="font-bold text-[#0f172a] text-base leading-tight line-clamp-2">
-                          Avg. Score
+                          Average Score
                         </h3>
                       </div>
 

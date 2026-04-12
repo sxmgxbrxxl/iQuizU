@@ -11,9 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cd frontend && npm install && npm run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies and build
+        working-directory: frontend
+        run: npm install && npm run build
         env:
           CI: false
+          REACT_APP_FIREBASE_API_KEY: AIzaSyB3TTTUISQvYONjgoFaosNH__2Jk2YGTRs
+          REACT_APP_FIREBASE_AUTH_DOMAIN: iquizu-29da7.firebaseapp.com
+          REACT_APP_FIREBASE_PROJECT_ID: iquizu-29da7
+          REACT_APP_FIREBASE_STORAGE_BUCKET: iquizu-29da7.firebasestorage.app
+          REACT_APP_FIREBASE_MESSAGING_SENDER_ID: "12089675643"
+          REACT_APP_FIREBASE_APP_ID: "1:12089675643:web:ab483135352d71ebe977de"
+          REACT_APP_GEMINI_API_KEY: AIzaSyDNUrZCkDGD7pWODktEr7d9c7VgbeQGn60
+          GENERATE_SOURCEMAP: "false"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
