@@ -10,6 +10,7 @@ import { ReactComponent as Flash } from "../../assets/ic_flash.svg";
 import { ReactComponent as Shield } from "../../assets/ic_shield.svg";
 import Male from "../../assets/fig_male.svg";
 import Female from "../../assets/fig_female.svg";
+import feature1 from "../../videos/feature_one.mp4";
 
 // Snow Particle Component
 const SnowParticle = ({ delay, duration, left }) => (
@@ -145,9 +146,22 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8 md:gap-0 md:items-center md:justify-center">
-                    <div className="md:w-80 md:h-72 p-6 md:p-10 -mr-4 bg-components border-green-100 border-2 shadow-2xl rounded-3xl hover:rotate-0 transition-transform duration-200 md:-rotate-3">
-                        <Brain className="h-14 w-14 mb-3" />
-                        <h2 className="text-xl font-semibold mb-2">Smart Quiz Creation</h2>
+                    <div className="md:w-96 md:h-max p-6 md:px-8 md:py-10 bg-components border-green-100 border-2 shadow-2xl rounded-3xl transition-transform duration-200">
+                        <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full max-w-xs md:max-w-2xl rounded-xl shadow-md"
+                        >
+                            <source src={feature1} type="video/mp4" />
+                        </video>
+
+                        <div className="flex flex-row items-center mt-2 text-3xl">
+                            <Brain className="h-14 w-14 mb-3" />
+                            <h2 className="text-xl font-semibold mb-2">Smart Quiz Creation</h2>
+                        </div>
+                        
                         <p className="text-base font-light">AI-powered question generation and intelligent difficulty adjustment for optimal learning.</p>
                     </div>
                     <div className="md:w-80 md:h-72 p-6 md:p-10 -mr-4 bg-components border-green-100 border-2 shadow-2xl rounded-3xl hover:rotate-0 transition-transform duration-200 md:rotate-3">
