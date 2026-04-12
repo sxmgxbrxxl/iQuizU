@@ -423,26 +423,46 @@ export default function ManageClasses() {
     return { classNo, code, description };
   };
 
-  const checkClassNoExists = async (classNo) => {
-    if (!classNo || classNo.trim() === "") {
-      return false;
-    }
-
+  const checkDuplicateClass = async (classInfo, validStudents, file) => {
     try {
       const user = auth.currentUser;
-      if (!user) return false;
+      if (!user) return null;
 
+      // Fetch all classes for the teacher (Max 8 classes, so this is very fast and avoids Firestore index issues)
       const q = query(
         collection(db, "classes"),
-        where("teacherId", "==", user.uid),
-        where("classNo", "==", classNo.trim())
+        where("teacherId", "==", user.uid)
       );
 
       const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
+      const existingClasses = querySnapshot.docs.map(doc => doc.data());
+
+      for (const data of existingClasses) {
+        // 1. Strict Check: Same Class No.
+        if (classInfo.classNo && classInfo.classNo.trim() !== "") {
+          if (data.classNo === classInfo.classNo.trim()) {
+            return { type: "Class No.", value: classInfo.classNo.trim() };
+          }
+        }
+
+        // 2. Strict Check: Same File Name
+        if (data.fileName === file.name) {
+          return { type: "File Name", value: file.name };
+        }
+
+        // 3. Content Check: Same Course Code + Same Student Count
+        // This catches renamed files with exactly the same students/course
+        if (classInfo.code && classInfo.code.trim() !== "") {
+          if (data.code === classInfo.code.trim() && data.studentCount === validStudents.length) {
+            return { type: "Content Match", value: `Course ${classInfo.code} with ${validStudents.length} students` };
+          }
+        }
+      }
+
+      return null;
     } catch (error) {
-      console.error("Error checking Class No.:", error);
-      return false;
+      console.error("Error checking for duplicate class:", error);
+      return null;
     }
   };
 
@@ -485,17 +505,19 @@ export default function ManageClasses() {
 
     const classInfo = extractClassInfo(allData);
 
-    if (classInfo.classNo && classInfo.classNo.trim() !== "") {
-      setUploadProgress("Validating class information...");
-      const classNoExists = await checkClassNoExists(classInfo.classNo);
-      if (classNoExists) {
-        showAlert("warning", "Duplicate Class No.", `Class No. "${classInfo.classNo}" already exists in your classes.\n\nEach class must have a unique Class No.`);
-        setFileName("");
-        setUploadProgress("");
-        return;
-      }
+    setUploadProgress("Validating class information...");
+    const duplicate = await checkDuplicateClass(classInfo, validStudents, file);
+    if (duplicate) {
+      showAlert(
+        "warning", 
+        "Duplicate Detected", 
+        `This class appears to be a duplicate.\n\nReason: Existing ${duplicate.type} "${duplicate.value}" already exists in your classes.\n\nUploading identical class lists is not allowed.`
+      );
+      setFileName("");
       setUploadProgress("");
+      return;
     }
+    setUploadProgress("");
 
     setPendingUploadData({
       validStudents,
@@ -669,6 +691,8 @@ export default function ManageClasses() {
     const file = e.target.files[0];
     if (!file) return;
 
+    setUploading(true);
+    setUploadProgress("Parsing file...");
     setFileName(file.name);
     setErrorMessage("");
     setUploadCount(0);
@@ -683,12 +707,17 @@ export default function ManageClasses() {
         transformHeader: (header) => header.trim(),
         complete: async function (results) {
           await processStudentData(results.data, results.meta.fields || [], file, []);
+          setUploading(false);
+          setUploadProgress("");
           e.target.value = "";
         },
         error: function (error) {
           console.error("CSV parsing error:", error);
           setErrorMessage("Failed to parse CSV file: " + error.message);
           showAlert("error", "CSV Parse Error", "Failed to parse CSV file. Please check the file format.");
+          setUploading(false);
+          setUploadProgress("");
+          e.target.value = "";
         }
       });
     } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
@@ -740,11 +769,14 @@ export default function ManageClasses() {
           const headers = Object.keys(jsonData[0] || {});
 
           await processStudentData(jsonData, headers, file, allData);
-          e.target.value = "";
         } catch (error) {
           console.error("XLSX parsing error:", error);
           setErrorMessage("Failed to parse Excel file: " + error.message);
           showAlert("error", "Excel Parse Error", "Failed to parse Excel file. Please check the file format.");
+        } finally {
+          setUploading(false);
+          setUploadProgress("");
+          e.target.value = "";
         }
       };
 
@@ -752,12 +784,17 @@ export default function ManageClasses() {
         console.error("File reading error:", error);
         setErrorMessage("Failed to read file");
         showAlert("error", "File Read Error", "Failed to read the file. Please try again.");
+        setUploading(false);
+        setUploadProgress("");
+        e.target.value = "";
       };
 
       reader.readAsArrayBuffer(file);
     } else {
       setErrorMessage("Unsupported file format. Please upload CSV or XLSX files only.");
       showAlert("error", "Unsupported Format", "Unsupported file format. Please upload CSV or XLSX files only.");
+      setUploading(false);
+      setUploadProgress("");
       e.target.value = "";
     }
   };

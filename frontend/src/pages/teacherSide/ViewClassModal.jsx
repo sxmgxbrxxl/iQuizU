@@ -127,7 +127,7 @@ export default function ViewClassModal({
 
         <div className="border-t border-gray-200 p-4 flex justify-end gap-3">
           <button
-            onClick={onClose}
+            onClick={onClose} 
             className="px-4 py-2 border border-gray-300 text-subtext rounded-lg hover:bg-gray-50 transition font-semibold"
           >
             Close
