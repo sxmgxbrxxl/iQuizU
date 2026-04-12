@@ -411,20 +411,20 @@ export default function StudentSidebar({ user, userDoc }) {
       </div>
 
       {showConfirm && (
-        <div className="font-Poppins fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-slideUp">
+        <div className="font-Poppins fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 animate-overlayFade">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-popIn">
             <div className="flex items-start gap-4">
               <div className="bg-red-100 p-4 rounded-full items-center justify-center flex">
-                <LogOut className="text-red-500" size={24} />
+                <LogOut className="text-red-500 w-6 h-6 md:w-8 md:h-8" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-title">Confirm Logout</h3>
-                <p className="text-subtext">
+                <h3 className="text-xl md:text-2xl font-bold text-title">Confirm Logout</h3>
+                <p className="text-subtext text-sm md:text-lg">
                   Are you sure you want to log out?
                 </p>
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-4">
               <button
                 onClick={() => setShowConfirm(false)}
                 className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 active:scale-95 hover:scale-105 duration-200 transition font-semibold"

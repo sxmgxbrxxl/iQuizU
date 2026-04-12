@@ -349,16 +349,8 @@ Now generate recommendations for this student:`;
   const remark = getGradeRemark(quizResults.base50ScorePercentage || 75);
 
   return (
-    <div className="min-h-screen px-2 py-6 md:p-16 font-Poppins bg-gray-50">
+    <div className="min-h-screen px-2 py-6 md:p-16 font-Poppins bg-gradient-to-br from-background via-background to-green-200">
       <div className="max-w-6xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold mb-4 transition"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back
-        </button>
 
         {/* Header Card */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-4 sm:mb-6 animate-fadeInDown">
@@ -478,7 +470,6 @@ Now generate recommendations for this student:`;
                       <div className="flex-1 pt-0.5 sm:pt-1 min-w-0">
                         <p className="text-gray-800 leading-relaxed text-sm sm:text-base break-words">{rec}</p>
                       </div>
-                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 flex-shrink-0 mt-1" />
                     </div>
                   ))
                 ) : (
