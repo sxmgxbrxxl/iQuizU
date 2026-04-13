@@ -338,8 +338,8 @@ export default function ArchivedQuizzes({ user }) {
 
       {/* Delete Confirmation Modal */}
       {mounted && showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn font-Poppins">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md text-center animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-overlayFade font-Poppins">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md text-center animate-popIn">
             <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
               <Trash2 className="w-6 h-6 text-red-600" />
             </div>

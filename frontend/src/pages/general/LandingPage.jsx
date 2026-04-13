@@ -145,7 +145,21 @@ export default function LandingPage() {
                     </p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-8 md:gap-0 md:items-center md:justify-center">
+                <div className="flex flex-row">
+                    <div className="w-max h-full bg-white rounded-3xl shadow-2xl p-6 md:p-10 mb-16">
+                        <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full max-w-xs md:max-w-md rounded-xl shadow-md mx-auto">
+                            <source src={feature1} type="video/mp4" />
+                        </video>
+                    </div>
+                </div>
+                
+
+                {/* <div className="flex flex-col md:flex-row gap-8 md:gap-0 md:items-center md:justify-center">
                     <div className="md:w-96 md:h-max p-6 md:px-8 md:py-10 bg-components border-green-100 border-2 shadow-2xl rounded-3xl transition-transform duration-200">
                         <video
                             autoPlay
@@ -192,7 +206,7 @@ export default function LandingPage() {
                         <h2 className="text-xl font-semibold mb-2">Secure & Private</h2>
                         <p className="text-base font-light">Your data is protected with enterprise-grade security and privacy controls.</p>
                     </div>
-                </div>
+                </div> */}
                 <div className="flex text-center justify-center mt-20">
                     <NavLink
                         to="/features"

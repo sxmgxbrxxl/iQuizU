@@ -8,6 +8,8 @@ import { useEffect, useState, useRef } from "react";
 import { auth, db } from "./firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import Lottie from "lottie-react";
+import animationData from "../src/assets/Books.json";
 
 // GENERAL PAGES
 import LandingPage from "./pages/general/LandingPage";
@@ -214,55 +216,15 @@ function App() {
     };
   }, []);
 
-  const isPublicPath = 
-    window.location.pathname === '/' || 
-    window.location.pathname === '/features' || 
-    window.location.pathname === '/about';
+  const isPublicPath =
+    window.location.pathname === "/" ||
+    window.location.pathname === "/features" ||
+    window.location.pathname === "/about";
 
   if (loading && !isPublicPath) {
     return (
-      <div
-        style={{
-          display: "flex",
-          height: "100vh",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "Outfit, 'Segoe UI', sans-serif",
-          margin: 0,
-          padding: 0,
-          background: "#f8f9fb",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              border: "3px solid #e8eaed",
-              borderTopColor: "#3b82f6",
-              borderRadius: "50%",
-              animation: "spinLoader 0.8s linear infinite",
-              margin: "0 auto 16px",
-            }}
-          />
-          <div
-            style={{
-              fontSize: "14px",
-              color: "#9ca3af",
-              fontWeight: 500,
-            }}
-          >
-            Loading...
-          </div>
-        </div>
-
-        <style>{`
-          @keyframes spinLoader {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-blue-200 via-background to-green-200">
+        <Lottie animationData={animationData} loop={true} className="w-32" />
       </div>
     );
   }

@@ -55,8 +55,8 @@ export default function ConfirmDialog({
     const c = colorMap[color] || colorMap.blue;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 font-Poppins animate-fadeIn">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-slideUp">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 font-Poppins animate-overlayFade">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-popIn">
                 <div className="p-6">
                     <div className="flex items-center gap-4 mb-4">
                         <div className={`w-12 h-12 rounded-full ${c.iconBg} flex items-center justify-center flex-shrink-0`}>

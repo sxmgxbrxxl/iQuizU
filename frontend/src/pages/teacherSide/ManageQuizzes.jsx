@@ -1040,10 +1040,10 @@ export default function ManageQuizzes() {
 
       {/* Published Quiz Detail Dialog */}
       {mounted && selectedPublishedQuiz && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedPublishedQuiz(null)}>
-          <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-overlayFade" onClick={() => setSelectedPublishedQuiz(null)}>
+          <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-popIn" onClick={(e) => e.stopPropagation()}>
             {/* Dialog Header */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-blue-50/50">
+            <div className="flex items-center justify-between p-5 border-b rounded-3xl border-gray-100 bg-blue-50/50">
               <div className="flex items-center gap-2">
                 <NotebookPen className="w-5 h-5 text-blue-500" />
                 <h3 className="text-lg font-bold text-title">{selectedPublishedQuiz.title}</h3>
@@ -2671,8 +2671,8 @@ export default function ManageQuizzes() {
 
       {/* Archive/Delete Loading Overlay */}
       {mounted && (deletingQuiz || deletingAssignment) && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] font-Poppins animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-slideUp max-w-xs w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] font-Poppins animate-overlayFade">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-popIn max-w-xs w-full mx-4">
             <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
             </div>

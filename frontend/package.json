@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "es-toolkit": "^1.41.0",
     "firebase": "^12.4.0",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.546.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",

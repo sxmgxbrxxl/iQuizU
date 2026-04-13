@@ -309,8 +309,8 @@ export default function ArchivedClasses({ user }) {
 
       {/* Delete Confirmation Modal */}
       {mounted && showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn font-Poppins">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-96 text-center animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-overlayFade font-Poppins">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-96 text-center animate-popIn">
             <Trash2 className="w-12 h-12 text-red-600 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-gray-800 mb-2">
               Permanently Delete Class?

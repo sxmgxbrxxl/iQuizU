@@ -11,31 +11,10 @@ import feature1 from "../../videos/feature_one.mp4";
 import feature2 from "../../videos/feature_two.mp4";
 import feature3 from "../../videos/feature_three.mp4";
 import feature4 from "../../videos/feature_four.mp4";
+import feature5 from "../../videos/feature_five.mp4";
 import feature6 from "../../videos/feature_six.mp4";
 
 export default function FeaturesPage() {
-    // const features = [
-    //     {
-    //         icon: <Chart className="h-20 w-20 mt-6 mx-auto" />,
-    //         title: "Advanced Analytics",
-    //         desc: "Detailed performance insights and progress tracking for both students and teachers."
-    //     },
-    //     {
-    //         icon: <Collab className="h-20 w-20 mt-6 mx-auto" />,
-    //         title: "Collaborative Learning",
-    //         desc: "Share quizzes, compete with friends, and learn together in a social environment."
-    //     },
-    //     {
-    //         icon: <Flash className="h-20 w-20 mt-6 mx-auto" />,
-    //         title: "Lightning Fast",
-    //         desc: "Optimized performance ensures smooth quiz-taking experience on any device."
-    //     },
-    //     {
-    //         icon: <Shield className="h-20 w-20 mt-6 mx-auto" />,
-    //         title: "Secure & Private",
-    //         desc: "Your data is protected with enterprise-grade security and privacy controls."
-    //     },
-    // ];
 
     return (
         <div className="bg-gradient-to-b from-background via-background to-green-200 min-h-screen pt-6 w-full font-Outfit">
@@ -223,7 +202,7 @@ export default function FeaturesPage() {
                             playsInline
                             className="w-full max-w-xs md:max-w-2xl rounded-xl shadow-md"
                         >
-                            <source src={feature3} type="video/mp4" />
+                            <source src={feature5} type="video/mp4" />
                         </video>
                     </div>
 
