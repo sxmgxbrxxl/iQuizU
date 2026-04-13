@@ -10,7 +10,7 @@ import { ReactComponent as Flash } from "../../assets/ic_flash.svg";
 import { ReactComponent as Shield } from "../../assets/ic_shield.svg";
 import Male from "../../assets/fig_male.svg";
 import Female from "../../assets/fig_female.svg";
-import feature1 from "../../videos/feature_one.mp4";
+import Carousel from "../../components/Carousel";
 
 // Snow Particle Component
 const SnowParticle = ({ delay, duration, left }) => (
@@ -87,7 +87,7 @@ export default function LandingPage() {
     }));
 
     return (
-        <div className="bg-background pt-6 min-h-screen w-full font-Outfit overflow-x-hidden relative">
+        <div className="bg-background pt-20 min-h-screen w-full font-Outfit overflow-x-hidden relative">
             {/* Snow Container */}
             <div className="fixed top-0 left-0 w-full h-screen pointer-events-none z-10 overflow-hidden">
                 {snowflakes.map((flake) => (
@@ -137,7 +137,7 @@ export default function LandingPage() {
             </div>
 
             {/* Features Section */}
-            <section id="features" className="bg-green-200 py-16 px-10 md:p-24 max-w-screen">
+            <section id="features" className="bg-green-200 py-12 max-w-screen max-h-screen">
                 <div className="text-center mb-12">
                     <h1 className="text-5xl md:text-6xl font-semibold">Features</h1>
                     <p className="text-base md:text-2xl font-light mt-3">
@@ -145,85 +145,8 @@ export default function LandingPage() {
                     </p>
                 </div>
 
-                <div className="flex flex-row">
-                    <div className="w-max h-full bg-white rounded-3xl shadow-2xl p-6 md:p-10 mb-16">
-                        <video
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            className="w-full max-w-xs md:max-w-md rounded-xl shadow-md mx-auto">
-                            <source src={feature1} type="video/mp4" />
-                        </video>
-                    </div>
-                </div>
-                
-
-                {/* <div className="flex flex-col md:flex-row gap-8 md:gap-0 md:items-center md:justify-center">
-                    <div className="md:w-96 md:h-max p-6 md:px-8 md:py-10 bg-components border-green-100 border-2 shadow-2xl rounded-3xl transition-transform duration-200">
-                        <video
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            className="w-full max-w-xs md:max-w-2xl rounded-xl shadow-md"
-                        >
-                            <source src={feature1} type="video/mp4" />
-                        </video>
-
-                        <div className="flex flex-row items-center mt-2 text-3xl">
-                            <Brain className="h-14 w-14 mb-3" />
-                            <h2 className="text-xl font-semibold mb-2">Smart Quiz Creation</h2>
-                        </div>
-                        
-                        <p className="text-base font-light">AI-powered question generation and intelligent difficulty adjustment for optimal learning.</p>
-                    </div>
-                    <div className="md:w-80 md:h-72 p-6 md:p-10 -mr-4 bg-components border-green-100 border-2 shadow-2xl rounded-3xl hover:rotate-0 transition-transform duration-200 md:rotate-3">
-                        <Clock className="h-14 w-14 mb-3" />
-                        <h2 className="text-xl font-semibold mb-2">Real-time Feedback</h2>
-                        <p className="text-base font-light">Instant results and explanations help learners understand concepts immediately.</p>
-                    </div>
-                    <div className="md:w-80 md:h-72 p-6 md:p-10 bg-components border-green-100 border-2 shadow-2xl rounded-3xl hover:rotate-0 transition-transform duration-200 md:-rotate-3">
-                        <Chart className="h-14 w-14 mb-3" />
-                        <h2 className="text-xl font-semibold mb-2">Advanced Analytics</h2>
-                        <p className="text-base font-light">Detailed performance insights and progress tracking for both students and teachers.</p>
-                    </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-8 md:gap-0 md:items-center md:justify-center mt-16">
-                    <div className="md:w-80 md:h-72 p-6 md:p-10 -mr-4 bg-components border-green-100 border-2 shadow-2xl rounded-3xl hover:rotate-0 transition-transform duration-200 md:rotate-3">
-                        <Collab className="h-14 w-14 mb-3" />
-                        <h2 className="text-xl font-semibold mb-2">Collaborative Learning</h2>
-                        <p className="text-base font-light">Share quizzes, compete with friends, and learn together in a social environment.</p>
-                    </div>
-                    <div className="md:w-80 md:h-72 p-6 md:p-10 -mr-4 bg-components border-green-100 border-2 shadow-2xl rounded-3xl hover:rotate-0 transition-transform duration-200 md:-rotate-3">
-                        <Flash className="h-14 w-14 mb-3" />
-                        <h2 className="text-xl font-semibold mb-2">Lightning Fast</h2>
-                        <p className="text-base font-light">Optimized performance ensures smooth quiz-taking experience on any device.</p>
-                    </div>
-                    <div className="md:w-80 md:h-72 p-6 md:p-10 bg-components border-green-100 border-2 shadow-2xl rounded-3xl hover:rotate-0 transition-transform duration-200 md:rotate-3">
-                        <Shield className="h-14 w-14 mb-3" />
-                        <h2 className="text-xl font-semibold mb-2">Secure & Private</h2>
-                        <p className="text-base font-light">Your data is protected with enterprise-grade security and privacy controls.</p>
-                    </div>
-                </div> */}
-                <div className="flex text-center justify-center mt-20">
-                    <NavLink
-                        to="/features"
-                        onClick={(e) => {
-                            if (location.pathname === "/features") {
-                                e.preventDefault();
-                                window.scrollTo({ top: 0, behavior: "smooth" });
-                            } else {
-                                navigate("/features");
-                                window.scrollTo({ top: 0, behavior: "smooth" });
-                            }
-                        }}
-                        className="bg-button border-2 font-semibold text-white text-lg border-white px-8 py-4 rounded-full w-full max-w-xs hover:scale-105 transition"
-                    >
-                        Learn More
-                    </NavLink>
-                </div>
+                <Carousel />
+            
             </section>
 
             {/* Divider */}

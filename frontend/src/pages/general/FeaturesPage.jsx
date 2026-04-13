@@ -17,10 +17,10 @@ import feature6 from "../../videos/feature_six.mp4";
 export default function FeaturesPage() {
 
     return (
-        <div className="bg-gradient-to-b from-background via-background to-green-200 min-h-screen pt-6 w-full font-Outfit">
+        <div className="bg-gradient-to-b from-background via-background to-green-200 min-h-screen pt-16 w-full font-Outfit">
             <Navbar />
 
-            <div className="px-6 md:px-40 mx-auto mt-10 md:mt-20">
+            <div className="px-6 md:px-24 mx-auto mt-10 md:mt-20">
                 <h1 className="text-5xl md:text-7xl font-semibold">Features</h1>
                 <p className="text-base md:text-2xl mt-2 font-light mb-6">
                     Everything you need to create engaging quizzes and track learning progress
