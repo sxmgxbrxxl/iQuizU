@@ -28,16 +28,30 @@ export default function LoginPage() {
 
       if (input.includes("@")) {
         const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", input.toLowerCase()));
-        const snapshot = await getDocs(q);
+        let q = query(usersRef, where("email", "==", input.toLowerCase()));
+        let snapshot = await getDocs(q);
 
-        if (snapshot.empty) {
-          setError("Account not found. Please check your email.");
-          setLoading(false);
-          return;
+        if (!snapshot.empty) {
+          userEmail = snapshot.docs[0].data().email;
+        } else {
+          q = query(usersRef, where("emailAddress", "==", input.toLowerCase()));
+          snapshot = await getDocs(q);
+          
+          if (!snapshot.empty) {
+            const userData = snapshot.docs[0].data();
+            userEmail = userData.emailAddress;
+            
+            if (!userData.hasAccount) {
+              setError("Your account hasn't been created yet. Please contact your teacher.");
+              setLoading(false);
+              return;
+            }
+          } else {
+            setError("Account not found. Please check your email.");
+            setLoading(false);
+            return;
+          }
         }
-
-        userEmail = snapshot.docs[0].data().email;
       } else {
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("studentNo", "==", input));
@@ -112,16 +126,31 @@ export default function LoginPage() {
 
       if (trimmedInput.includes("@")) {
         const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", trimmedInput.toLowerCase()));
-        const snapshot = await getDocs(q);
+        let q = query(usersRef, where("email", "==", trimmedInput.toLowerCase()));
+        let snapshot = await getDocs(q);
 
-        if (snapshot.empty) {
-          setError("No account found with this email.");
-          setRecoveryLoading(false);
-          return;
+        if (!snapshot.empty) {
+          emailToSend = snapshot.docs[0].data().email;
+        } else {
+          q = query(usersRef, where("emailAddress", "==", trimmedInput.toLowerCase()));
+          snapshot = await getDocs(q);
+          
+          if (!snapshot.empty) {
+            const userData = snapshot.docs[0].data();
+            
+            if (userData.hasAccount === false) {
+              setError("Your account hasn't been created yet. Please contact your teacher.");
+              setRecoveryLoading(false);
+              return;
+            }
+            
+            emailToSend = userData.emailAddress;
+          } else {
+            setError("No account found with this email.");
+            setRecoveryLoading(false);
+            return;
+          }
         }
-
-        emailToSend = snapshot.docs[0].data().email;
       } else {
         // Student number input
         const usersRef = collection(db, "users");
@@ -142,16 +171,22 @@ export default function LoginPage() {
           setRecoveryLoading(false);
           return;
         }
+
+        if (userData.hasAccount === false) {
+          setError("Your account hasn't been created yet. Please contact your teacher.");
+          setRecoveryLoading(false);
+          return;
+        }
       }
 
       await sendPasswordResetEmail(auth, emailToSend);
-      setRecoveryMessage(`✓ Password reset link sent to ${emailToSend}`);
+      setRecoveryMessage(`✓ Password reset link sent to ${emailToSend}. Please check your spam/junk folder.`);
       setRecoveryEmail("");
 
-      // Auto close modal after 3 seconds on success
+      // Auto close modal after 5 seconds on success
       setTimeout(() => {
         handleCloseRecoveryModal();
-      }, 3000);
+      }, 5000);
     } catch (err) {
       console.error("Recovery error:", err);
 
