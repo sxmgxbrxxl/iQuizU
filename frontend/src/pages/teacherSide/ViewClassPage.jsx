@@ -616,7 +616,7 @@ export default function ViewClassPage() {
 
   const sendWelcomeEmail = async (email, studentName, password, studentNo = "") => {
     try {
-      const baseUrl = process.env.REACT_APP_EMAIL_SERVER_URL || "http://localhost:4000";
+      const baseUrl = process.env.REACT_APP_EMAIL_SERVER_URL || "https://iquizu-backend-production-3336.up.railway.app";
       const response = await fetch(
         `${baseUrl}/api/email/send-welcome`,
         {
