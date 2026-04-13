@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import quiz_routes
+from app.routes import quiz_routes, email_routes
 
 app = FastAPI(
     title="Quiz Generator API",
@@ -34,6 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(quiz_routes.router, prefix="/api/quiz", tags=["Quiz"])
+app.include_router(email_routes.router, prefix="/api/email", tags=["Email"])
 
 @app.get("/")
 async def root():
