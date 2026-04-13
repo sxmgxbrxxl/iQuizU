@@ -1,7 +1,5 @@
-import smtplib
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -29,8 +27,6 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
         <tr>
           <td align="center">
             <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-
-              <!-- Header -->
               <tr>
                 <td style="background:linear-gradient(135deg,#22c55e 0%,#16a34a 50%,#15803d 100%);padding:40px 32px;text-align:center;">
                   <div style="font-size:36px;margin-bottom:8px;">🎓</div>
@@ -38,8 +34,6 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
                   <p style="margin:8px 0 0;color:#bbf7d0;font-size:15px;">Your student account has been created</p>
                 </td>
               </tr>
-
-              <!-- Body -->
               <tr>
                 <td style="padding:32px;">
                   <p style="margin:0 0 20px;color:#374151;font-size:16px;line-height:1.6;">
@@ -48,8 +42,6 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
                   <p style="margin:0 0 24px;color:#374151;font-size:15px;line-height:1.6;">
                     Your teacher has created an iQuizU account for you. You can now log in and start taking quizzes!
                   </p>
-
-                  <!-- Credentials Card -->
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:24px;">
                     <tr>
                       <td colspan="2" style="background:#1e293b;padding:12px 16px;">
@@ -61,14 +53,16 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
                       <td style="padding:12px 16px;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #f1f5f9;">{student_no}</td>
                     </tr>
                     <tr>
-                      <td style="padding:12px 16px;color:#64748b;font-size:14px;border-bottom:1px solid #f1f5f9;">Password</td>
-                      <td style="padding:12px 16px;border-bottom:none;">
+                      <td style="padding:12px 16px;color:#64748b;font-size:14px;border-bottom:1px solid #f1f5f9;">Email</td>
+                      <td style="padding:12px 16px;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #f1f5f9;">{email}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 16px;color:#64748b;font-size:14px;">Password</td>
+                      <td style="padding:12px 16px;">
                         <code style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:14px;font-weight:700;letter-spacing:0.5px;">{password}</code>
                       </td>
                     </tr>
                   </table>
-
-                  <!-- Login Button -->
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                     <tr>
                       <td align="center" style="padding:8px 0 24px;">
@@ -79,8 +73,6 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
                       </td>
                     </tr>
                   </table>
-
-                  <!-- Security Note -->
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin-bottom:8px;">
                     <tr>
                       <td style="padding:14px 16px;">
@@ -92,8 +84,6 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
                   </table>
                 </td>
               </tr>
-
-              <!-- Footer -->
               <tr>
                 <td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;text-align:center;">
                   <p style="margin:0;color:#94a3b8;font-size:12px;">
@@ -101,7 +91,6 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
                   </p>
                 </td>
               </tr>
-
             </table>
           </td>
         </tr>
@@ -113,49 +102,62 @@ def build_welcome_email_html(student_name: str, email: str, password: str, stude
 
 @router.post("/send-welcome")
 async def send_welcome_email(data: WelcomeEmailRequest):
-    """Send a welcome email to a newly created student account."""
     if not data.email or not data.studentName or not data.password:
-        raise HTTPException(status_code=400, detail="Missing required fields: email, studentName, password")
+        raise HTTPException(status_code=400, detail="Missing required fields")
 
     api_key = os.getenv("RESEND_API_KEY", "")
     if not api_key:
-        raise HTTPException(status_code=500, detail="RESEND_API_KEY is not configured on the server")
+        raise HTTPException(status_code=500, detail="RESEND_API_KEY is not configured")
+
+    html_content = build_welcome_email_html(
+        data.studentName, data.email, data.password, data.studentNo or ""
+    )
+    plain_text = (
+        f"Hi {data.studentName},\n\n"
+        f"Your iQuizU account has been created.\n\n"
+        f"Student No.: {data.studentNo}\n"
+        f"Email: {data.email}\n"
+        f"Password: {data.password}\n"
+        f"Log in at: https://iquizu.online\n\n"
+        f"Please change your password after your first login.\n\n"
+        f"- iQuizU Team"
+    )
+
+    payload = {
+        "from": "iQuizU <no-reply@iquizu.online>",
+        "to": [data.email],
+        "subject": "Welcome to iQuizU! Your Account is Ready 🎓",
+        "html": html_content,
+        "text": plain_text,
+    }
 
     try:
-        html_content = build_welcome_email_html(data.studentName, data.email, data.password, data.studentNo or "")
-        plain_text = (
-            f"Hi {data.studentName},\n\n"
-            f"Your iQuizU account has been created.\n\n"
-            f"Student No.: {data.studentNo}\n"
-            f"Password: {data.password}\n"
-            f"Log in at: https://iquizu.online\n\n"
-            f"Please change your password after your first login.\n\n"
-            f"- iQuizU Team"
-        )
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
 
-        # Build MIME message
-        msg = MIMEMultipart("alternative")
-        msg["From"] = "iQuizU <no-reply@iquizu.online>"
-        msg["To"] = data.email
-        msg["Subject"] = "Welcome to iQuizU! Your Account is Ready 🎓"
-        msg.attach(MIMEText(plain_text, "plain"))
-        msg.attach(MIMEText(html_content, "html"))
+        if response.status_code in (200, 201):
+            print(f"📧 Welcome email sent to {data.email}")
+            return JSONResponse(content={
+                "status": "success",
+                "message": f"Welcome email sent to {data.email}"
+            })
+        else:
+            error_detail = response.json() if response.content else {}
+            print(f"❌ Resend API error: {response.status_code} - {error_detail}")
+            raise HTTPException(status_code=502, detail=f"Resend API error: {error_detail}")
 
-        # Send via Resend SMTP
-        with smtplib.SMTP_SSL("smtp.resend.com", 465) as server:
-            server.login("resend", api_key)
-            server.send_message(msg)
-
-        print(f"📧 Welcome email sent to {data.email}")
-
-        return JSONResponse(content={
-            "status": "success",
-            "message": f"Welcome email sent to {data.email}",
-        })
-
-    except smtplib.SMTPException as e:
-        print(f"❌ SMTP error sending email to {data.email}: {e}")
-        raise HTTPException(status_code=500, detail=f"SMTP error: {str(e)}")
+    except httpx.TimeoutException:
+        print(f"❌ Timeout sending email to {data.email}")
+        raise HTTPException(status_code=504, detail="Request timed out")
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Failed to send email to {data.email}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
