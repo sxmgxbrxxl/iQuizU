@@ -64,6 +64,8 @@ export default function FeatureCarousel() {
   const [paused, setPaused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   const videoRefs = useRef([]);
   const containerRef = useRef(null);
@@ -118,10 +120,35 @@ export default function FeatureCarousel() {
     return () => clearTimeout(timer);
   }, [active, paused, goNext]);
 
+  const handleTouchStart = (e) => {
+  touchStartX.current = e.touches[0].clientX;
+};
+
+const handleTouchMove = (e) => {
+  touchEndX.current = e.touches[0].clientX;
+};
+
+const handleTouchEnd = () => {
+  const distance = touchStartX.current - touchEndX.current;
+
+  if (distance > 50) {
+    // swipe left → next
+    setActive((prev) => (prev + 1) % cards.length);
+  } else if (distance < -50) {
+    // swipe right → previous
+    setActive((prev) =>
+      prev === 0 ? cards.length - 1 : prev - 1
+    );
+  }
+};
+
   return (
     <div className="w-full flex flex-col items-center">
       {/* Strip */}
-      <div ref={containerRef} className="w-full overflow-hidden">
+      <div ref={containerRef} className="w-full overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}>
         <div
           className="flex transition-transform duration-500 ease-in-out"
           style={{ transform: `translateX(${translateX})` }}

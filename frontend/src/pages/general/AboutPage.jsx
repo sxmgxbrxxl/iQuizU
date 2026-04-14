@@ -1,28 +1,29 @@
 import Navbar from "../../components/NavBar";
 import LOGO from "../../assets/iQuizU.svg";
 import Footer from "../../components/Footer";
+import { Lightbulb, ChartArea, Trophy, ChartNoAxesCombined} from "lucide-react";
 
 const features = [
     {
-        icon: "📝",
+        icon: <Lightbulb className="w-10 h-10 text-accent"/>,
         title: "Interactive Quizzes",
         description:
             "Create and manage quizzes with ease. Supports multiple question types to keep assessments engaging and effective.",
     },
     {
-        icon: "📊",
+        icon: <ChartArea className="w-10 h-10 text-accent"/>,
         title: "Built-in Analytics",
         description:
             "Track student performance with detailed reports and insights. Identify strengths and areas for improvement at a glance.",
     },
     {
-        icon: "🏆",
+        icon: <Trophy className="w-10 h-10 text-accent"/>,
         title: "Leaderboards",
         description:
             "Foster healthy academic competition with real-time rankings that motivate students to do their best.",
     },
     {
-        icon: "📈",
+        icon: <ChartNoAxesCombined className="w-10 h-10 text-accent"/>,
         title: "Progress Tracking",
         description:
             "Monitor individual and class-wide progress over time. Ensure continuous learning and growth for every student.",
@@ -34,7 +35,7 @@ export default function AboutPage() {
         <div className="bg-gradient-to-b from-background via-background to-green-200 min-h-screen h-full pt-6 w-full font-Outfit">
             <Navbar />
 
-            <div className="px-4 md:px-20 lg:px-40 mx-auto mt-10 mb-20">
+            <div className="px-4 md:px-20 lg:px-40 mx-auto mb-20 md: pt-10">
                 {/* Hero Section */}
                 <img src={LOGO} alt="Logo" className="h-44 w-44 mx-auto mt-24 md:mt-20" />
                 <h1 className="text-accent text-4xl md:text-6xl font-bold text-center mt-6 md:mt-10">
