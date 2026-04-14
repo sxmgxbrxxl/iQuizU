@@ -49,11 +49,11 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-components h-20 mx-5 md:mx-20 flex items-center justify-between font-Poppins shadow-md rounded-full px-6 relative z-50">
+    <nav className="bg-components/80 backdrop-blur-lg py-4 px-4 flex justify-between items-center font-Poppins shadow-md rounded-full fixed top-4 left-6 right-6 md:left-10 md:right-10 z-50">
       {/* Logo Section */}
       <div className="flex items-center gap-3">
-        <img src={LOGO} alt="Logo" className="h-12 w-12" />
-        <h1 className="font-bold text-3xl">iQuizU</h1>
+        <img src={LOGO} alt="Logo" className="h-10 w-10" />
+        <h1 className="font-bold text-lg md:text-2xl">iQuizU</h1>
       </div>
 
       {/* Desktop Nav Links */}
@@ -65,7 +65,7 @@ export default function Navbar() {
           onFocus={(e) => setIndicatorFromEl(e.currentTarget)}
           onMouseLeave={() => updateIndicator()}
           onBlur={() => updateIndicator()}
-          className={({ isActive }) => `nav-item px-2 ${isActive ? 'active text-black' : 'text-subtext hover:text-black'}`}
+          className={({ isActive }) => `nav-item px-2 ${isActive ? 'active text-black font-semibold transition-all duration-200' : 'text-subtext hover:text-black'}`}
         >
           Home
         </NavLink>
@@ -75,7 +75,7 @@ export default function Navbar() {
           onFocus={(e) => setIndicatorFromEl(e.currentTarget)}
           onMouseLeave={() => updateIndicator()}
           onBlur={() => updateIndicator()}
-          className={({ isActive }) => `nav-item px-2 ${isActive ? 'active text-black' : 'text-subtext hover:text-black'}`}
+          className={({ isActive }) => `nav-item px-2 ${isActive ? 'active text-black font-semibold' : 'text-subtext hover:text-black'}`}
         >
           Features
         </NavLink>
@@ -85,7 +85,7 @@ export default function Navbar() {
           onFocus={(e) => setIndicatorFromEl(e.currentTarget)}
           onMouseLeave={() => updateIndicator()}
           onBlur={() => updateIndicator()}
-          className={({ isActive }) => `nav-item px-2 ${isActive ? 'active text-black' : 'text-subtext hover:text-black'}`}
+          className={({ isActive }) => `nav-item px-2 ${isActive ? 'active text-black font-semibold' : 'text-subtext hover:text-black'}`}
         >
           About
         </NavLink>

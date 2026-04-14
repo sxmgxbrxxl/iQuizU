@@ -17,10 +17,10 @@ import feature6 from "../../videos/feature_six.mp4";
 export default function FeaturesPage() {
 
     return (
-        <div className="bg-gradient-to-b from-background via-background to-green-200 min-h-screen pt-6 w-full font-Outfit">
+        <div className="bg-gradient-to-b from-background via-background to-green-200 min-h-screen pt-16 w-full font-Outfit">
             <Navbar />
 
-            <div className="px-6 md:px-40 mx-auto mt-10 md:mt-20">
+            <div className="px-6 md:px-24 mx-auto mt-10 md:mt-20">
                 <h1 className="text-5xl md:text-7xl font-semibold">Features</h1>
                 <p className="text-base md:text-2xl mt-2 font-light mb-6">
                     Everything you need to create engaging quizzes and track learning progress
@@ -36,13 +36,13 @@ export default function FeaturesPage() {
 
                             <Brain className="h-10 w-10 md:h-20 md:w-20 text-green-200" />
 
-                            <h1 className="text-2xl md:text-6xl font-semibold">
+                            <h1 className="text-2xl lg:text-5xl font-semibold">
                                 Smart Quiz Creation
                             </h1>
                             
                         </div>
                         
-                        <p className="mt-2 text-sm md:text-xl text-gray-600">
+                        <p className="mt-2 text-sm lg:text-base text-gray-500">
                                 AI-powered question generation and intelligent difficulty adjustment enhance learning by automatically creating relevant questions and adapting their complexity based on the learner’s performance. This ensures that students are consistently challenged at an appropriate level—easier questions are provided when they struggle, while more difficult ones appear as they improve—helping maintain engagement and prevent frustration or boredom. By continuously tailoring practice to the learner’s needs, this approach promotes deeper understanding, better retention, and a more personalized and efficient learning experience overall.
                         </p>
 
@@ -85,13 +85,13 @@ export default function FeaturesPage() {
 
                             <Clock className="h-10 w-10 md:h-20 md:w-20 text-green-200" />
 
-                            <h1 className="text-2xl md:text-6xl font-semibold">
+                            <h1 className="text-2xl lg:text-5xl font-semibold">
                                 Real-time Feedback
                             </h1>
                             
                         </div>
                         
-                        <p className="mt-2 text-sm md:text-xl text-gray-600">
+                        <p className="mt-2 text-sm lg:text-base text-gray-500">
                                 Instant results paired with clear explanations allow learners to immediately see not just what the correct answer is, but why it is correct. This immediate feedback loop reinforces understanding in real time, preventing confusion from building up. Instead of waiting for delayed corrections, learners can quickly identify mistakes, adjust their thinking, and grasp the underlying concepts more effectively. Over time, this approach strengthens retention, builds confidence, and encourages active learning, as users are continuously engaged in understanding rather than simply memorizing information.
                         </p>
 
@@ -109,13 +109,13 @@ export default function FeaturesPage() {
 
                             <Chart className="h-10 w-10 md:h-20 md:w-20 text-green-200" />
 
-                            <h1 className="text-2xl md:text-6xl font-semibold">
+                            <h1 className="text-2xl lg:text-5xl font-semibold">
                                 Advanced Analytics
                             </h1>
                             
                         </div>
                         
-                        <p className="mt-2 text-sm md:text-xl text-gray-600">
+                        <p className="mt-2 text-sm lg:text-base text-gray-500">
                             Detailed performance insights and progress tracking provide both students and teachers with a clear view of learning development over time, making it easier to identify strengths, weaknesses, and areas that need improvement. Students can monitor their own progress, see patterns in their performance, and stay motivated by tracking their growth and achievements. At the same time, teachers gain valuable data on individual and group performance, allowing them to adjust instruction, provide targeted support, and make informed decisions to enhance learning outcomes. This data-driven approach fosters accountability, supports personalized learning, and ensures that both teaching and studying are more effective and focused.
                         </p>
 
@@ -159,13 +159,13 @@ export default function FeaturesPage() {
 
                             <Collab className="h-10 w-10 md:h-20 md:w-20 text-green-200" />
 
-                            <h1 className="text-2xl md:text-6xl font-semibold">
+                            <h1 className="text-2xl lg:text-5xl font-semibold">
                                 Collaborative Learning
                             </h1>
                             
                         </div>
                         
-                        <p className="mt-2 text-sm md:text-xl text-gray-600">
+                        <p className="mt-2 text-sm lg:text-base text-gray-500">
                             Share quizzes, compete with friends, and learn together in a dynamic social environment that transforms studying into a more engaging and interactive experience. By allowing users to create and share quizzes, learners can challenge one another, exchange knowledge, and explore different perspectives on various topics. Friendly competition through scores, rankings, or challenges motivates students to improve while keeping the experience fun. At the same time, collaboration encourages peer learning, where individuals can support each other, discuss answers, and deepen their understanding together, fostering both academic growth and a strong sense of community.
                         </p>
                     </div>
@@ -181,13 +181,13 @@ export default function FeaturesPage() {
 
                             <Flash className="h-10 w-10 md:h-20 md:w-20 text-green-200" />
 
-                            <h1 className="text-2xl md:text-6xl font-semibold">
+                            <h1 className="text-2xl lg:text-5xl font-semibold">
                                 Lightning Fast
                             </h1>
                             
                         </div>
                         
-                        <p className="mt-2 text-sm md:text-xl text-gray-600">
+                        <p className="mt-2 text-sm lg:text-base text-gray-500">
                             Optimized performance ensures a smooth and seamless quiz-taking experience across any device, whether on desktop, tablet, or mobile. The system is designed to load quickly, respond instantly to user inputs, and maintain stability even during continuous interactions, minimizing delays or interruptions. This allows learners to stay focused without distractions caused by lag or technical issues. By adapting efficiently to different screen sizes and device capabilities, it provides a consistent and reliable experience, making it easier for users to engage with quizzes anytime and anywhere.
                         </p>
 
@@ -231,13 +231,13 @@ export default function FeaturesPage() {
 
                             <Shield className="h-10 w-10 md:h-20 md:w-20 text-green-200" />
 
-                            <h1 className="text-2xl md:text-6xl font-semibold">
+                            <h1 className="text-2xl lg:text-5xl font-semibold">
                                 Secure & Private
                             </h1>
                             
                         </div>
                         
-                        <p className="mt-2 text-sm md:text-xl text-gray-600">
+                        <p className="mt-2 text-sm lg:text-base text-gray-500">
                             The system is designed to maintain academic integrity by ensuring that all quiz activities remain strictly between the student and the professor, preventing unauthorized sharing or exposure of warnings and results to other classmates. It includes built-in safeguards that discourage dishonest behavior while keeping the process fair and confidential. In addition, all quizzes and answers are securely stored using protected systems, ensuring that sensitive data remains private and inaccessible to unauthorized users. This creates a controlled and trustworthy environment where both assessment content and user information are kept safe and confidential.
                         </p>
 
