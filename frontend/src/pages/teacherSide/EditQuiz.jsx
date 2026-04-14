@@ -103,6 +103,12 @@ export default function EditQuiz() {
     }
   };
 
+  const padChoicesTo4 = (choices) => {
+    const base = choices ? [...choices] : [];
+    while (base.length < 4) base.push({ text: "", is_correct: false });
+    return base.slice(0, 4); // cap at 4
+  };
+
   const handleQuestionEdit = (index, question) => {
     setEditingQuestion(index);
     setEditForm({
@@ -110,7 +116,7 @@ export default function EditQuiz() {
       type: question.type,
       points: question.points,
       correct_answer: question.correct_answer || "",
-      choices: question.choices ? [...question.choices] : null,
+      choices: question.type === "multiple_choice" ? padChoicesTo4(question.choices) : null,
       bloom_classification: question.bloom_classification || "LOTS",
       cognitive_level: question.cognitive_level || "remembering",
       difficulty: question.difficulty || "easy"
@@ -184,7 +190,9 @@ export default function EditQuiz() {
       correct_answer: type === "true_false" ? "True" : "",
       choices: type === "multiple_choice" ? [
         { text: "", is_correct: false },
-        { text: "", is_correct: false }
+        { text: "", is_correct: false },
+        { text: "", is_correct: false },
+        { text: "", is_correct: false },
       ] : null,
       bloom_classification: "LOTS",
       cognitive_level: "remembering",
@@ -204,7 +212,9 @@ export default function EditQuiz() {
       correct_answer: type === "true_false" ? "True" : "",
       choices: type === "multiple_choice" ? [
         { text: "", is_correct: false },
-        { text: "", is_correct: false }
+        { text: "", is_correct: false },
+        { text: "", is_correct: false },
+        { text: "", is_correct: false },
       ] : null,
       bloom_classification: "LOTS",
       cognitive_level: "remembering",
@@ -284,6 +294,8 @@ export default function EditQuiz() {
     true_false: "True/False",
     identification: "Identification"
   };
+  // Always show all three sections so teachers can add any type
+  const allTypes = ["multiple_choice", "true_false", "identification"];
 
   const hasChanges = hasUnsavedChanges();
 
@@ -351,8 +363,8 @@ export default function EditQuiz() {
 
       {/* Questions */}
       <div className="space-y-8">
-        {Object.entries(grouped).map(([type, questions]) => {
-          if (questions.length === 0) return null;
+        {allTypes.map((type) => {
+          const questions = grouped[type] || [];
 
           return (
             <div key={type} className="space-y-4">
@@ -367,9 +379,15 @@ export default function EditQuiz() {
                   onClick={() => handleAddQuestion(type)}
                   className="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-600Hover transition text-sm transform-all active:scale-95 hover:scale-105 duration-200"
                 >
-                  <PlusCircle className="w-4 h-4" /> Add Question
+                  <PlusCircle className="w-4 h-4" /> Add {typeLabels[type]}
                 </button>
               </div>
+
+              {questions.length === 0 && (
+                <div className="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                  <p className="text-gray-400 text-sm">No {typeLabels[type]} questions yet. Click "Add {typeLabels[type]}" to add one.</p>
+                </div>
+              )}
 
               <div className="space-y-4">
                 {questions.map((q) => {
@@ -378,48 +396,48 @@ export default function EditQuiz() {
                   return (
                     <div key={q.originalIndex} className="bg-gray-50 p-4 md:p-6 border-2 rounded-3xl border-gray-200">
                       {isEditing ? (
-                        <div className="space-y-4">
+                        <div className="space-y-5">
+                          {/* Question Text */}
                           <div>
-                            <label className="block text-md font-semibold mb-2">Question</label>
+                            <label className="block text-sm font-bold mb-1.5 text-gray-700">Question *</label>
                             <textarea
                               value={editForm.question}
                               onChange={(e) => setEditForm({ ...editForm, question: e.target.value })}
-                              className="w-full px-3 py-2 border rounded-lg"
+                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 transition resize-none"
                               rows="3"
+                              placeholder="Type your question here..."
                             />
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          {/* Metadata Row */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div>
-                              <label className="block text-md font-semibold mb-2">Points</label>
+                              <label className="block text-xs font-bold mb-1.5 text-gray-500 uppercase tracking-wide">Points</label>
                               <input
                                 type="number"
                                 min="1"
                                 value={editForm.points}
                                 onChange={(e) => setEditForm({ ...editForm, points: parseInt(e.target.value) || 1 })}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 transition text-sm"
                               />
                             </div>
                             <div>
-                              <label className="block text-md font-semibold mb-2">LOTS/HOTS</label>
+                              <label className="block text-xs font-bold mb-1.5 text-gray-500 uppercase tracking-wide">LOTS / HOTS</label>
                               <select
                                 value={editForm.bloom_classification}
                                 onChange={(e) => setEditForm({ ...editForm, bloom_classification: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 transition text-sm"
                               >
-                                <option value="LOTS">LOTS (Lower Order Thinking)</option>
-                                <option value="HOTS">HOTS (Higher Order Thinking)</option>
+                                <option value="LOTS">LOTS</option>
+                                <option value="HOTS">HOTS</option>
                               </select>
                             </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-md font-semibold mb-2">Cognitive Level</label>
+                              <label className="block text-xs font-bold mb-1.5 text-gray-500 uppercase tracking-wide">Cognitive Level</label>
                               <select
                                 value={editForm.cognitive_level || "remembering"}
                                 onChange={(e) => setEditForm({ ...editForm, cognitive_level: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 transition text-sm"
                               >
                                 <option value="remembering">Remembering</option>
                                 <option value="understanding">Understanding</option>
@@ -430,11 +448,11 @@ export default function EditQuiz() {
                               </select>
                             </div>
                             <div>
-                              <label className="block text-md font-semibold mb-2">Difficulty</label>
+                              <label className="block text-xs font-bold mb-1.5 text-gray-500 uppercase tracking-wide">Difficulty</label>
                               <select
                                 value={editForm.difficulty || "easy"}
                                 onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 transition text-sm"
                               >
                                 <option value="easy">Easy</option>
                                 <option value="average">Average</option>
@@ -443,106 +461,106 @@ export default function EditQuiz() {
                             </div>
                           </div>
 
+                          {/* Multiple Choice — fixed 4 choices */}
                           {editForm.type === "multiple_choice" && (
                             <div>
-                              <label className="block text-md font-semibold mb-2">Choices</label>
+                              <label className="block text-sm font-bold mb-2 text-gray-700">Choices <span className="text-xs font-normal text-gray-400">(select the correct answer)</span></label>
                               <div className="space-y-2">
                                 {editForm.choices.map((choice, i) => (
-                                  <div key={i} className="flex items-center gap-2">
-                                    <input
-                                      type="radio"
-                                      checked={choice.is_correct}
-                                      onChange={() => {
-                                        const newChoices = editForm.choices.map((c, idx) => ({
-                                          ...c,
-                                          is_correct: idx === i
-                                        }));
-                                        setEditForm({ ...editForm, choices: newChoices });
-                                      }}
-                                      className="w-4 h-4"
-                                    />
+                                  <div
+                                    key={i}
+                                    onClick={() => {
+                                      const newChoices = editForm.choices.map((c, idx) => ({ ...c, is_correct: idx === i }));
+                                      setEditForm({ ...editForm, choices: newChoices });
+                                    }}
+                                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                      choice.is_correct
+                                        ? "bg-blue-50 border-blue-500"
+                                        : "bg-white border-gray-200 hover:border-blue-300"
+                                    }`}
+                                  >
+                                    <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
+                                      choice.is_correct
+                                        ? "bg-blue-600 border-blue-600 text-white"
+                                        : "bg-white border-gray-300 text-gray-500"
+                                    }`}>
+                                      {String.fromCharCode(65 + i)}
+                                    </span>
                                     <input
                                       type="text"
                                       value={choice.text}
+                                      onClick={(e) => e.stopPropagation()}
                                       onChange={(e) => {
                                         const newChoices = [...editForm.choices];
-                                        newChoices[i].text = e.target.value;
+                                        newChoices[i] = { ...newChoices[i], text: e.target.value };
                                         setEditForm({ ...editForm, choices: newChoices });
                                       }}
                                       placeholder={`Choice ${String.fromCharCode(65 + i)}`}
-                                      className="flex-1 px-3 py-2 border rounded-lg"
+                                      className="flex-1 bg-transparent outline-none text-sm font-medium text-gray-800 placeholder-gray-400"
                                     />
-                                    {editForm.choices.length > 2 && (
-                                      <button
-                                        onClick={() => {
-                                          const newChoices = editForm.choices.filter((_, idx) => idx !== i);
-                                          setEditForm({ ...editForm, choices: newChoices });
-                                        }}
-                                        className="text-red-600 hover:text-red-700 transform-all active:scale-95 hover:scale-105 duration-200"
-                                      >
-                                        <X className="w-5 h-5" />
-                                      </button>
+                                    {choice.is_correct && (
+                                      <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
                                     )}
                                   </div>
                                 ))}
-                                <button
-                                  onClick={() => {
-                                    setEditForm({
-                                      ...editForm,
-                                      choices: [...editForm.choices, { text: "", is_correct: false }]
-                                    });
-                                  }}
-                                  className="text-blue-600 text-md hover:underline flex items-center gap-1"
-                                >
-                                  <PlusCircle className="w-4 h-4" /> Add Choice
-                                </button>
                               </div>
                             </div>
                           )}
 
+                          {/* True/False — button toggle */}
                           {editForm.type === "true_false" && (
                             <div>
-                              <label className="block text-sm font-semibold mb-2">Correct Answer</label>
-                              <select
-                                value={editForm.correct_answer}
-                                onChange={(e) => setEditForm({ ...editForm, correct_answer: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
-                              >
-                                <option value="True">True</option>
-                                <option value="False">False</option>
-                              </select>
+                              <label className="block text-sm font-bold mb-2 text-gray-700">Correct Answer</label>
+                              <div className="flex gap-3">
+                                {["True", "False"].map((val) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setEditForm({ ...editForm, correct_answer: val })}
+                                    className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                                      editForm.correct_answer === val
+                                        ? "bg-blue-600 border-blue-600 text-white shadow-md"
+                                        : "bg-white border-gray-200 text-gray-600 hover:border-blue-300"
+                                    }`}
+                                  >
+                                    {val}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           )}
 
+                          {/* Identification */}
                           {editForm.type === "identification" && (
                             <div>
-                              <label className="block text-sm font-semibold mb-2">Correct Answer</label>
+                              <label className="block text-sm font-bold mb-1.5 text-gray-700">Correct Answer *</label>
                               <input
                                 type="text"
                                 value={editForm.correct_answer}
                                 onChange={(e) => setEditForm({ ...editForm, correct_answer: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 transition text-sm"
                                 placeholder="Enter the correct answer"
                               />
                             </div>
                           )}
 
-                          <div className="flex flex-wrap gap-2">
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-100">
                             <button
                               onClick={() => handleQuestionSave(q.originalIndex)}
-                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1 transform-all active:scale-95 hover:scale-105 duration-200"
+                              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1.5 text-sm font-semibold transform-all active:scale-95 hover:scale-105 duration-200"
                             >
-                              <CheckCircle className="w-4 h-4" /> Save
+                              <CheckCircle className="w-4 h-4" /> Save Question
                             </button>
                             <button
                               onClick={() => setEditingQuestion(null)}
-                              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transform-all active:scale-95 hover:scale-105 duration-200"
+                              className="bg-gray-100 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-200 text-sm font-semibold transform-all active:scale-95 hover:scale-105 duration-200"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleDeleteQuestion(q.originalIndex)}
-                              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 ml-auto flex items-center gap-1 transform-all active:scale-95 hover:scale-105 duration-200"
+                              className="ml-auto bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 flex items-center gap-1.5 text-sm font-semibold transform-all active:scale-95 hover:scale-105 duration-200"
                             >
                               <Trash2 className="w-4 h-4" /> Delete
                             </button>
@@ -578,15 +596,19 @@ export default function EditQuiz() {
                                       {q.cognitive_level.charAt(0).toUpperCase() + q.cognitive_level.slice(1)}
                                     </span>
                                   )}
-                                  {q.difficulty && (
-                                    <span className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-bold border-2 ${q.difficulty === "easy" ? "bg-green-100 text-green-700 border-green-300" :
-                                      q.difficulty === "average" ? "bg-yellow-100 text-yellow-700 border-yellow-300" :
-                                        q.difficulty === "difficult" ? "bg-red-100 text-red-700 border-red-300" :
-                                          "bg-gray-100 text-gray-700 border-gray-300"
-                                      }`}>
-                                      {q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)}
-                                    </span>
-                                  )}
+                                  {(() => {
+                                    const diff = q.difficulty || "easy";
+                                    const diffColors = {
+                                      easy: "bg-green-100 text-green-700 border-green-300",
+                                      average: "bg-yellow-100 text-yellow-700 border-yellow-300",
+                                      difficult: "bg-red-100 text-red-700 border-red-300",
+                                    };
+                                    return (
+                                      <span className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-bold border-2 ${diffColors[diff] || "bg-gray-100 text-gray-700 border-gray-300"}`}>
+                                        {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                                      </span>
+                                    );
+                                  })()}
                                   <span className="text-[10px] md:text-sm text-gray-600 rounded-full px-2 py-0.5 md:px-3 md:py-1 bg-gray-100">
                                     {q.points} {q.points === 1 ? 'point' : 'points'}
                                   </span>
