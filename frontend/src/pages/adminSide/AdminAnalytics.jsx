@@ -15,7 +15,7 @@ import {
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { db } from '../../firebase/firebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-
+import { SkeletonBlock, SkeletonKeyframes } from '../../components/SkeletonLoaders';
 // Colors for the charts
 const COLORS = {
   primary: '#3b82f6', // blue-500
@@ -326,26 +326,22 @@ export default function AdminAnalytics() {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center font-Poppins">
-        <div className="text-center flex flex-col gap-3 items-center">
-          <Loader2 className="animate-spin text-blue-600" size={48} />
-          <p className="text-slate-500 font-medium">Loading analytics data...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 md:p-8 font-Poppins animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Analytics Overview</h1>
-            <p className="text-slate-500 mt-1">Monitor system performance and user engagement</p>
-          </div>
+    <div className="p-8 bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen font-Poppins animate-fadeIn">
+      <SkeletonKeyframes />
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <div className="w-12 h-12 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center border border-violet-200">
+                  <BarChart3 size={28} />
+                </div>
+                Analytics Overview
+              </h1>
+              <p className="text-gray-600 ml-1">Monitor system performance and user engagement</p>
+            </div>
 
           <div className="flex items-center gap-3 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
             {/* Time Range Selector */}
@@ -375,38 +371,49 @@ export default function AdminAnalytics() {
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          icon={Users}
-          title="Total Students"
-          value={metrics.totalStudents.toLocaleString()}
-          change={2.4}
-          color="text-blue-600"
-          bgColor="bg-blue-50"
-        />
-        <StatCard
-          icon={Users}
-          title="Total Teachers"
-          value={metrics.totalTeachers}
-          change={1.2}
-          color="text-violet-600"
-          bgColor="bg-violet-50"
-        />
-        <StatCard
-          icon={BookOpen}
-          title="Active Quizzes"
-          value={metrics.activeQuizzes}
-          change={5.3}
-          color="text-emerald-600"
-          bgColor="bg-emerald-50"
-        />
-        <StatCard
-          icon={Activity}
-          title="Completion Rate"
-          value={`${metrics.completionRate}%`}
-          change={-0.5}
-          color="text-amber-600"
-          bgColor="bg-amber-50"
-        />
+        {loading ? (
+          <>
+            <SkeletonBlock height="120px" rounded="16px" delay={0.0} />
+            <SkeletonBlock height="120px" rounded="16px" delay={0.1} />
+            <SkeletonBlock height="120px" rounded="16px" delay={0.2} />
+            <SkeletonBlock height="120px" rounded="16px" delay={0.3} />
+          </>
+        ) : (
+          <>
+            <StatCard
+              icon={Users}
+              title="Total Students"
+              value={metrics.totalStudents.toLocaleString()}
+              change={2.4}
+              color="text-blue-600"
+              bgColor="bg-blue-50"
+            />
+            <StatCard
+              icon={Users}
+              title="Total Teachers"
+              value={metrics.totalTeachers}
+              change={1.2}
+              color="text-violet-600"
+              bgColor="bg-violet-50"
+            />
+            <StatCard
+              icon={BookOpen}
+              title="Active Quizzes"
+              value={metrics.activeQuizzes}
+              change={5.3}
+              color="text-emerald-600"
+              bgColor="bg-emerald-50"
+            />
+            <StatCard
+              icon={Activity}
+              title="Completion Rate"
+              value={`${metrics.completionRate}%`}
+              change={-0.5}
+              color="text-amber-600"
+              bgColor="bg-amber-50"
+            />
+          </>
+        )}
       </div>
 
       {/* Charts Grid */}
@@ -424,42 +431,46 @@ export default function AdminAnalytics() {
             </div>
           </div>
 
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={charts.quizPerformance} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorAvgScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                  dy={10}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                />
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: '#3b82f6', fontWeight: 600 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="avgScore"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorAvgScore)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="h-[300px] w-full mt-4">
+            {loading ? (
+              <SkeletonBlock height="100%" rounded="12px" delay={0.4} />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={charts.quizPerformance} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorAvgScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    dy={10}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                  />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: '#3b82f6', fontWeight: 600 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="avgScore"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorAvgScore)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -472,16 +483,20 @@ export default function AdminAnalytics() {
             </div>
             <Calendar size={20} className="text-slate-400" />
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.studentActivity} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="active" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-[300px] w-full mt-4">
+            {loading ? (
+              <SkeletonBlock height="100%" rounded="12px" delay={0.5} />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={charts.studentActivity} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="active" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -491,73 +506,81 @@ export default function AdminAnalytics() {
         {/* Program Distribution */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <h3 className="text-lg font-bold text-slate-800 mb-6">Student Demographics</h3>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
-            <div className="w-[200px] h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={charts.programDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {charts.programDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+          {loading ? (
+             <SkeletonBlock height="200px" rounded="12px" delay={0.6} />
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
+              <div className="w-[200px] h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={charts.programDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {charts.programDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {charts.programDistribution.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 text-sm">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-slate-600 font-medium">{item.subject}</span>
+                    <span className="text-slate-900 font-bold ml-auto">{item.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="space-y-3">
-              {charts.programDistribution.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 text-sm">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-slate-600 font-medium">{item.subject}</span>
-                  <span className="text-slate-900 font-bold ml-auto">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Subject Distribution */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <h3 className="text-lg font-bold text-slate-800 mb-6">Subject Distribution</h3>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
-            <div className="w-[200px] h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={charts.subjectDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {charts.subjectDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+          {loading ? (
+             <SkeletonBlock height="200px" rounded="12px" delay={0.7} />
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
+              <div className="w-[200px] h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={charts.subjectDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {charts.subjectDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {charts.subjectDistribution.slice(0, 5).map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 text-sm">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-slate-600 font-medium">{item.subject}</span>
+                    <span className="text-slate-900 font-bold ml-auto">{item.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="space-y-3">
-              {charts.subjectDistribution.slice(0, 5).map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 text-sm">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-slate-600 font-medium">{item.subject}</span>
-                  <span className="text-slate-900 font-bold ml-auto">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -571,58 +594,61 @@ export default function AdminAnalytics() {
           <button className="text-sm text-blue-600 font-medium hover:text-blue-700 transition-colors">View All</button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50/50">
-              <tr>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Teacher</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Quizzes</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Students</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Avg Score</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Rating</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {charts.teacherPerformance.slice(0, 5).map((teacher, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                        {teacher.email.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-sm font-medium text-slate-700">{teacher.email}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {teacher.quizzes}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center text-sm text-slate-600">{teacher.students}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="font-bold text-slate-700">{teacher.avgScore}%</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-center">
-                      <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 rounded-full"
-                          style={{ width: `${teacher.avgScore}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {charts.teacherPerformance.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400 text-sm">
-                    No performance data available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {loading ? (
+             <div className="p-6">
+                <SkeletonBlock height="250px" rounded="12px" delay={0.8} />
+             </div>
+          ) : (
+             <table className="w-full text-left">
+               <thead className="bg-slate-50/50">
+                 <tr>
+                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Teacher</th>
+                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Quizzes</th>
+                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Students</th>
+                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Avg Score</th>
+                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Rating</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-100">
+                 {charts.teacherPerformance.slice(0, 5).map((teacher, idx) => (
+                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                     <td className="px-6 py-4">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                           {teacher.email.charAt(0).toUpperCase()}
+                         </div>
+                         <span className="text-sm font-medium text-slate-700">{teacher.email}</span>
+                       </div>
+                     </td>
+                     <td className="px-6 py-4 text-center">
+                       <span className="text-slate-800 font-medium">{teacher.quizzes}</span>
+                     </td>
+                     <td className="px-6 py-4 text-center">
+                       <span className="text-slate-800 font-medium">{teacher.students || '—'}</span>
+                     </td>
+                     <td className="px-6 py-4 text-center">
+                       <span className="text-slate-800 font-medium">{teacher.avgScore ? `${teacher.avgScore}%` : '—'}</span>
+                     </td>
+                     <td className="px-6 py-4 text-center">
+                       <div className="flex items-center justify-center gap-1">
+                         <span className="text-slate-800 font-medium">{teacher.rating || 0}</span>
+                         <span className="text-amber-400 text-lg">★</span>
+                       </div>
+                     </td>
+                   </tr>
+                 ))}
+                 {charts.teacherPerformance.length === 0 && (
+                   <tr>
+                     <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                       No teacher data available
+                     </td>
+                   </tr>
+                 )}
+               </tbody>
+             </table>
+          )}
         </div>
+      </div>
       </div>
     </div>
   );

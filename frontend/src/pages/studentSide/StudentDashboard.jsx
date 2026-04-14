@@ -25,6 +25,8 @@ import {
   Lightbulb,
   GraduationCap,
   CalendarDays,
+  Megaphone,
+  AlertTriangle,
 } from "lucide-react";
 import StudentSidebar from "../../components/StudentSideBar";
 import { QuizListSkeleton, AnalyticsSkeleton } from "../../components/SkeletonLoaders";
@@ -41,6 +43,9 @@ export default function StudentDashboard({ user, userDoc }) {
   const [quizProgress, setQuizProgress] = useState({});
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Announcements
+  const [announcements, setAnnouncements] = useState([]);
+
   const [analytics, setAnalytics] = useState({
     totalQuizzes: 0,
     completedQuizzes: 0,
@@ -55,6 +60,23 @@ export default function StudentDashboard({ user, userDoc }) {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Fetch announcements for students
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((a) => a.targetAudience === "all" || a.targetAudience === "students");
+        setAnnouncements(data);
+      } catch (error) {
+        console.error("Error fetching announcements:", error);
+      }
+    };
+    fetchAnnouncements();
   }, []);
 
   // Dynamic greeting
@@ -513,6 +535,36 @@ export default function StudentDashboard({ user, userDoc }) {
                   </div>
                 </div>
               </div>
+
+              {/* Announcement Banners */}
+              {announcements.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  {announcements.map((ann) => (
+                    <div
+                      key={ann.id}
+                      className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+                        ann.priority === "urgent"
+                          ? "bg-red-50 border-red-200 text-red-800"
+                          : "bg-green-50 border-green-200 text-green-800"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg flex-shrink-0 ${
+                        ann.priority === "urgent" ? "bg-red-100" : "bg-green-100"
+                      }`}>
+                        {ann.priority === "urgent" ? (
+                          <AlertTriangle size={18} className="text-red-600" />
+                        ) : (
+                          <Megaphone size={18} className="text-green-600" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm">{ann.title}</h4>
+                        <p className="text-sm opacity-80 mt-0.5 whitespace-pre-wrap">{ann.message}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Join Live Quiz Section */}
               <section className="bg-gradient-to-r from-green-700 to-green-400 rounded-xl sm:rounded-2xl mt-4 shadow-lg p-4 sm:p-5 animate-slideIn">

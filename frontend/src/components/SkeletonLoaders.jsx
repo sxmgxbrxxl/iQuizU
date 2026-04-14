@@ -8,7 +8,7 @@ const shimmerStyle = {
     borderRadius: "8px",
 };
 
-function SkeletonBlock({ width = "100%", height = "16px", rounded = "8px", delay = 0, className = "" }) {
+export function SkeletonBlock({ width = "100%", height = "16px", rounded = "8px", delay = 0, className = "" }) {
     return (
         <div
             className={className}
@@ -24,7 +24,7 @@ function SkeletonBlock({ width = "100%", height = "16px", rounded = "8px", delay
 }
 
 // ─── Shared Keyframes (injected via <style>) ─────────────────────────────────
-function SkeletonKeyframes() {
+export function SkeletonKeyframes() {
     return (
         <style>{`
       @keyframes skeletonShimmer {
@@ -681,6 +681,42 @@ export function QuizResultsSkeleton() {
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AdminTableSkeleton — used in Admin side tables
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export function AdminTableSkeleton() {
+    return (
+        <div className="w-full animate-pulse font-Poppins">
+            <SkeletonKeyframes />
+            
+            <div className="overflow-x-auto rounded-xl border border-gray-100">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50 border-b border-gray-100">
+                        <tr>
+                            <th className="p-4"><SkeletonBlock width="40px" height="16px" delay={0.05} /></th>
+                            <th className="p-4"><SkeletonBlock width="150px" height="16px" delay={0.1} /></th>
+                            <th className="p-4"><SkeletonBlock width="200px" height="16px" delay={0.15} /></th>
+                            <th className="p-4"><SkeletonBlock width="80px" height="16px" delay={0.2} /></th>
+                            <th className="p-4 text-right pr-6"><SkeletonBlock width="100px" height="16px" delay={0.25} /></th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {[0, 1, 2, 3, 4, 5].map((rowIdx) => (
+                            <tr key={rowIdx} className="hover:bg-slate-50/50">
+                                <td className="p-4"><SkeletonBlock width="40px" height="14px" delay={rowIdx * 0.05} /></td>
+                                <td className="p-4"><SkeletonBlock width="150px" height="14px" delay={rowIdx * 0.05 + 0.05} /></td>
+                                <td className="p-4"><SkeletonBlock width="200px" height="14px" delay={rowIdx * 0.05 + 0.1} /></td>
+                                <td className="p-4"><SkeletonBlock width="80px" height="14px" delay={rowIdx * 0.05 + 0.15} /></td>
+                                <td className="p-4 flex justify-end"><SkeletonBlock width="100px" height="14px" delay={rowIdx * 0.05 + 0.2} /></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
