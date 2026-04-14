@@ -1,6 +1,6 @@
-# iQuizU : Interactive Quiz Platform
+# iQuizU : The Laguna University CCS Quiz Platform
 
-![iQuizU Banner](./frontend/public/Banner.png)
+![iQuizU Banner](./public/Banner.png)
 
 ## Table of Contents
 
@@ -37,7 +37,7 @@ Built with a scalable React frontend and a real-time Firebase backend, iQuizU of
 
 - **Multi-Role Dashboards:** Dedicated interfaces for Admins, Teachers, and Students with fine-tuned access controls.
 - **Synchronous & Asynchronous Quizzes:** Support for timed live quizzes (with Waiting Rooms) and homework-style assignments.
-- **Advanced Anti-Cheating System:** 
+- **Advanced Anti-Cheating System:**
   - Tracks and flags tab switching, fullscreen exits, and developer tool access.
   - Disables right-click, copy-paste functionalities.
 - **Automated Grading & Analytics:** Generate instant raw and base-50 scores, alongside real-time class leaderboards and item analysis.
@@ -53,23 +53,27 @@ Built with a scalable React frontend and a real-time Firebase backend, iQuizU of
 ## Setup and Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone <repository_url>
    cd iQuizUNew
    ```
 
 2. **Navigate to the frontend directory:**
+
    ```bash
    cd frontend
    ```
 
 3. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 4. **Environment Configuration:**
    Create a `.env` file in your `frontend` directory and add your Firebase config keys:
+
    ```env
    REACT_APP_FIREBASE_API_KEY=your_api_key
    REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
@@ -101,7 +105,7 @@ Built with a scalable React frontend and a real-time Firebase backend, iQuizU of
 │   ├── 📂 src/
 │   │   ├── 📂 components/     # Reusable UI components (Modals, Custom Buttons, Sidebars)
 │   │   ├── 📂 firebase/       # Firebase config and utility scripts
-│   │   ├── 📂 pages/          
+│   │   ├── 📂 pages/
 │   │   │    ├── 📂 adminSide/      # Admin specific views
 │   │   │    ├── 📂 general/        # Landing page, Login page, About page
 │   │   │    ├── 📂 studentSide/    # Student dashboard, quiz taking views, leaderboards
@@ -124,6 +128,7 @@ Built with a scalable React frontend and a real-time Firebase backend, iQuizU of
 ## Changelog
 
 ### [Version 1.0.0]
+
 - Initial release of the project.
 - Implementation of multi-role login, quiz building, synchronous/asynchronous quiz sessions, and real-time anti-cheat monitoring.
 
