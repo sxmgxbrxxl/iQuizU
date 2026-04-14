@@ -12,7 +12,6 @@ import Male from "../../assets/fig_male.svg";
 import Female from "../../assets/fig_female.svg";
 import Carousel from "../../components/Carousel";
 
-// Snow Particle Component
 const SnowParticle = ({ delay, duration, left }) => (
     <div
         className="absolute w-2 h-2 bg-white rounded-full opacity-80 pointer-events-none"
@@ -30,55 +29,26 @@ export default function LandingPage() {
     const location = useLocation();
 
     useEffect(() => {
-        // Add snowfall animation styles
         const style = document.createElement("style");
         style.textContent = `
             @keyframes snowfall {
-                0% {
-                    transform: translateY(0) translateX(0);
-                    opacity: 1;
-                }
-                10% {
-                    transform: translateY(10vh) translateX(5px);
-                }
-                20% {
-                    transform: translateY(20vh) translateX(-5px);
-                }
-                30% {
-                    transform: translateY(30vh) translateX(5px);
-                }
-                40% {
-                    transform: translateY(40vh) translateX(-5px);
-                }
-                50% {
-                    transform: translateY(50vh) translateX(5px);
-                }
-                60% {
-                    transform: translateY(60vh) translateX(-5px);
-                }
-                70% {
-                    transform: translateY(70vh) translateX(5px);
-                }
-                80% {
-                    transform: translateY(80vh) translateX(-5px);
-                }
-                90% {
-                    transform: translateY(90vh) translateX(5px);
-                }
-                100% {
-                    transform: translateY(100vh) translateX(0);
-                    opacity: 0;
-                }
+                0% { transform: translateY(0) translateX(0); opacity: 1; }
+                10% { transform: translateY(10vh) translateX(5px); }
+                20% { transform: translateY(20vh) translateX(-5px); }
+                30% { transform: translateY(30vh) translateX(5px); }
+                40% { transform: translateY(40vh) translateX(-5px); }
+                50% { transform: translateY(50vh) translateX(5px); }
+                60% { transform: translateY(60vh) translateX(-5px); }
+                70% { transform: translateY(70vh) translateX(5px); }
+                80% { transform: translateY(80vh) translateX(-5px); }
+                90% { transform: translateY(90vh) translateX(5px); }
+                100% { transform: translateY(100vh) translateX(0); opacity: 0; }
             }
         `;
         document.head.appendChild(style);
-
-        return () => {
-            document.head.removeChild(style);
-        };
+        return () => { document.head.removeChild(style); };
     }, []);
 
-    // Generate random snowflakes
     const snowflakes = Array.from({ length: 50 }).map((_, i) => ({
         id: i,
         delay: Math.random() * 5,
@@ -88,8 +58,8 @@ export default function LandingPage() {
 
     return (
         <div className="bg-background pt-20 min-h-screen w-full font-Outfit overflow-x-hidden relative">
-            {/* Snow Container */}
-            <div className="fixed top-0 left-0 w-full h-screen pointer-events-none z-10 overflow-hidden">
+            {/* Snow Container for holidays */}
+            {/* <div className="fixed top-0 left-0 w-full h-screen pointer-events-none z-10 overflow-hidden">
                 {snowflakes.map((flake) => (
                     <SnowParticle
                         key={flake.id}
@@ -98,12 +68,12 @@ export default function LandingPage() {
                         left={flake.left}
                     />
                 ))}
-            </div>
+            </div> */}
 
             <Navbar />
 
             {/* Hero Section */}
-            <section id="home" className="bg-gradient-to-b from-background via-background to-green-200 text-center py-16 px-10 md:py-24">
+            <section id="home" className="bg-gradient-to-b from-background via-background to-green-200 text-center py-16 px-10 md:py-24 relative">
                 <p className="bg-components rounded-full inline-block border-2 border-stroke text-subtext text-sm md:text-base px-4 py-1">
                     Join us to learn more!
                 </p>
@@ -116,6 +86,17 @@ export default function LandingPage() {
                     Create, share, and take engaging quizzes with real-time feedback. Perfect for educators,
                     students, and knowledge enthusiasts.
                 </p>
+
+                <img
+                    src={Male}
+                    alt="Male Figure"
+                    className="absolute left-10 bottom-0 w-28 sm:w-48 md:w-56 hidden sm:block object-contain"
+                />
+                <img
+                    src={Female}
+                    alt="Female Figure"
+                    className="absolute right-10 bottom-0 w-28 sm:w-56 md:w-64 hidden sm:block object-contain"
+                />
 
                 <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-14">
                     <button
@@ -130,15 +111,15 @@ export default function LandingPage() {
             </section>
 
             {/* Divider */}
-            <div className="flex justify-center bg-green-200">
+            <div className="flex justify-center bg-green-200 md:pt-20">
                 <div className="w-full max-w-screen-xl px-6">
                     <hr className="border-1.5 md:border-2 border-accent rounded-full" />
                 </div>
             </div>
 
             {/* Features Section */}
-            <section id="features" className="bg-green-200 py-12 max-w-screen max-h-screen">
-                <div className="text-center mb-12">
+            <section id="features" className="bg-green-200 relative text-center flex flex-col py-16 md:py-20">
+                <div className="text-center mb-12 px-10">
                     <h1 className="text-5xl md:text-6xl font-semibold">Features</h1>
                     <p className="text-base md:text-2xl font-light mt-3">
                         Everything you need to create engaging quizzes and track learning progress
@@ -146,7 +127,25 @@ export default function LandingPage() {
                 </div>
 
                 <Carousel />
-            
+
+                <div className="flex justify-center px-10">
+                    <NavLink
+                        to="/features"
+                        onClick={(e) => {
+                            if (location.pathname === "/features") {
+                                e.preventDefault();
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                            } else {
+                                navigate("/features");
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                            }
+                        }}
+                        className="bg-button text-white border-2 font-semibold text-lg border-white px-6 py-3 rounded-full mt-6 w-full sm:w-auto hover:scale-105 transition"
+                    >
+                        Learn More
+                    </NavLink>
+                </div>
+                
             </section>
 
             {/* Divider */}
@@ -164,17 +163,6 @@ export default function LandingPage() {
                 <p className="text-base sm:text-lg md:text-xl font-light mt-3 max-w-2xl mx-auto">
                     Start creating engaging quizzes today. No credit card required, free forever plan available.
                 </p>
-
-                <img
-                    src={Male}
-                    alt="Male Figure"
-                    className="absolute left-32 bottom-0 w-28 sm:w-48 md:w-56 lg:w-64 hidden sm:block object-contain"
-                />
-                <img
-                    src={Female}
-                    alt="Female Figure"
-                    className="absolute right-20 bottom-0 w-28 sm:w-56 md:w-56 lg:w-72 hidden sm:block object-contain"
-                />
 
                 <div className="flex justify-center">
                     <button
