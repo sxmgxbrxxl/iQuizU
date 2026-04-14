@@ -73,7 +73,7 @@ export default function FeaturesPage() {
         <div className="bg-gradient-to-b from-background via-background to-green-200 min-h-screen pt-16 w-full font-Outfit">
             <Navbar />
 
-            <div className="px-6 md:px-24 mx-auto mt-10 md:mt-20">
+            <div className="px-10 md:px-24 mx-auto mt-10 md:mt-20 pt-4">
                 {/* Page Header */}
                 <p className="text-accent text-sm font-semibold tracking-widest uppercase">What We Offer</p>
                 <h1 className="text-3xl md:text-5xl font-semibold mt-1">Features</h1>
