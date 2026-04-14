@@ -145,7 +145,7 @@ export default function LandingPage() {
                         Learn More
                     </NavLink>
                 </div>
-                
+
             </section>
 
             {/* Divider */}

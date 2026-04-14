@@ -7,11 +7,11 @@ export default function Footer() {
 
     return (
         <footer id="about" className="bg-components mt-12 w-full py-8 px-6">
-            <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-center gap-6">
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-center gap-4 md:gap-6">
 
                 {/* Logo + Title */}
                 <div
-                    className="flex items-center gap-3 cursor-pointer md:pr-32"
+                    className="flex items-center gap-3 cursor-pointer md:pr-32 justify-center"
                     onClick={() => {
                         if (location.pathname === "/") {
                             window.scrollTo({ top: 0, behavior: "smooth" });

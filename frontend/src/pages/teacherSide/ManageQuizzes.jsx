@@ -566,7 +566,7 @@ export default function ManageQuizzes() {
 
     try {
       const res = await fetch(
-  "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-file",
+        "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-file",
         {
           method: "POST",
           body: fd,
@@ -2605,7 +2605,7 @@ export default function ManageQuizzes() {
 
                         try {
                           const res = await fetch(
-  "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-file",
+                            "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-file",
                             {
                               method: "POST",
                               body: fd,
