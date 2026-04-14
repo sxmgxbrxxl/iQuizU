@@ -50,6 +50,8 @@ import AdminDashboard from "./pages/adminSide/AdminDashboard";
 import ManageTeachers from "./pages/adminSide/ManageTeachers";
 import ManageStudents from "./pages/adminSide/ManageStudents";
 import AdminAnalytics from "./pages/adminSide/AdminAnalytics";
+import ManageAnnouncements from "./pages/adminSide/ManageAnnouncements";
+import ManageContent from "./pages/adminSide/ManageContent";
 
 // COMPONENTS
 import StudentSidebar from "./components/StudentSideBar";
@@ -446,6 +448,8 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="teachers" element={<ManageTeachers />} />
           <Route path="students" element={<ManageStudents />} />
+          <Route path="announcements" element={<ManageAnnouncements />} />
+          <Route path="content" element={<ManageContent />} />
           <Route path="analytics" element={<AdminAnalytics />} />
         </Route>
 

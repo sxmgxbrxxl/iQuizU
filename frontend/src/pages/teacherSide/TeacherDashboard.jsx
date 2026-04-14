@@ -25,6 +25,8 @@ import {
   Trophy,
   CalendarDays,
   Sparkles,
+  Megaphone,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function TeacherDashboard({ user, userDoc }) {
@@ -53,10 +55,31 @@ export default function TeacherDashboard({ user, userDoc }) {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
 
+  // Announcements
+  const [announcements, setAnnouncements] = useState([]);
+
   // Live clock
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const teacherId = user?.uid;
+
+  // Fetch announcements for teachers
+  useEffect(() => {
+    if (!isMainDashboard) return;
+    const fetchAnnouncements = async () => {
+      try {
+        const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((a) => a.targetAudience === "all" || a.targetAudience === "teachers");
+        setAnnouncements(data);
+      } catch (error) {
+        console.error("Error fetching announcements:", error);
+      }
+    };
+    fetchAnnouncements();
+  }, [isMainDashboard]);
 
   // Update clock every second
   useEffect(() => {
@@ -535,6 +558,36 @@ export default function TeacherDashboard({ user, userDoc }) {
                     </div>
                   </div>
                 </div>
+
+                {/* Announcement Banners */}
+                {announcements.length > 0 && (
+                  <div className="space-y-3 mb-6">
+                    {announcements.map((ann) => (
+                      <div
+                        key={ann.id}
+                        className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+                          ann.priority === "urgent"
+                            ? "bg-red-50 border-red-200 text-red-800"
+                            : "bg-blue-50 border-blue-200 text-blue-800"
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg flex-shrink-0 ${
+                          ann.priority === "urgent" ? "bg-red-100" : "bg-blue-100"
+                        }`}>
+                          {ann.priority === "urgent" ? (
+                            <AlertTriangle size={18} className="text-red-600" />
+                          ) : (
+                            <Megaphone size={18} className="text-blue-600" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-sm">{ann.title}</h4>
+                          <p className="text-sm opacity-80 mt-0.5 whitespace-pre-wrap">{ann.message}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Stat Cards - 4 cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
