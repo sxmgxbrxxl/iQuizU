@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - ARGIE
+      - SAM
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
