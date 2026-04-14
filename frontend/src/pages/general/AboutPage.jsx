@@ -36,7 +36,7 @@ export default function AboutPage() {
 
             <div className="px-4 md:px-20 lg:px-40 mx-auto mt-10 mb-20">
                 {/* Hero Section */}
-                <img src={LOGO} alt="Logo" className="h-44 w-44 mx-auto mt-10 md:mt-20" />
+                <img src={LOGO} alt="Logo" className="h-44 w-44 mx-auto mt-24 md:mt-20" />
                 <h1 className="text-accent text-4xl md:text-6xl font-bold text-center mt-6 md:mt-10">
                     iQuizU
                 </h1>
@@ -45,7 +45,7 @@ export default function AboutPage() {
                 </p>
 
                 {/* Intro */}
-                <p className="max-w-3xl mx-auto text-center text-base md:text-lg mt-6 px-4 leading-relaxed text-gray-700">
+                <p className="max-w-3xl mx-auto text-justify text-base md:text-lg mt-6 px-4 leading-relaxed text-gray-700">
                     iQuizU is an innovative online quiz platform developed to enhance
                     teaching and learning through interactive assessments. It enables
                     educators to efficiently create, manage, and evaluate quizzes while
@@ -76,9 +76,9 @@ export default function AboutPage() {
                     <h2 className="text-accent text-2xl md:text-3xl font-bold mb-3">
                         Our Mission
                     </h2>
-                    <p className="text-gray-700 text-base md:text-lg leading-relaxed">
+                    <p className="text-gray-700 text-base md:text-lg leading-relaxed text-justify">
                         We aim to support institutions in fostering a more dynamic,
-                        data-driven approach to education — ensuring that both teachers
+                        data-driven approach to education ensuring that both teachers
                         and learners achieve their fullest potential through continuous
                         learning and healthy academic competition.
                     </p>
