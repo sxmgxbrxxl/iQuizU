@@ -526,7 +526,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                 {/* Header with greeting */}
                 {/* Header with greeting */}
                 {/* Header with greeting */}
-                <div className="relative bg-blue-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-blue-500 flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+                <div className="relative bg-blue-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-blue-500 flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4 animate-fadeIn">
                   {/* Background blob design */}
                   <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
 
@@ -565,7 +565,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                     {announcements.map((ann) => (
                       <div
                         key={ann.id}
-                        className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+                        className={`flex items-start gap-3 p-4 rounded-xl border transition-all animate-slideIn ${
                           ann.priority === "urgent"
                             ? "bg-red-50 border-red-200 text-red-800"
                             : "bg-blue-50 border-blue-200 text-blue-800"
@@ -590,7 +590,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                 )}
 
                 {/* Stat Cards - 4 cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn">
                   {/* Classes Card */}
                   <div className="relative bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all overflow-hidden p-6 group">
                     <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100 rounded-full opacity-60 transition-transform group-hover:scale-110 pointer-events-none" />
@@ -697,11 +697,11 @@ export default function TeacherDashboard({ user, userDoc }) {
 
                 {/* Quick Actions */}
                 <div className="mt-6">
-                  <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2 animate-fadeIn">
                     <Sparkles size={20} className="text-gray-400" />
                     Quick Actions
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 animate-fadeIn">
                     <button
                       onClick={() => navigate("/teacher/quizzes")}
                       className="relative overflow-hidden group flex flex-col items-start text-left bg-white border border-gray-100 p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1"
@@ -765,7 +765,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                 </div>
 
                 {/* Bottom Section: Recent Quizzes + Recent Activity */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8 animate-fadeIn">
                   {/* Recent Quizzes - takes 3/5 */}
                   <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
