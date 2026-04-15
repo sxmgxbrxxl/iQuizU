@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   collection,
@@ -45,6 +45,38 @@ import {
   AreaChart,
   Area
 } from "recharts";
+
+const reportsAnalyticsCache = {};
+
+function getTeacherCache(userId) {
+  if (!userId) {
+    return {
+      classes: null,
+      quizzesByClass: {},
+      analyticsByQuizClass: {},
+      inFlight: {
+        classes: null,
+        quizzesByClass: {},
+        analyticsByQuizClass: {}
+      }
+    };
+  }
+
+  if (!reportsAnalyticsCache[userId]) {
+    reportsAnalyticsCache[userId] = {
+      classes: null,
+      quizzesByClass: {},
+      analyticsByQuizClass: {},
+      inFlight: {
+        classes: null,
+        quizzesByClass: {},
+        analyticsByQuizClass: {}
+      }
+    };
+  }
+
+  return reportsAnalyticsCache[userId];
+}
 
 // ─── Custom Toast Notification ───────────────────────────────────────────────
 function Toast({ toast, onClose }) {
@@ -145,6 +177,8 @@ function ConfirmDialog({ isOpen, title, message, confirmLabel, cancelLabel, onCo
 }
 
 export default function ReportsAnalytics() {
+  const currentUserId = auth.currentUser?.uid || null;
+  const activeCache = getTeacherCache(currentUserId);
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -158,6 +192,12 @@ export default function ReportsAnalytics() {
   const [savingChanges, setSavingChanges] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // ─── In-memory cache refs ─────────────────────────────────────────────────
+  // Persists across renders without causing re-renders
+  const classesCache = useRef(activeCache.classes);          // null = not loaded yet
+  const quizzesCache = useRef(activeCache.quizzesByClass);   // { [classId]: quizArray }
+  const analyticsCache = useRef(activeCache.analyticsByQuizClass); // { [`${quizId}_${classId}`]: analyticsObj }
+
   // Toast state
   const [toast, setToast] = useState(null);
   const showToast = useCallback((type, message) => {
@@ -169,8 +209,24 @@ export default function ReportsAnalytics() {
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
 
   useEffect(() => {
+    const userCache = getTeacherCache(currentUserId);
+    classesCache.current = userCache.classes;
+    quizzesCache.current = userCache.quizzesByClass;
+    analyticsCache.current = userCache.analyticsByQuizClass;
+
+    setClasses(userCache.classes || []);
+    setSelectedClass(null);
+    setQuizzes([]);
+    setSelectedQuiz(null);
+    setAnalytics(null);
+    setLoading(userCache.classes === null);
+    setLoadingQuizzes(false);
+    setLoadingAnalytics(false);
+  }, [currentUserId]);
+
+  useEffect(() => {
     fetchTeacherClasses();
-  }, []);
+  }, [currentUserId]);
 
   useEffect(() => {
     if (selectedClass) {
@@ -179,74 +235,143 @@ export default function ReportsAnalytics() {
   }, [selectedClass]);
 
   const fetchTeacherClasses = async () => {
+    // ── Return from cache if already loaded ──
+    if (classesCache.current !== null) {
+      setClasses(classesCache.current);
+      setLoading(false);
+      return;
+    }
+
+    if (activeCache.inFlight.classes) {
+      setLoading(true);
+      try {
+        const cachedClasses = await activeCache.inFlight.classes;
+        setClasses(cachedClasses);
+      } catch (error) {
+        console.error("Error fetching classes:", error);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     setLoading(true);
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) return;
 
-      const classesRef = collection(db, "classes");
-      const q = query(classesRef, where("teacherId", "==", currentUser.uid));
-      const snapshot = await getDocs(q);
+      activeCache.inFlight.classes = (async () => {
+        const cachedClassesRef = collection(db, "classes");
+        const classesQuery = query(cachedClassesRef, where("teacherId", "==", currentUser.uid));
+        const classesSnapshot = await getDocs(classesQuery);
 
-      const classData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+        const cachedClassData = classesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-      setClasses(classData);
+        activeCache.classes = cachedClassData;
+        classesCache.current = cachedClassData;
+        return cachedClassData;
+      })();
+
+      const resolvedClasses = await activeCache.inFlight.classes;
+      setClasses(resolvedClasses);
+      return;
     } catch (error) {
       console.error("Error fetching classes:", error);
     } finally {
+      activeCache.inFlight.classes = null;
       setLoading(false);
     }
   };
 
   const fetchClassQuizzes = async () => {
-    setLoadingQuizzes(true);
-    try {
-      const assignmentsRef = collection(db, "assignedQuizzes");
-      const q = query(
-        assignmentsRef,
-        where("classId", "==", selectedClass.id),
-        where("completed", "==", true)
-      );
-      const snapshot = await getDocs(q);
+    const classId = selectedClass.id;
 
-      const quizIds = new Set();
-      const quizData = [];
-
-      for (const assignDoc of snapshot.docs) {
-        const data = assignDoc.data();
-        if (!quizIds.has(data.quizId)) {
-          quizIds.add(data.quizId);
-
-          const quizRef = doc(db, "quizzes", data.quizId);
-          const quizSnap = await getDoc(quizRef);
-
-          if (quizSnap.exists()) {
-            quizData.push({
-              id: data.quizId,
-              title: quizSnap.data().title,
-              quizMode: data.quizMode,
-              assignedAt: data.assignedAt
-            });
-          }
-        }
-      }
-
-      quizData.sort((a, b) => {
-        if (a.assignedAt && b.assignedAt) {
-          return b.assignedAt.seconds - a.assignedAt.seconds;
-        }
-        return 0;
-      });
-
-      setQuizzes(quizData);
+    // ── Return from cache if already loaded ──
+    if (quizzesCache.current[classId]) {
+      setQuizzes(quizzesCache.current[classId]);
       setSelectedQuiz(null);
       setAnalytics(null);
+      return;
+    }
+
+    if (activeCache.inFlight.quizzesByClass[classId]) {
+      setLoadingQuizzes(true);
+      try {
+        const cachedQuizzes = await activeCache.inFlight.quizzesByClass[classId];
+        setQuizzes(cachedQuizzes);
+        setSelectedQuiz(null);
+        setAnalytics(null);
+      } catch (error) {
+        console.error("Error fetching quizzes:", error);
+      } finally {
+        setLoadingQuizzes(false);
+      }
+      return;
+    }
+
+    setLoadingQuizzes(true);
+    try {
+      activeCache.inFlight.quizzesByClass[classId] = (async () => {
+        const cachedAssignmentsRef = collection(db, "assignedQuizzes");
+        const quizzesQuery = query(
+          cachedAssignmentsRef,
+          where("classId", "==", classId),
+          where("completed", "==", true)
+        );
+        const assignmentsSnapshot = await getDocs(quizzesQuery);
+
+        const latestAssignmentsByQuiz = new Map();
+        assignmentsSnapshot.docs.forEach((assignDoc) => {
+          const data = assignDoc.data();
+          const existing = latestAssignmentsByQuiz.get(data.quizId);
+          const existingSeconds = existing?.assignedAt?.seconds || 0;
+          const currentSeconds = data.assignedAt?.seconds || 0;
+
+          if (!existing || currentSeconds > existingSeconds) {
+            latestAssignmentsByQuiz.set(data.quizId, data);
+          }
+        });
+
+        const cachedQuizData = (
+          await Promise.all(
+            Array.from(latestAssignmentsByQuiz.entries()).map(async ([quizId, assignmentData]) => {
+              const quizSnap = await getDoc(doc(db, "quizzes", quizId));
+              if (!quizSnap.exists()) return null;
+
+              return {
+                id: quizId,
+                title: quizSnap.data().title,
+                quizMode: assignmentData.quizMode,
+                assignedAt: assignmentData.assignedAt
+              };
+            })
+          )
+        ).filter(Boolean);
+
+        cachedQuizData.sort((a, b) => {
+          if (a.assignedAt && b.assignedAt) {
+            return b.assignedAt.seconds - a.assignedAt.seconds;
+          }
+          return 0;
+        });
+
+        activeCache.quizzesByClass[classId] = cachedQuizData;
+        quizzesCache.current = activeCache.quizzesByClass;
+        return cachedQuizData;
+      })();
+
+      const resolvedQuizzes = await activeCache.inFlight.quizzesByClass[classId];
+      setQuizzes(resolvedQuizzes);
+      setSelectedQuiz(null);
+      setAnalytics(null);
+      return;
     } catch (error) {
       console.error("Error fetching quizzes:", error);
     } finally {
+      delete activeCache.inFlight.quizzesByClass[classId];
       setLoadingQuizzes(false);
     }
   };
@@ -332,133 +457,150 @@ export default function ReportsAnalytics() {
   };
 
   const fetchQuizAnalytics = async (quizId, quizMode) => {
+    const cacheKey = `${quizId}_${selectedClass.id}`;
+
+    // ── Return from cache if already loaded ──
+    if (analyticsCache.current[cacheKey]) {
+      setAnalytics(analyticsCache.current[cacheKey]);
+      return;
+    }
+
+    if (activeCache.inFlight.analyticsByQuizClass[cacheKey]) {
+      setLoadingAnalytics(true);
+      try {
+        const cachedAnalytics = await activeCache.inFlight.analyticsByQuizClass[cacheKey];
+        if (cachedAnalytics) setAnalytics(cachedAnalytics);
+      } catch (error) {
+        console.error("Error fetching analytics:", error);
+      } finally {
+        setLoadingAnalytics(false);
+      }
+      return;
+    }
+
     setLoadingAnalytics(true);
     try {
-      const quizRef = doc(db, "quizzes", quizId);
-      const quizSnap = await getDoc(quizRef);
+      activeCache.inFlight.analyticsByQuizClass[cacheKey] = (async () => {
+        const cachedQuizRef = doc(db, "quizzes", quizId);
+        const cachedQuizSnap = await getDoc(cachedQuizRef);
 
-      if (!quizSnap.exists()) {
-        console.error("Quiz not found");
-        return;
-      }
-
-      const quizData = quizSnap.data();
-      const questions = quizData.questions || [];
-
-      const submissionsRef = collection(db, "quizSubmissions");
-      const q = query(
-        submissionsRef,
-        where("quizId", "==", quizId)
-      );
-      const submissionsSnapshot = await getDocs(q);
-
-      const submissions = [];
-      for (const subDoc of submissionsSnapshot.docs) {
-        const subData = subDoc.data();
-
-        const assignmentRef = doc(db, "assignedQuizzes", subData.assignmentId);
-        const assignmentSnap = await getDoc(assignmentRef);
-
-        if (assignmentSnap.exists() && assignmentSnap.data().classId === selectedClass.id) {
-          submissions.push({
-            id: subDoc.id,
-            ...subData
-          });
+        if (!cachedQuizSnap.exists()) {
+          console.error("Quiz not found");
+          return null;
         }
-      }
 
-      if (submissions.length === 0) {
-        setAnalytics({
+        const cachedQuizData = cachedQuizSnap.data();
+        const cachedQuestions = cachedQuizData.questions || [];
+
+        const cachedSubmissionsRef = collection(db, "quizSubmissions");
+        const analyticsQuery = query(
+          cachedSubmissionsRef,
+          where("quizId", "==", quizId),
+          where("classId", "==", selectedClass.id)
+        );
+        const cachedSubmissionsSnapshot = await getDocs(analyticsQuery);
+
+        const classSubmissions = cachedSubmissionsSnapshot.docs.map((subDoc) => ({
+          id: subDoc.id,
+          ...subDoc.data()
+        }));
+
+        if (classSubmissions.length === 0) {
+          const emptyAnalytics = {
+            quizId,
+            quizMode,
+            questions: cachedQuestions,
+            totalStudents: 0,
+            averageRawScore: 0,
+            averageBase50Score: 0,
+            itemAnalysis: [],
+            lowPerformers: [],
+            topPerformers: [],
+            submissions: []
+          };
+
+          activeCache.analyticsByQuizClass[cacheKey] = emptyAnalytics;
+          analyticsCache.current = activeCache.analyticsByQuizClass;
+          return emptyAnalytics;
+        }
+
+        const computedItemAnalysis = cachedQuestions.map((question, qIndex) => {
+          let correctCount = 0;
+
+          classSubmissions.forEach(sub => {
+            const studentAnswer = sub.answers?.[qIndex];
+            if (!studentAnswer) return;
+
+            let isCorrect = false;
+
+            if (question.type === "multiple_choice") {
+              const correctChoice = question.choices?.find(c => c.is_correct);
+              isCorrect = correctChoice && studentAnswer === correctChoice.text;
+            } else if (question.type === "true_false") {
+              isCorrect = studentAnswer.toLowerCase() === question.correct_answer.toLowerCase();
+            } else if (question.type === "identification") {
+              isCorrect = studentAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+            }
+
+            if (isCorrect) correctCount++;
+          });
+
+          const percentCorrect = (correctCount / classSubmissions.length) * 100;
+          const difficultyIndex = calculateDifficultyIndex(percentCorrect);
+          const discriminationIndex = calculateDiscriminationIndex(classSubmissions, qIndex, question);
+          const quality = getItemQuality(difficultyIndex, discriminationIndex);
+
+          return {
+            questionNumber: qIndex + 1,
+            questionText: question.question,
+            type: question.type,
+            correctCount,
+            totalStudents: classSubmissions.length,
+            percentCorrect: Math.round(percentCorrect),
+            difficultyIndex: Math.round(difficultyIndex * 100) / 100,
+            discriminationIndex,
+            quality,
+            points: question.points || 1,
+            index: qIndex
+          };
+        });
+
+        const averageRawScore = classSubmissions.reduce((sum, sub) => sum + (sub.rawScorePercentage || 0), 0) / classSubmissions.length;
+        const averageBase50Score = classSubmissions.reduce((sum, sub) => sum + (sub.base50ScorePercentage || 0), 0) / classSubmissions.length;
+
+        const lowPerformers = computedItemAnalysis
+          .filter(item => item.percentCorrect < 50)
+          .map(item => `Q${item.questionNumber}`);
+
+        const topPerformers = computedItemAnalysis
+          .filter(item => item.percentCorrect === 100)
+          .map(item => `Q${item.questionNumber}`);
+
+        const cachedResult = {
           quizId,
           quizMode,
-          questions,
-          totalStudents: 0,
-          averageRawScore: 0,
-          averageBase50Score: 0,
-          itemAnalysis: [],
-          lowPerformers: [],
-          topPerformers: [],
-          submissions: []
-        });
-        setLoadingAnalytics(false);
-        return;
-      }
-
-      const itemAnalysis = questions.map((question, qIndex) => {
-        let correctCount = 0;
-        let correctAnswer = "";
-
-        if (question.type === "multiple_choice") {
-          const correctChoice = question.choices?.find(c => c.is_correct);
-          correctAnswer = correctChoice?.text || "";
-        } else {
-          correctAnswer = question.correct_answer || "";
-        }
-
-        submissions.forEach(sub => {
-          const studentAnswer = sub.answers?.[qIndex];
-          if (!studentAnswer) return;
-
-          let isCorrect = false;
-
-          if (question.type === "multiple_choice") {
-            const correctChoice = question.choices?.find(c => c.is_correct);
-            isCorrect = correctChoice && studentAnswer === correctChoice.text;
-          } else if (question.type === "true_false") {
-            isCorrect = studentAnswer.toLowerCase() === question.correct_answer.toLowerCase();
-          } else if (question.type === "identification") {
-            isCorrect = studentAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-          }
-
-          if (isCorrect) correctCount++;
-        });
-
-        const percentCorrect = (correctCount / submissions.length) * 100;
-        const difficultyIndex = calculateDifficultyIndex(percentCorrect);
-        const discriminationIndex = calculateDiscriminationIndex(submissions, qIndex, question);
-        const quality = getItemQuality(difficultyIndex, discriminationIndex);
-
-        return {
-          questionNumber: qIndex + 1,
-          questionText: question.question,
-          type: question.type,
-          correctCount,
-          totalStudents: submissions.length,
-          percentCorrect: Math.round(percentCorrect),
-          difficultyIndex: Math.round(difficultyIndex * 100) / 100,
-          discriminationIndex,
-          quality,
-          points: question.points || 1,
-          index: qIndex
+          questions: cachedQuestions,
+          totalStudents: classSubmissions.length,
+          averageRawScore: Math.round(averageRawScore),
+          averageBase50Score: Math.round(averageBase50Score),
+          itemAnalysis: computedItemAnalysis,
+          lowPerformers,
+          topPerformers,
+          submissions: classSubmissions
         };
-      });
 
-      const averageRawScore = submissions.reduce((sum, sub) => sum + (sub.rawScorePercentage || 0), 0) / submissions.length;
-      const averageBase50Score = submissions.reduce((sum, sub) => sum + (sub.base50ScorePercentage || 0), 0) / submissions.length;
+        activeCache.analyticsByQuizClass[cacheKey] = cachedResult;
+        analyticsCache.current = activeCache.analyticsByQuizClass;
+        return cachedResult;
+      })();
 
-      const lowPerformers = itemAnalysis
-        .filter(item => item.percentCorrect < 50)
-        .map(item => `Q${item.questionNumber}`);
-
-      const topPerformers = itemAnalysis
-        .filter(item => item.percentCorrect === 100)
-        .map(item => `Q${item.questionNumber}`);
-
-      setAnalytics({
-        quizId,
-        quizMode,
-        questions,
-        totalStudents: submissions.length,
-        averageRawScore: Math.round(averageRawScore),
-        averageBase50Score: Math.round(averageBase50Score),
-        itemAnalysis,
-        lowPerformers,
-        topPerformers,
-        submissions
-      });
+      const resolvedAnalytics = await activeCache.inFlight.analyticsByQuizClass[cacheKey];
+      if (resolvedAnalytics) setAnalytics(resolvedAnalytics);
+      return;
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
+      delete activeCache.inFlight.analyticsByQuizClass[cacheKey];
       setLoadingAnalytics(false);
     }
   };
@@ -480,6 +622,14 @@ export default function ReportsAnalytics() {
       bloom_classification: question.bloom_classification || "LOTS"
     });
     setShowEditModal(true);
+  };
+
+  // ─── Invalidate cache for this quiz after edits ───────────────────────────
+  const invalidateAnalyticsCache = (quizId) => {
+    const cacheKey = `${quizId}_${selectedClass.id}`;
+    delete analyticsCache.current[cacheKey];
+    delete activeCache.analyticsByQuizClass[cacheKey];
+    delete activeCache.inFlight.analyticsByQuizClass[cacheKey];
   };
 
   const handleSaveQuestionChanges = async () => {
@@ -540,6 +690,9 @@ export default function ReportsAnalytics() {
 
       await recalculateStudentScores(analytics.quizId, editingQuestion, oldQuestion, updatedQuestions[editingQuestion], updatedQuestions);
 
+      // ── Invalidate cache so fresh data loads next time ──
+      invalidateAnalyticsCache(analytics.quizId);
+
       showToast("success", "Question updated successfully! Student scores have been recalculated.");
       setShowEditModal(false);
       setEditingQuestion(null);
@@ -571,7 +724,6 @@ export default function ReportsAnalytics() {
   };
 
   const executeDeleteQuestion = async () => {
-
     setSavingChanges(true);
     try {
       const deletedQuestion = analytics.questions[editingQuestion];
@@ -596,6 +748,9 @@ export default function ReportsAnalytics() {
 
       await recalculateStudentScoresAfterDeletion(analytics.quizId, editingQuestion, deletedQuestion, updatedQuestions);
 
+      // ── Invalidate cache so fresh data loads next time ──
+      invalidateAnalyticsCache(analytics.quizId);
+
       showToast("success", "Question deleted successfully! Student scores have been recalculated.");
       setShowEditModal(false);
       setEditingQuestion(null);
@@ -612,7 +767,11 @@ export default function ReportsAnalytics() {
   const recalculateStudentScores = async (quizId, questionIndex, oldQuestion, newQuestion, allQuestions) => {
     try {
       const submissionsRef = collection(db, "quizSubmissions");
-      const q = query(submissionsRef, where("quizId", "==", quizId));
+      const q = query(
+        submissionsRef,
+        where("quizId", "==", quizId),
+        where("classId", "==", selectedClass.id)
+      );
       const submissionsSnapshot = await getDocs(q);
 
       const batch = writeBatch(db);
@@ -621,52 +780,46 @@ export default function ReportsAnalytics() {
         const subData = subDoc.data();
 
         const assignmentRef = doc(db, "assignedQuizzes", subData.assignmentId);
-        const assignmentSnap = await getDoc(assignmentRef);
+        let newScore = 0;
+        let correctCount = 0;
 
-        if (assignmentSnap.exists() && assignmentSnap.data().classId === selectedClass.id) {
-          let newScore = 0;
-          let correctCount = 0;
+        allQuestions.forEach((question, qIndex) => {
+          const studentAnswer = subData.answers?.[qIndex];
+          if (!studentAnswer) return;
 
-          allQuestions.forEach((question, qIndex) => {
-            const studentAnswer = subData.answers?.[qIndex];
-            if (!studentAnswer) return;
+          let isCorrect = false;
 
-            let isCorrect = false;
+          if (question.type === "multiple_choice") {
+            const correctChoice = question.choices?.find(c => c.is_correct);
+            isCorrect = correctChoice && studentAnswer === correctChoice.text;
+          } else if (question.type === "true_false") {
+            isCorrect = studentAnswer.toLowerCase() === question.correct_answer.toLowerCase();
+          } else if (question.type === "identification") {
+            isCorrect = studentAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+          }
 
-            if (question.type === "multiple_choice") {
-              const correctChoice = question.choices?.find(c => c.is_correct);
-              isCorrect = correctChoice && studentAnswer === correctChoice.text;
-            } else if (question.type === "true_false") {
-              isCorrect = studentAnswer.toLowerCase() === question.correct_answer.toLowerCase();
-            } else if (question.type === "identification") {
-              isCorrect = studentAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-            }
+          if (isCorrect) {
+            correctCount++;
+            newScore += question.points || 1;
+          }
+        });
 
-            if (isCorrect) {
-              correctCount++;
-              newScore += question.points || 1;
-            }
-          });
+        const totalPoints = allQuestions.reduce((sum, q) => sum + (q.points || 1), 0);
+        const rawScorePercentage = totalPoints > 0 ? Math.round((newScore / totalPoints) * 100) : 0;
+        const base50ScorePercentage = Math.round(50 + (rawScorePercentage / 2));
 
-          const totalPoints = allQuestions.reduce((sum, q) => sum + (q.points || 1), 0);
+        batch.update(subDoc.ref, {
+          score: Math.max(0, newScore),
+          correctPoints: correctCount,
+          totalPoints: totalPoints,
+          rawScorePercentage: rawScorePercentage,
+          base50ScorePercentage: base50ScorePercentage
+        });
 
-          const rawScorePercentage = totalPoints > 0 ? Math.round((newScore / totalPoints) * 100) : 0;
-
-          const base50ScorePercentage = Math.round(50 + (rawScorePercentage / 2));
-
-          batch.update(subDoc.ref, {
-            score: Math.max(0, newScore),
-            correctPoints: correctCount,
-            totalPoints: totalPoints,
-            rawScorePercentage: rawScorePercentage,
-            base50ScorePercentage: base50ScorePercentage
-          });
-
-          batch.update(assignmentRef, {
-            rawScorePercentage: rawScorePercentage,
-            base50ScorePercentage: base50ScorePercentage
-          });
-        }
+        batch.update(assignmentRef, {
+          rawScorePercentage: rawScorePercentage,
+          base50ScorePercentage: base50ScorePercentage
+        });
       }
 
       await batch.commit();
@@ -679,7 +832,11 @@ export default function ReportsAnalytics() {
   const recalculateStudentScoresAfterDeletion = async (quizId, deletedQuestionIndex, deletedQuestion, updatedQuestions) => {
     try {
       const submissionsRef = collection(db, "quizSubmissions");
-      const q = query(submissionsRef, where("quizId", "==", quizId));
+      const q = query(
+        submissionsRef,
+        where("quizId", "==", quizId),
+        where("classId", "==", selectedClass.id)
+      );
       const submissionsSnapshot = await getDocs(q);
 
       const batch = writeBatch(db);
@@ -688,54 +845,48 @@ export default function ReportsAnalytics() {
         const subData = subDoc.data();
 
         const assignmentRef = doc(db, "assignedQuizzes", subData.assignmentId);
-        const assignmentSnap = await getDoc(assignmentRef);
+        let newScore = 0;
+        let correctCount = 0;
 
-        if (assignmentSnap.exists() && assignmentSnap.data().classId === selectedClass.id) {
-          let newScore = 0;
-          let correctCount = 0;
+        updatedQuestions.forEach((question, qIndex) => {
+          const originalIndex = qIndex >= deletedQuestionIndex ? qIndex + 1 : qIndex;
+          const studentAnswer = subData.answers?.[originalIndex];
 
-          updatedQuestions.forEach((question, qIndex) => {
-            const originalIndex = qIndex >= deletedQuestionIndex ? qIndex + 1 : qIndex;
-            const studentAnswer = subData.answers?.[originalIndex];
+          if (!studentAnswer) return;
 
-            if (!studentAnswer) return;
+          let isCorrect = false;
 
-            let isCorrect = false;
+          if (question.type === "multiple_choice") {
+            const correctChoice = question.choices?.find(c => c.is_correct);
+            isCorrect = correctChoice && studentAnswer === correctChoice.text;
+          } else if (question.type === "true_false") {
+            isCorrect = studentAnswer.toLowerCase() === question.correct_answer.toLowerCase();
+          } else if (question.type === "identification") {
+            isCorrect = studentAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+          }
 
-            if (question.type === "multiple_choice") {
-              const correctChoice = question.choices?.find(c => c.is_correct);
-              isCorrect = correctChoice && studentAnswer === correctChoice.text;
-            } else if (question.type === "true_false") {
-              isCorrect = studentAnswer.toLowerCase() === question.correct_answer.toLowerCase();
-            } else if (question.type === "identification") {
-              isCorrect = studentAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-            }
+          if (isCorrect) {
+            correctCount++;
+            newScore += question.points || 1;
+          }
+        });
 
-            if (isCorrect) {
-              correctCount++;
-              newScore += question.points || 1;
-            }
-          });
+        const totalPoints = updatedQuestions.reduce((sum, q) => sum + (q.points || 1), 0);
+        const rawScorePercentage = totalPoints > 0 ? Math.round((newScore / totalPoints) * 100) : 0;
+        const base50ScorePercentage = Math.round(50 + (rawScorePercentage / 2));
 
-          const totalPoints = updatedQuestions.reduce((sum, q) => sum + (q.points || 1), 0);
+        batch.update(subDoc.ref, {
+          score: Math.max(0, newScore),
+          correctPoints: correctCount,
+          totalPoints: totalPoints,
+          rawScorePercentage: rawScorePercentage,
+          base50ScorePercentage: base50ScorePercentage
+        });
 
-          const rawScorePercentage = totalPoints > 0 ? Math.round((newScore / totalPoints) * 100) : 0;
-
-          const base50ScorePercentage = Math.round(50 + (rawScorePercentage / 2));
-
-          batch.update(subDoc.ref, {
-            score: Math.max(0, newScore),
-            correctPoints: correctCount,
-            totalPoints: totalPoints,
-            rawScorePercentage: rawScorePercentage,
-            base50ScorePercentage: base50ScorePercentage
-          });
-
-          batch.update(assignmentRef, {
-            rawScorePercentage: rawScorePercentage,
-            base50ScorePercentage: base50ScorePercentage
-          });
-        }
+        batch.update(assignmentRef, {
+          rawScorePercentage: rawScorePercentage,
+          base50ScorePercentage: base50ScorePercentage
+        });
       }
 
       await batch.commit();
@@ -768,18 +919,14 @@ export default function ReportsAnalytics() {
     return (
       <div className="w-full font-Poppins">
         <div className="relative group flex flex-col mb-4 md:mb-6 w-full animate-fadeIn bg-blue-600 p-10 rounded-3xl overflow-hidden">
-        {/* BLOB */}
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
-
-        <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 z-10">
-          Reports & Analytics
-        </h1>
-        <p className="text-md font-light text-white z-10">
-          View detailed quiz details and student performance and insights.
-        </p>
-      </div>
-
-        {/* Skeleton Class Cards Grid */}
+          <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 z-10">
+            Reports & Analytics
+          </h1>
+          <p className="text-md font-light text-white z-10">
+            View detailed quiz details and student performance and insights.
+          </p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <div
@@ -818,9 +965,7 @@ export default function ReportsAnalytics() {
         color={confirmDialog.color}
       />
       <div className="relative group flex flex-col mb-4 md:mb-6 w-full bg-blue-600 p-10 rounded-3xl overflow-hidden">
-        {/* BLOB */}
         <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
-
         <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 z-10">
           Reports & Analytics
         </h1>
@@ -952,7 +1097,6 @@ export default function ReportsAnalytics() {
 
               {loadingAnalytics && (
                 <>
-                  {/* Skeleton Stat Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-4 md:mb-8">
                     {[1, 2, 3, 4, 5].map((_, i) => (
                       <div
@@ -971,8 +1115,6 @@ export default function ReportsAnalytics() {
                       </div>
                     ))}
                   </div>
-
-                  {/* Skeleton Chart */}
                   <div className="bg-white rounded-2xl p-4 md:p-6 shadow-md mb-4 md:mb-8 animate-pulse">
                     <div className="h-5 bg-gray-200 rounded-lg w-48 mb-4" />
                     <div className="h-48 md:h-64 bg-gray-100 rounded-xl flex items-end justify-around px-4 pb-4 gap-2">
@@ -981,8 +1123,6 @@ export default function ReportsAnalytics() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Skeleton Table */}
                   <div className="bg-white rounded-2xl p-4 md:p-6 shadow-md animate-pulse">
                     <div className="h-5 bg-gray-200 rounded-lg w-56 mb-4" />
                     <div className="space-y-3">
@@ -1096,7 +1236,6 @@ export default function ReportsAnalytics() {
                   </div>
 
                   <div className="bg-white rounded-xl md:rounded-2xl border border-gray-200 mb-4 md:mb-8 overflow-hidden">
-                    {/* Card Header */}
                     <div className="p-4 md:p-6 pb-2 md:pb-3">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
                         <div>
@@ -1106,7 +1245,6 @@ export default function ReportsAnalytics() {
                       </div>
                     </div>
 
-                    {/* Chart */}
                     {analytics.itemAnalysis.length > 0 ? (
                       <div className="px-2 md:px-6 pb-4 md:pb-6">
                         <ResponsiveContainer width="100%" height={window.innerWidth < 768 ? 220 : 350}>
@@ -1500,3 +1638,5 @@ export default function ReportsAnalytics() {
     </div>
   );
 }
+
+
