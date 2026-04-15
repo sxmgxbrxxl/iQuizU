@@ -191,7 +191,6 @@ export default function StudentDashboard({ user, userDoc }) {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        console.log("❌ WALANG LOGGED IN USER");
         return;
       }
 
@@ -213,7 +212,6 @@ export default function StudentDashboard({ user, userDoc }) {
       });
 
       console.log("✅ QUIZ SUBMISSIONS FETCHED:", submissions.length);
-      console.log("📝 SUBMISSIONS DATA:", submissions);
       setQuizSubmissions(submissions);
     } catch (error) {
       console.error("❌ ERROR FETCHING SUBMISSIONS:", error);
@@ -229,9 +227,6 @@ export default function StudentDashboard({ user, userDoc }) {
         console.log("❌ WALANG LOGGED IN USER");
         return;
       }
-
-      console.log("✅ LOGGED IN USER:", currentUser.uid);
-      console.log("📧 EMAIL:", currentUser.email);
 
       const assignedRef = collection(db, "assignedQuizzes");
 
@@ -255,13 +250,6 @@ export default function StudentDashboard({ user, userDoc }) {
 
       snapshot.forEach((doc) => {
         const data = doc.data();
-
-        console.log("📄 DOCUMENT ID:", doc.id);
-        console.log("   - quizTitle:", data.quizTitle);
-        console.log("   - quizMode:", data.quizMode);
-        console.log("   - studentId:", data.studentId);
-        console.log("   - className:", data.className);
-        console.log("   - status:", data.status);
 
         if (data.quizMode === "asynchronous") {
           console.log("   ✅ ASYNCHRONOUS - IDADAGDAG SA LIST");

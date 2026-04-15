@@ -61,7 +61,6 @@ let isAccountCreationInProgress = false;
 
 export function setAccountCreationFlag(value) {
   isAccountCreationInProgress = value;
-  console.log(`🔧 Account creation flag set to: ${value}`);
 }
 
 export function isAccountCreationActive() {
@@ -126,21 +125,13 @@ function App() {
       authStateChangeCountRef.current += 1;
       const changeNumber = authStateChangeCountRef.current;
 
-      console.log(`\n🔄 Auth State Change #${changeNumber}`);
-      console.log(`   User: ${user?.email || "None"}`);
-      console.log(`   UID: ${user?.uid || "None"}`);
-      console.log(`   Account Creation Flag: ${isAccountCreationInProgress}`);
 
       // ✅ CRITICAL: Block ALL auth state changes during account creation
       if (isAccountCreationInProgress) {
-        console.log(
-          `⛔ BLOCKED: Account creation in progress, ignoring change #${changeNumber}`,
-        );
         return;
       }
 
       if (user) {
-        console.log(`✅ Processing user login: ${user.email}`);
         setAuthUser(user);
         previousAuthUserRef.current = user;
 
@@ -159,7 +150,6 @@ function App() {
 
           // ✅ FIXED: Try to find by authUID if still not found
           if (snapshot.empty) {
-            console.log(`🔍 Trying to find by authUID: ${user.uid}`);
             q = query(usersRef, where("authUID", "==", user.uid));
             snapshot = await getDocs(q);
           }
@@ -173,19 +163,10 @@ function App() {
               ...doc.data(),
             };
 
-            console.log(`✅ User document found!`);
-            console.log(`   Document ID: ${doc.id}`);
-            console.log(`   Auth UID: ${user.uid}`);
-            console.log(`   Role: ${userDocWithId.role}`);
-            console.log(
-              `   Name: ${userDocWithId.name || userDocWithId.displayName}`,
-            );
-
             setUserDoc(userDocWithId);
             setRole(userDocWithId.role || null);
           } else {
-            console.log(`⚠️ No user document found for: ${user.email}`);
-            console.log(`   Tried: email, emailAddress, and authUID fields`);
+            
             setUserDoc(null);
             setRole(null);
           }
@@ -197,15 +178,11 @@ function App() {
       } else {
         // ✅ Only clear state if we're not in account creation mode
         if (previousAuthUserRef.current) {
-          console.log(
-            `⚠️ User logged out (was: ${previousAuthUserRef.current.email})`,
-          );
           setAuthUser(null);
           setUserDoc(null);
           setRole(null);
           previousAuthUserRef.current = null;
         } else {
-          console.log(`ℹ️ No user logged in`);
         }
       }
 
