@@ -23,6 +23,10 @@ import {
   Download,
   Shield,
   AlertTriangle,
+  Flag,
+  Clipboard,
+  Timer,
+  Wrench,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { QuizControlPanelSkeleton } from "../../components/SkeletonLoaders";
@@ -1059,9 +1063,16 @@ export default function QuizControlPanel() {
                           }`}
                         >
                           <Shield className="w-3 h-3" />
-                          {student.antiCheatData?.tabSwitchCount > 0
-                            ? `🔄 ${student.antiCheatData.tabSwitchCount}`
-                            : student.antiCheatData?.flaggedForReview ? "Flagged" : "Clean"}
+                          {student.antiCheatData?.tabSwitchCount > 0 ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 inline mr-1" />
+                              {student.antiCheatData.tabSwitchCount}
+                            </>
+                          ) : student.antiCheatData?.flaggedForReview ? (
+                            "Flagged"
+                          ) : (
+                            "Clean"
+                          )}
                         </button>
                       )}
                     </div>
@@ -1106,8 +1117,8 @@ export default function QuizControlPanel() {
       {/* Anti-Cheat Modal */}
       {
         showAntiCheatModal && selectedAntiCheatData && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-3 md:p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-3 md:p-4 animate-ovelayFade">
+            <div className="bg-white rounded-2xl max-w-2xl w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto animate-popIn">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <Shield className={`w-5 h-5 md:w-6 md:h-6 ${selectedAntiCheatData?.flaggedForReview ? "text-red-500" : "text-accent"}`} />
@@ -1128,20 +1139,29 @@ export default function QuizControlPanel() {
               <div className={`p-3 md:p-4 rounded-lg mb-4 md:mb-6 ${selectedAntiCheatData?.flaggedForReview ? "bg-red-50 border border-red-200" : "bg-green-50 border border-green-200"}`}>
                 <p className="font-bold text-title mb-1 text-sm">Status</p>
                 <p className={`text-sm ${selectedAntiCheatData?.flaggedForReview ? "text-red-600 font-semibold" : "text-accent font-semibold"}`}>
-                  {selectedAntiCheatData?.flaggedForReview ? "⚠️ Flagged for Review - Suspicious Activity Detected" : "✓ Clean - No Suspicious Activity"}
+                  {selectedAntiCheatData?.flaggedForReview ? (
+                    <>
+                    <Flag className="w-4 h-4 inline mr-1" />
+                    Flagged for Review - Suspicious Activity Detected </>
+                    ) : (
+                    <>
+                    <Check className="w-4 h-4 inline mr-1" />
+                    Clean - No Suspicious Activity
+                    </>
+                    )}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-3 mb-4 md:mb-6">
                 <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200">
-                  <p className="text-xs md:text-sm font-semibold text-subtext mb-1">🔄 Tab Switches</p>
+                  <p className="text-xs md:text-sm font-semibold text-subtext mb-1"><RefreshCw className="w-4 h-4 inline mr-1"/> Tab Switches</p>
                   <p className="text-lg md:text-xl font-bold text-title">{selectedAntiCheatData?.tabSwitchCount || 0}</p>
                   <p className="text-xs text-subsubtext mt-1">Times left the quiz</p>
                 </div>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200 mb-4 md:mb-6">
-                <p className="text-xs md:text-sm font-semibold text-subtext mb-3">📋 Detailed Activity Timeline</p>
+                <p className="text-xs md:text-sm font-semibold text-subtext mb-3"> <Clipboard className="w-4 h-4 inline mr-1"/>Detailed Activity Timeline</p>
                 {selectedAntiCheatData?.suspiciousActivities && selectedAntiCheatData.suspiciousActivities.length > 0 ? (
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {[...selectedAntiCheatData.suspiciousActivities].reverse().map((activity, idx) => {
@@ -1150,16 +1170,16 @@ export default function QuizControlPanel() {
                       const activityMin = activityTime.getMinutes().toString().padStart(2, '0');
                       const activitySec = activityTime.getSeconds().toString().padStart(2, '0');
 
-                      let icon = '⚠️';
+                      let icon = <AlertTriangle className="w-4 h-4 inline"/>;
                       let bgColor = 'bg-yellow-50 border-yellow-200';
                       let textColor = 'text-yellow-700';
 
                       if (activity.type === 'tab_switch') {
-                        icon = '🔄';
+                        icon = <RefreshCw className="w-4 h-4 inline"/>;
                         bgColor = 'bg-blue-50 border-blue-200';
                         textColor = 'text-blue-700';
                       } else if (activity.type === 'dev_tools_attempt') {
-                        icon = '🛠️';
+                        icon = <Wrench className="w-4 h-4 inline"/>;
                         bgColor = 'bg-red-50 border-red-200';
                         textColor = 'text-red-700';
                       }
@@ -1197,7 +1217,7 @@ export default function QuizControlPanel() {
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3 md:p-4 border border-gray-200 mb-4 md:mb-6">
-                <p className="text-xs md:text-sm font-semibold text-subtext mb-2">⏱️ Quiz Duration</p>
+                <p className="text-xs md:text-sm font-semibold text-subtext mb-2"> <Timer className="w-4 h-4 inline mr-1"/> Quiz Duration</p>
                 <p className="text-sm text-subtext">
                   {Math.floor((selectedAntiCheatData?.quizDuration || 0) / 60)} minutes {(selectedAntiCheatData?.quizDuration || 0) % 60} seconds
                 </p>
