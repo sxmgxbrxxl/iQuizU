@@ -1190,7 +1190,7 @@ export default function ReportsAnalytics() {
                   </div>
 
                   <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-md mb-4 md:mb-8">
-                    <h3 className="text-sm md:text-lg font-bold text-gray-800 mb-3 md:mb-4">Item Quality Legend (Hopkins & Antes)</h3>
+                    <h3 className="text-sm md:text-lg font-bold text-gray-800 mb-3 md:mb-4">Item Quality Legend</h3>
                     <div className="grid grid-cols-3 gap-2 md:gap-4">
                       <div className="flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 p-2 md:p-4 bg-blue-50 border border-blue-200 md:border-2 rounded-lg text-center md:text-left">
                         <div className="w-4 h-4 md:w-6 md:h-6 bg-blue-500 rounded-full flex-shrink-0"></div>
