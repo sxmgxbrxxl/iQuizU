@@ -168,7 +168,7 @@ const handleTouchEnd = () => {
                   <h2 className="text-2xl md:text-4xl font-semibold tracking-tight">
                     {card.title}
                   </h2>
-                  <p className="text-sm md:text-base text-gray-500 font-light leading-relaxed">
+                  <p className="text-lg md:text-base text-gray-500 font-light leading-relaxed">
                     {card.description}
                   </p>
                 </div>
