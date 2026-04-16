@@ -6,7 +6,9 @@ from app.routes import quiz_routes, email_routes, recommendation_routes
 app = FastAPI(
     title="Quiz Generator API",
     description="AI-powered quiz generation using Gemini",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url=None,
+    redoc_url=None,
 )   
 
 ALLOWED_ORIGINS = [
@@ -39,7 +41,7 @@ app.include_router(recommendation_routes.router, prefix="/api", tags=["Recommend
 
 @app.get("/")
 async def root():
-    return {"message": "Quiz Generator API", "status": "running", "docs": "/docs"}
+    return {"message": "Quiz Generator API", "status": "running"}
 
 @app.get("/health")
 async def health_check():
