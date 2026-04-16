@@ -8,7 +8,8 @@ import {
   doc,
   getDoc,
   updateDoc,
-  writeBatch
+  writeBatch,
+  onSnapshot
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
 import {
@@ -225,104 +226,61 @@ export default function ReportsAnalytics() {
   }, [currentUserId]);
 
   useEffect(() => {
-    fetchTeacherClasses();
-  }, [currentUserId]);
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
 
-  useEffect(() => {
-    if (selectedClass) {
-      fetchClassQuizzes();
-    }
-  }, [selectedClass]);
-
-  const fetchTeacherClasses = async () => {
-    // ── Return from cache if already loaded ──
+    // Show from cache immediately if available
     if (classesCache.current !== null) {
       setClasses(classesCache.current);
       setLoading(false);
-      return;
-    }
-
-    if (activeCache.inFlight.classes) {
+    } else {
       setLoading(true);
-      try {
-        const cachedClasses = await activeCache.inFlight.classes;
-        setClasses(cachedClasses);
-      } catch (error) {
-        console.error("Error fetching classes:", error);
-      } finally {
-        setLoading(false);
-      }
-      return;
     }
 
-    setLoading(true);
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
-
-      activeCache.inFlight.classes = (async () => {
-        const cachedClassesRef = collection(db, "classes");
-        const classesQuery = query(cachedClassesRef, where("teacherId", "==", currentUser.uid));
-        const classesSnapshot = await getDocs(classesQuery);
-
-        const cachedClassData = classesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        activeCache.classes = cachedClassData;
-        classesCache.current = cachedClassData;
-        return cachedClassData;
-      })();
-
-      const resolvedClasses = await activeCache.inFlight.classes;
-      setClasses(resolvedClasses);
-      return;
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-    } finally {
-      activeCache.inFlight.classes = null;
+    const cachedClassesRef = collection(db, "classes");
+    const classesQuery = query(cachedClassesRef, where("teacherId", "==", currentUser.uid));
+    
+    // Real-time listener for classes
+    const unsubscribe = onSnapshot(classesQuery, (snapshot) => {
+      const cachedClassData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      activeCache.classes = cachedClassData;
+      classesCache.current = cachedClassData;
+      setClasses(cachedClassData);
       setLoading(false);
-    }
-  };
+    }, (error) => {
+      console.error("Error fetching classes real-time:", error);
+      setLoading(false);
+    });
 
-  const fetchClassQuizzes = async () => {
+    return () => unsubscribe();
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!selectedClass) return;
+
     const classId = selectedClass.id;
 
-    // ── Return from cache if already loaded ──
+    // Show from cache immediately if available
     if (quizzesCache.current[classId]) {
       setQuizzes(quizzesCache.current[classId]);
-      setSelectedQuiz(null);
-      setAnalytics(null);
-      return;
-    }
-
-    if (activeCache.inFlight.quizzesByClass[classId]) {
+    } else {
       setLoadingQuizzes(true);
-      try {
-        const cachedQuizzes = await activeCache.inFlight.quizzesByClass[classId];
-        setQuizzes(cachedQuizzes);
-        setSelectedQuiz(null);
-        setAnalytics(null);
-      } catch (error) {
-        console.error("Error fetching quizzes:", error);
-      } finally {
-        setLoadingQuizzes(false);
-      }
-      return;
     }
 
-    setLoadingQuizzes(true);
-    try {
-      activeCache.inFlight.quizzesByClass[classId] = (async () => {
-        const cachedAssignmentsRef = collection(db, "assignedQuizzes");
-        const quizzesQuery = query(
-          cachedAssignmentsRef,
-          where("classId", "==", classId),
-          where("completed", "==", true)
-        );
-        const assignmentsSnapshot = await getDocs(quizzesQuery);
+    const cachedAssignmentsRef = collection(db, "assignedQuizzes");
+    const quizzesQuery = query(
+      cachedAssignmentsRef,
+      where("classId", "==", classId),
+      where("completed", "==", true)
+    );
 
+    // Real-time listener for assigned quizzes
+    const unsubscribe = onSnapshot(quizzesQuery, async (assignmentsSnapshot) => {
+      try {
         const latestAssignmentsByQuiz = new Map();
         assignmentsSnapshot.docs.forEach((assignDoc) => {
           const data = assignDoc.data();
@@ -360,21 +318,19 @@ export default function ReportsAnalytics() {
 
         activeCache.quizzesByClass[classId] = cachedQuizData;
         quizzesCache.current = activeCache.quizzesByClass;
-        return cachedQuizData;
-      })();
-
-      const resolvedQuizzes = await activeCache.inFlight.quizzesByClass[classId];
-      setQuizzes(resolvedQuizzes);
-      setSelectedQuiz(null);
-      setAnalytics(null);
-      return;
-    } catch (error) {
-      console.error("Error fetching quizzes:", error);
-    } finally {
-      delete activeCache.inFlight.quizzesByClass[classId];
+        setQuizzes(cachedQuizData);
+      } catch (error) {
+        console.error("Error parsing real-time quizzes:", error);
+      } finally {
+        setLoadingQuizzes(false);
+      }
+    }, (error) => {
+      console.error("Error fetching quizzes real-time:", error);
       setLoadingQuizzes(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, [selectedClass]);
 
   const calculateDifficultyIndex = (percentCorrect) => {
     return percentCorrect / 100;
@@ -456,54 +412,46 @@ export default function ReportsAnalytics() {
     }
   };
 
-  const fetchQuizAnalytics = async (quizId, quizMode) => {
+  useEffect(() => {
+    if (!selectedQuiz || !selectedClass) return;
+
+    const quizId = selectedQuiz.id;
+    const quizMode = selectedQuiz.quizMode;
     const cacheKey = `${quizId}_${selectedClass.id}`;
 
-    // ── Return from cache if already loaded ──
+    // Show from cache immediately if available
     if (analyticsCache.current[cacheKey]) {
       setAnalytics(analyticsCache.current[cacheKey]);
-      return;
-    }
-
-    if (activeCache.inFlight.analyticsByQuizClass[cacheKey]) {
+    } else {
       setLoadingAnalytics(true);
-      try {
-        const cachedAnalytics = await activeCache.inFlight.analyticsByQuizClass[cacheKey];
-        if (cachedAnalytics) setAnalytics(cachedAnalytics);
-      } catch (error) {
-        console.error("Error fetching analytics:", error);
-      } finally {
-        setLoadingAnalytics(false);
-      }
-      return;
     }
 
-    setLoadingAnalytics(true);
-    try {
-      activeCache.inFlight.analyticsByQuizClass[cacheKey] = (async () => {
-        const cachedQuizRef = doc(db, "quizzes", quizId);
-        const cachedQuizSnap = await getDoc(cachedQuizRef);
+    const cachedSubmissionsRef = collection(db, "quizSubmissions");
+    const analyticsQuery = query(
+      cachedSubmissionsRef,
+      where("quizId", "==", quizId),
+      where("classId", "==", selectedClass.id)
+    );
 
-        if (!cachedQuizSnap.exists()) {
-          console.error("Quiz not found");
-          return null;
-        }
-
-        const cachedQuizData = cachedQuizSnap.data();
-        const cachedQuestions = cachedQuizData.questions || [];
-
-        const cachedSubmissionsRef = collection(db, "quizSubmissions");
-        const analyticsQuery = query(
-          cachedSubmissionsRef,
-          where("quizId", "==", quizId),
-          where("classId", "==", selectedClass.id)
-        );
-        const cachedSubmissionsSnapshot = await getDocs(analyticsQuery);
-
+    // Real-time listener for quiz submissions
+    const unsubscribe = onSnapshot(analyticsQuery, async (cachedSubmissionsSnapshot) => {
+      try {
         const classSubmissions = cachedSubmissionsSnapshot.docs.map((subDoc) => ({
           id: subDoc.id,
           ...subDoc.data()
         }));
+
+        const cachedQuizRef = doc(db, "quizzes", quizId);
+        const cachedQuizSnap = await getDoc(cachedQuizRef);
+        
+        if (!cachedQuizSnap.exists()) {
+          console.error("Quiz not found");
+          setLoadingAnalytics(false);
+          return;
+        }
+
+        const cachedQuizData = cachedQuizSnap.data();
+        const cachedQuestions = cachedQuizData.questions || [];
 
         if (classSubmissions.length === 0) {
           const emptyAnalytics = {
@@ -518,10 +466,11 @@ export default function ReportsAnalytics() {
             topPerformers: [],
             submissions: []
           };
-
           activeCache.analyticsByQuizClass[cacheKey] = emptyAnalytics;
           analyticsCache.current = activeCache.analyticsByQuizClass;
-          return emptyAnalytics;
+          setAnalytics(emptyAnalytics);
+          setLoadingAnalytics(false);
+          return;
         }
 
         const computedItemAnalysis = cachedQuestions.map((question, qIndex) => {
@@ -591,23 +540,22 @@ export default function ReportsAnalytics() {
 
         activeCache.analyticsByQuizClass[cacheKey] = cachedResult;
         analyticsCache.current = activeCache.analyticsByQuizClass;
-        return cachedResult;
-      })();
-
-      const resolvedAnalytics = await activeCache.inFlight.analyticsByQuizClass[cacheKey];
-      if (resolvedAnalytics) setAnalytics(resolvedAnalytics);
-      return;
-    } catch (error) {
-      console.error("Error fetching analytics:", error);
-    } finally {
-      delete activeCache.inFlight.analyticsByQuizClass[cacheKey];
+        setAnalytics(cachedResult);
+      } catch (error) {
+        console.error("Error creating real-time analytics:", error);
+      } finally {
+        setLoadingAnalytics(false);
+      }
+    }, (error) => {
+      console.error("Error fetching real-time analytics:", error);
       setLoadingAnalytics(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, [selectedQuiz, selectedClass]);
 
   const handleQuizSelect = (quiz) => {
     setSelectedQuiz(quiz);
-    fetchQuizAnalytics(quiz.id, quiz.quizMode);
   };
 
   const handleOpenQuestionEditor = (itemAnalysis) => {
@@ -696,8 +644,6 @@ export default function ReportsAnalytics() {
       showToast("success", "Question updated successfully! Student scores have been recalculated.");
       setShowEditModal(false);
       setEditingQuestion(null);
-
-      await fetchQuizAnalytics(analytics.quizId, analytics.quizMode);
     } catch (error) {
       console.error("Error saving question changes:", error);
       showToast("error", "Error saving changes. Please try again.");
@@ -754,8 +700,6 @@ export default function ReportsAnalytics() {
       showToast("success", "Question deleted successfully! Student scores have been recalculated.");
       setShowEditModal(false);
       setEditingQuestion(null);
-
-      await fetchQuizAnalytics(analytics.quizId, analytics.quizMode);
     } catch (error) {
       console.error("Error deleting question:", error);
       showToast("error", "Error deleting question. Please try again.");
