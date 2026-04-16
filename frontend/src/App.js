@@ -16,7 +16,6 @@ import LandingPage from "./pages/general/LandingPage";
 import FeaturesPage from "./pages/general/FeaturesPage";
 import AboutPage from "./pages/general/AboutPage";
 import LoginPage from "./pages/studentSide/LoginPage";
-import SignUpPage from "./pages/studentSide/SignUpPage";
 
 // STUDENT PAGES
 import StudentDashboard from "./pages/studentSide/StudentDashboard";
@@ -234,8 +233,6 @@ function App() {
             )
           }
         />
-
-        <Route path="/signup" element={<SignUpPage />} />
 
         {/* ============================
             ✅ STUDENT ROUTES WITH SIDEBAR
