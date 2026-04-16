@@ -30,6 +30,23 @@ import {
 import QuizResults from "../studentSide/QuizResults";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
+// ─── localStorage helpers (base64 encode/decode to deter casual editing) ───
+const encodeProgress = (data) => {
+  try {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  } catch {
+    return null;
+  }
+};
+
+const decodeProgress = (str) => {
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(str))));
+  } catch {
+    return null;
+  }
+};
+
 export default function TakeAsyncQuiz({ user, userDoc }) {
   const { quizCode, assignmentId } = useParams();
   const navigate = useNavigate();
@@ -72,6 +89,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
   const isAssignedQuiz = !!assignmentId;
 
+  // ─── Anti-cheat: tab visibility ───
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (!quizStartedRef.current) return;
@@ -142,6 +160,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [assignmentId]);
 
+  // ─── Anti-cheat: devtools keyboard shortcuts ───
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isQuizStarted) return;
@@ -166,6 +185,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isQuizStarted]);
 
+  // ─── Anti-cheat: block back navigation ───
   useEffect(() => {
     if (!isQuizStarted || showResults) return;
     const handleBeforeUnload = (e) => {
@@ -193,23 +213,70 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     };
   }, [isQuizStarted, showResults]);
 
+  // ─── Save progress to localStorage (encoded, NO index saved) ───
   useEffect(() => {
     if (assignmentId && answers && Object.keys(answers).length > 0) {
-      const progressData = { answers, currentQuestionIndex, timestamp: new Date().getTime() };
-      localStorage.setItem(`quiz_progress_${assignmentId}`, JSON.stringify(progressData));
+      const progressData = {
+        answers,
+        // currentQuestionIndex is intentionally NOT saved —
+        // it will be derived from answers on restore to prevent skip exploitation
+        timestamp: new Date().getTime(),
+      };
+      const encoded = encodeProgress(progressData);
+      if (encoded) {
+        localStorage.setItem(`quiz_progress_${assignmentId}`, encoded);
+      }
     }
-  }, [answers, currentQuestionIndex, assignmentId]);
+  }, [answers, assignmentId]);
 
+  // ─── Restore progress from localStorage with sequential validation ───
   useEffect(() => {
     if (assignmentId && questions.length > 0) {
-      const savedProgress = localStorage.getItem(`quiz_progress_${assignmentId}`);
-      if (savedProgress) {
+      const raw = localStorage.getItem(`quiz_progress_${assignmentId}`);
+      if (raw) {
         try {
-          const { answers: savedAnswers, currentQuestionIndex: savedIndex } = JSON.parse(savedProgress);
-          setAnswers(savedAnswers);
-          setCurrentQuestionIndex(savedIndex);
-        } catch (error) {
-          console.error("Error loading saved progress:", error);
+          const decoded = decodeProgress(raw);
+          if (!decoded || typeof decoded !== "object") {
+            localStorage.removeItem(`quiz_progress_${assignmentId}`);
+            return;
+          }
+
+          const { answers: savedAnswers } = decoded;
+          if (!savedAnswers || typeof savedAnswers !== "object") {
+            localStorage.removeItem(`quiz_progress_${assignmentId}`);
+            return;
+          }
+
+          // Sequential validation: only accept answers with no gaps.
+          // If index 3 is answered but index 2 is not, discard from index 3 onward.
+          const validatedAnswers = {};
+          let highestValidIndex = -1;
+
+          for (let i = 0; i < questions.length; i++) {
+            const ans = savedAnswers[i];
+            if (ans !== undefined && ans !== null && ans !== "") {
+              // Every previous question must also be answered
+              if (i === 0 || validatedAnswers[i - 1] !== undefined) {
+                validatedAnswers[i] = ans;
+                highestValidIndex = i;
+              } else {
+                // Gap detected — stop accepting answers
+                break;
+              }
+            } else {
+              break;
+            }
+          }
+
+          setAnswers(validatedAnswers);
+
+          // Restore index to exactly one past the last valid answer
+          // (cannot go back, cannot skip ahead)
+          const restoredIndex = Math.min(highestValidIndex + 1, questions.length - 1);
+          setCurrentQuestionIndex(Math.max(restoredIndex, 0));
+        } catch (err) {
+          console.error("Error loading saved progress:", err);
+          localStorage.removeItem(`quiz_progress_${assignmentId}`);
         }
       }
     }
@@ -223,6 +290,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     }
   }, [assignmentId, quizCode]);
 
+  // ─── Countdown timer ───
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
     const timer = setInterval(() => {
@@ -353,8 +421,14 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     }
   };
 
+  // ─── Answer handler — only accepts answer for the CURRENT question ───
   const handleAnswerChange = (questionIndex, answer, choiceIndex = null) => {
-    setAnswers({ ...answers, [questionIndex]: answer });
+    // Block answering any question that is not the current one.
+    // This prevents manipulated calls (e.g., via React DevTools) from
+    // setting answers on questions the student hasn't reached yet.
+    if (questionIndex !== currentQuestionIndex) return;
+
+    setAnswers((prev) => ({ ...prev, [questionIndex]: answer }));
     if (choiceIndex !== null) {
       setSelectedAnswerIndices((prev) => ({ ...prev, [questionIndex]: choiceIndex }));
     }
@@ -501,6 +575,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     return answers[currentQuestionIndex] !== undefined && answers[currentQuestionIndex] !== null && answers[currentQuestionIndex] !== "";
   };
 
+  // ─── Only advance forward; enforce sequential answering ───
   const goToNextQuestion = () => {
     if (!isCurrentQuestionAnswered()) {
       setConfirmDialog({
@@ -513,8 +588,9 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       });
       return;
     }
+    // Only move forward — never allow going back or jumping ahead
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex((prev) => prev + 1);
     }
   };
 
@@ -527,6 +603,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     }
   };
 
+  // ─── Hide sidebar / nav while quiz is active ───
   useEffect(() => {
     const style = document.createElement("style");
     style.id = "quiz-fullscreen-style";
@@ -545,6 +622,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     };
   }, []);
 
+  // ─── Render: loading ───
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center font-Poppins z-[9999]" style={{ background: "#eef0f3" }}>
@@ -556,6 +634,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     );
   }
 
+  // ─── Render: error ───
   if (error) {
     return (
       <div className="fixed inset-0 flex items-center justify-center p-4 font-Poppins z-[9999]" style={{ background: "#eef0f3" }}>
@@ -573,6 +652,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
 
   if (!quiz || !assignment) return null;
 
+  // ─── Render: results ───
   if (showResults && quizResults) {
     return <QuizResults quiz={quiz} assignment={assignment} quizResults={quizResults} questions={questions} answers={answers} onNavigate={navigate} />;
   }
@@ -582,6 +662,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const answeredCount = Object.keys(answers).length;
   const progressPercent = ((currentQuestionIndex + 1) / questions.length) * 100;
 
+  // ─── Render: quiz ───
   return (
     <div className="fixed inset-0 font-Poppins overflow-y-auto z-[9999]" style={{ background: "#eef0f3" }}>
 

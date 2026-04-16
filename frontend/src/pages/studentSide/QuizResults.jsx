@@ -1,118 +1,22 @@
-// QuizResults.jsx - Updated with Firestore saving
+// QuizResults.jsx — display-only; saving is handled by the parent (TakeAsyncQuiz / TakeSyncQuiz).
+// Gemini recommendations are fetched via backend proxy so the API key is never exposed to the browser.
 import { Award, TrendingUp, BookOpen, Loader, Sparkles, Brain, Target, Flame, ChevronRight, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { collection, addDoc, query, where, getDocs, doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../../firebase/firebaseConfig";
 
-export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignment = { subject: "General", className: "Class A" }, quizResults = { correctPoints: 45, totalPoints: 50, base50ScorePercentage: 95, rawScorePercentage: 90, totalQuestions: 50 }, questions = [], answers = [], onNavigate = () => { } }) {
+export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignment = { subject: "General", className: "Class A" }, quizResults = { correctPoints: 45, totalPoints: 50, base50ScorePercentage: 95, rawScorePercentage: 90, totalQuestions: 50 }, questions = [], answers = {}, onNavigate = () => { } }) {
   const navigate = useNavigate();
   const { assignmentId } = useParams();
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
   const [showStats, setShowStats] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
-  const [savingResults, setSavingResults] = useState(false);
 
   useEffect(() => {
     generateRecommendations();
     setTimeout(() => setShowStats(true), 300);
     setTimeout(() => setShowRecommendations(true), 600);
   }, []);
-
-  useEffect(() => {
-    // Save results after recommendations are generated (even if empty, after loading finishes)
-    if (!loadingRecommendations) {
-      saveResultsToFirestore();
-    }
-  }, [loadingRecommendations]);
-
-  const saveResultsToFirestore = async () => {
-    setSavingResults(true);
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        console.error("❌ No logged-in user");
-        return;
-      }
-
-      const quizSubmissionData = {
-        studentId: currentUser.uid,
-        studentEmail: currentUser.email,
-        assignmentId: assignmentId || "",
-        quizId: quiz.id || "",
-        quizTitle: quiz.title || "Untitled Quiz",
-        className: assignment.className || "Unknown Class",
-        subject: assignment.subject || "",
-        correctPoints: quizResults.correctPoints || 0,
-        totalPoints: quizResults.totalPoints || 50,
-        base50ScorePercentage: quizResults.base50ScorePercentage || 0,
-        rawScorePercentage: quizResults.rawScorePercentage || 0,
-        totalQuestions: quizResults.totalQuestions || questions.length,
-        quizMode: assignment.quizMode || "asynchronous",
-        submittedAt: serverTimestamp(),
-        questionsAndAnswers: questions.map((q, idx) => ({
-          questionId: q.id || idx,
-          question: q.question,
-          type: q.type,
-          correctAnswer: getCorrectAnswer(q),
-          studentAnswer: answers[idx] || "Not answered",
-          isCorrect: checkAnswer(q, answers[idx]),
-          explanation: q.explanation || ""
-        })),
-        recommendations: recommendations,
-        remark: getGradeRemark(quizResults.base50ScorePercentage || 75).text,
-        feedbackMetadata: {
-          totalRecommendations: recommendations.length,
-          scoreLevel: getScoreLevel(),
-          generatedAt: serverTimestamp(),
-          analysisType: "AI Generated"
-        }
-      };
-
-      // Check if submission already exists
-      const submissionsRef = collection(db, "quizSubmissions");
-      const q = query(
-        submissionsRef,
-        where("studentId", "==", currentUser.uid),
-        where("assignmentId", "==", assignmentId)
-      );
-
-      const existingDocs = await getDocs(q);
-
-      if (existingDocs.empty) {
-        // Create new submission
-        const docRef = await addDoc(submissionsRef, quizSubmissionData);
-        console.log("✅ Quiz submission saved with ID:", docRef.id);
-
-        // Update assignedQuizzes with completion status
-        if (assignmentId) {
-          const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
-          await updateDoc(assignmentRef, {
-            completed: true,
-            status: "submitted",
-            submittedAt: serverTimestamp(),
-            score: quizResults.base50ScorePercentage,
-            base50ScorePercentage: quizResults.base50ScorePercentage,
-            attempts: (assignment.attempts || 0) + 1
-          });
-        }
-      } else {
-        // Update existing submission (retry scenario)
-        const existingDocId = existingDocs.docs[0].id;
-        const submissionRef = doc(db, "quizSubmissions", existingDocId);
-        await updateDoc(submissionRef, {
-          ...quizSubmissionData,
-          updatedAt: serverTimestamp()
-        });
-        console.log("✅ Quiz submission updated");
-      }
-    } catch (error) {
-      console.error("❌ Error saving quiz results:", error);
-    } finally {
-      setSavingResults(false);
-    }
-  };
 
   const getGradeRemark = (base50ScorePercentage) => {
     if (base50ScorePercentage >= 90) return { text: "Excellent!", color: "text-green-600" };
@@ -128,55 +32,39 @@ export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignmen
     try {
       const analysis = analyzeAllQuestions();
 
-      const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+      // Use backend proxy to call Gemini — the API key stays on the server
+      const API_URL = process.env.REACT_APP_API_URL || "";
+      const backendUrl = `${API_URL}/api/generate-recommendations`;
 
-      if (!GEMINI_API_KEY) {
-        console.warn("REACT_APP_GEMINI_API_KEY not found. Using fallback recommendations.");
-        const fallbackRecs = generateFallbackRecommendations(analysis);
-        setRecommendations(fallbackRecs);
-        setLoadingRecommendations(false);
-        return;
-      }
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
+      try {
+        const response = await fetch(backendUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: createRecommendationsPrompt(analysis)
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1500,
-              topP: 0.95,
-              topK: 40
-            }
-          })
+            quizTitle: quiz.title || "Quiz",
+            subject: assignment.subject || "General",
+            scorePercentage: analysis.scorePercentage,
+            correctAnswers: analysis.correctAnswers,
+            totalQuestions: analysis.allQuestions.length,
+            questions: analysis.allQuestions,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.recommendations && data.recommendations.length > 0) {
+            setRecommendations(data.recommendations);
+            setLoadingRecommendations(false);
+            return;
+          }
         }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error(`API Error ${response.status}:`, errorData);
-        throw new Error(`API Error: ${response.status}`);
+      } catch (backendError) {
+        console.warn("Backend proxy unavailable, using fallback recommendations:", backendError.message);
       }
 
-      const data = await response.json();
-
-      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        const aiResponse = data.candidates[0].content.parts[0].text;
-        const parsed = parseRecommendations(aiResponse);
-        setRecommendations(parsed.length > 0 ? parsed : generateFallbackRecommendations(analysis));
-      } else {
-        throw new Error("Invalid API response format");
-      }
-
+      // Fallback: generate recommendations locally (no API key exposed)
+      const fallbackRecs = generateFallbackRecommendations(analysis);
+      setRecommendations(fallbackRecs);
     } catch (error) {
       console.error("Error generating recommendations:", error);
       const analysis = analyzeAllQuestions();
@@ -196,13 +84,6 @@ export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignmen
     };
 
     if (questions.length === 0) {
-      analysis.allQuestions = [
-        { question: "What is the capital of France?", correctAnswer: "Paris", studentAnswer: "Paris", isCorrect: true, type: "identification" },
-        { question: "Is the Earth flat?", correctAnswer: "False", studentAnswer: "True", isCorrect: false, type: "true_false" },
-        { question: "Which is the largest planet?", correctAnswer: "Jupiter", studentAnswer: "Saturn", isCorrect: false, type: "multiple_choice" }
-      ];
-      analysis.correctAnswers = 1;
-      analysis.incorrectAnswers = 2;
       return analysis;
     }
 
@@ -248,64 +129,6 @@ export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignmen
       return correctChoice?.text || "N/A";
     }
     return question.correct_answer || "N/A";
-  };
-
-  const createRecommendationsPrompt = (analysis) => {
-    return `You are an educational AI assistant. Analyze this quiz performance and provide SPECIFIC, actionable study recommendations.
-
-Quiz: ${quiz.title}
-Subject: ${assignment.subject || "General"}
-Score: ${analysis.scorePercentage}% (${analysis.correctAnswers}/${analysis.allQuestions.length} correct)
-
-STUDENT'S QUIZ PERFORMANCE:
-${analysis.allQuestions.map((q, i) =>
-      `Question ${i + 1}: "${q.question}"
-Correct Answer: "${q.correctAnswer}"
-Student's Answer: "${q.studentAnswer}"
-Result: ${q.isCorrect ? "✓ CORRECT" : "✗ INCORRECT"}`
-    ).join('\n\n')}
-
-TASK: Generate 5-8 SPECIFIC study recommendations based on the questions above.
-
-REQUIREMENTS:
-1. Each recommendation must reference actual topics/concepts from the quiz
-2. Focus on topics the student got WRONG
-3. Also include 1-2 recommendations to reinforce topics they got RIGHT
-4. Make recommendations actionable and specific
-5. Include study methods (e.g., "memorize", "practice", "understand the process of", etc.)
-
-Format: Provide ONLY a numbered list with no extra text. Each line should be exactly:
-1. [Specific recommendation about actual content from the quiz]
-2. [Next recommendation]
-etc.
-
-Example format:
-1. Review the definition and characteristics of photosynthesis, focusing on light-dependent reactions
-2. Practice identifying capital cities, starting with European countries
-3. Study the process of cell division (mitosis vs meiosis) with diagrams
-4. Memorize the periodic table elements with atomic numbers 1-20
-5. Understand the causes and effects of the French Revolution
-
-Now generate recommendations for this student:`;
-  };
-
-  const parseRecommendations = (aiResponse) => {
-    const lines = aiResponse.split('\n').filter(line => line.trim());
-    const recs = [];
-
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      const match = trimmed.match(/^(\d+\.|[-•])\s+(.+)/);
-
-      if (match && match[2]) {
-        const text = match[2].trim();
-        if (text.length > 15) {
-          recs.push(text);
-        }
-      }
-    });
-
-    return recs;
   };
 
   const generateFallbackRecommendations = (analysis) => {
@@ -497,14 +320,6 @@ Now generate recommendations for this student:`;
             </div>
           </div>
         </div>
-
-        {/* Saving Indicator */}
-        {savingResults && (
-          <div className="flex items-center justify-center gap-2 text-indigo-600 font-semibold mb-4 animate-pulse">
-            <Loader className="w-4 h-4 animate-spin" />
-            Saving your results...
-          </div>
-        )}
 
         {/* Action Button */}
         <button
