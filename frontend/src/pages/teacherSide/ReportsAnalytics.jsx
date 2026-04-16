@@ -1011,7 +1011,7 @@ export default function ReportsAnalytics() {
                   setSelectedQuiz(null);
                   setAnalytics(null);
                 }}
-                className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold mb-3 md:mb-4 text-sm md:text-base"
+                className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold mb-3 md:mb-4 text-sm md:text-base hover:scale-110 active:scale-95 duration-200"
               >
                 ← Back to Classes
               </button>
@@ -1089,7 +1089,7 @@ export default function ReportsAnalytics() {
                     setSelectedQuiz(null);
                     setAnalytics(null);
                   }}
-                  className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold mb-3 md:mb-4 text-sm md:text-base"
+                  className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold mb-3 md:mb-4 text-sm md:text-base hover:scale-110 active:scale-95 duration-200"
                 >
                   ← Back to Quizzes
                 </button>
@@ -1461,8 +1461,8 @@ export default function ReportsAnalytics() {
       )}
 
       {showEditModal && editingQuestion !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-overlayFade">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 animate-popIn">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl md:text-2xl font-bold text-gray-800">Edit Question {editingQuestion + 1}</h2>
               <button

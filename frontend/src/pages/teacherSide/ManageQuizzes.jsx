@@ -1312,8 +1312,8 @@ export default function ManageQuizzes() {
 
       {/* Sync Quiz Detail Dialog */}
       {mounted && selectedSyncQuiz && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedSyncQuiz(null)}>
-          <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-overlayFade" onClick={() => setSelectedSyncQuiz(null)}>
+          <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-popIn" onClick={(e) => e.stopPropagation()}>
             {/* Dialog Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-amber-50/50 rounded-t-2xl">
               <div className="flex items-center gap-2">
@@ -1331,10 +1331,10 @@ export default function ManageQuizzes() {
               <div className="grid grid-cols-2 gap-3">
                 {/* Status */}
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
-                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1.5">Session Status</p>
+                  <p className="text-[12px] uppercase font-bold text-slate-400 tracking-widest mb-1.5">Session Status</p>
                   <div>
                     <span
-                      className={`inline-flex px-2 py-1 rounded-md text-[11px] font-black uppercase tracking-wide ${selectedSyncQuiz.sessionStatus === "active"
+                      className={`inline-flex px-2 py-1 rounded-md text-[20px] font-black uppercase tracking-wide ${selectedSyncQuiz.sessionStatus === "active"
                         ? "bg-emerald-100 text-emerald-700"
                         : selectedSyncQuiz.sessionStatus === "ended"
                           ? "bg-rose-100 text-rose-700"
@@ -1352,11 +1352,14 @@ export default function ManageQuizzes() {
 
                 {/* Timeline */}
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1.5">Timeline</p>
+                  <p className="text-[12px] uppercase font-bold text-slate-400 tracking-widest mb-1.5">Timeline</p>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3 text-slate-400" />
-                      <p className="text-[11px] text-slate-600 truncate"><span className="font-semibold text-slate-700">Assigned:</span> {selectedSyncQuiz.assignedAt ? new Date(selectedSyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}</p>
+                      <Calendar className="w-5 h-5 text-slate-400" />
+                      <div className="flex flex-col">
+                        <span className="text-[12px] text-slate-400 font-semibold uppercase">Assigned</span> 
+                        <p className="text-[15px] font-semibold text-slate-700 truncate">{selectedSyncQuiz.assignedAt ? new Date(selectedSyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1366,8 +1369,8 @@ export default function ManageQuizzes() {
               {selectedSyncQuiz.quizCode && (
                 <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-100/50 flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-amber-500 tracking-widest mb-0.5">Live Quiz Code</p>
-                    <p className="text-2xl font-black text-amber-700 tracking-widest">{selectedSyncQuiz.quizCode}</p>
+                    <p className="text-[13px] uppercase font-bold text-amber-500 tracking-widest mb-0.5">Live Quiz Code</p>
+                    <p className="text-3xl font-black text-amber-700 tracking-widest">{selectedSyncQuiz.quizCode}</p>
                   </div>
                   <button
                     onClick={() => handleCopyCode(selectedSyncQuiz.quizCode, `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}`)}
@@ -1393,7 +1396,7 @@ export default function ManageQuizzes() {
                     setSelectedSyncQuiz(null);
                     navigate(`/teacher/quiz-control/${selectedSyncQuiz.quizId}/${selectedSyncQuiz.classId}`);
                   }}
-                  className="w-full bg-amber-500 text-white hover:bg-amber-600 font-bold rounded-lg px-3 py-2 flex items-center justify-center gap-1.5 text-sm shadow-sm transition-all"
+                  className="w-full bg-amber-500 text-white hover:bg-amber-600 font-bold rounded-lg px-3 py-4 flex items-center justify-center gap-1.5 text-sm shadow-sm transition-all"
                 >
                   <Zap className="w-4 h-4" /> Open Control Panel
                 </button>
@@ -1403,7 +1406,7 @@ export default function ManageQuizzes() {
                     handleDeleteAssignment(selectedSyncQuiz, true);
                   }}
                   disabled={deletingAssignment === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}`}
-                  className="w-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 px-3 py-4 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {deletingAssignment === `${selectedSyncQuiz.quizId}-${selectedSyncQuiz.classId}` ? (
                     <>
@@ -1499,8 +1502,8 @@ export default function ManageQuizzes() {
       {/* Async Quiz Detail Dialog */}
       {
         mounted && selectedAsyncQuiz && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn" onClick={() => setSelectedAsyncQuiz(null)}>
-            <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-slideUp" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-overlayFade" onClick={() => setSelectedAsyncQuiz(null)}>
+            <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl animate-popIn" onClick={(e) => e.stopPropagation()}>
               {/* Dialog Header */}
               <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-violet-50/50 rounded-t-2xl">
                 <div className="flex items-center gap-2">
@@ -1518,15 +1521,15 @@ export default function ManageQuizzes() {
                 <div className="grid grid-cols-2 gap-3">
                   {/* Details */}
                   <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
-                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Assignment</p>
+                    <p className="text-[13px] uppercase font-bold text-slate-400 tracking-widest mb-2">Assignment</p>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-xs">
-                        <div className="w-5 h-5 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center">
-                          <Users className="w-3 h-3" />
+                        <div className="w-9 h-7 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center">
+                          <Users className="w-5 h-5" />
                         </div>
-                        <span className="font-semibold text-slate-800">{selectedAsyncQuiz.className}</span>
+                        <span className="font-semibold text-md text-slate-800">{selectedAsyncQuiz.className}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px]">
+                      <div className="flex items-center gap-2 ml-1.5 text-[12px]">
                         <span className="font-semibold text-slate-500 ml-7">{selectedAsyncQuiz.studentCount} Students</span>
                       </div>
                     </div>
@@ -1534,16 +1537,16 @@ export default function ManageQuizzes() {
 
                   {/* Timeline */}
                   <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
-                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Timeline</p>
+                    <p className="text-[13px] uppercase font-bold text-slate-400 tracking-widest mb-2">Timeline</p>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3 text-slate-400" />
-                        <p className="text-[11px] text-slate-600"><span className="font-semibold text-slate-700">Assigned:</span> {selectedAsyncQuiz.assignedAt ? new Date(selectedAsyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", { month: "short", day: "numeric" }) : "N/A"}</p>
+                        <Calendar className="w-5 h-5 text-slate-400" />
+                        <p className="text-[13px] text-slate-700 font-semibold"><span className="font-semibold uppercase text-slate-400">Assigned:</span> {selectedAsyncQuiz.assignedAt ? new Date(selectedAsyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", { month: "short", day: "numeric" }) : "N/A"}</p>
                       </div>
                       {selectedAsyncQuiz.dueDate && (
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          <p className="text-[11px] text-slate-600"><span className="font-semibold text-slate-700">Due:</span> {new Date(selectedAsyncQuiz.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</p>
+                          <Clock className="w-5 h-5 text-slate-400" />
+                          <p className="text-[13px] text-slate-700 font-semibold"><span className="font-semibold uppercase text-slate-400">Due:</span> {new Date(selectedAsyncQuiz.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</p>
                         </div>
                       )}
                     </div>
@@ -1557,7 +1560,7 @@ export default function ManageQuizzes() {
                       setSelectedAsyncQuiz(null);
                       navigate(`/teacher/quiz-results/${selectedAsyncQuiz.quizId}/${selectedAsyncQuiz.classId}`);
                     }}
-                    className="w-full bg-violet-600 text-white hover:bg-violet-700 font-bold rounded-lg px-3 py-2 flex items-center justify-center gap-1.5 text-sm shadow-sm transition-all"
+                    className="w-full bg-violet-600 text-white hover:bg-violet-700 font-bold rounded-lg px-3 py-4 flex items-center justify-center gap-1.5 text-sm shadow-sm transition-all"
                   >
                     <Eye className="w-4 h-4" /> View Results
                   </button>
@@ -1567,7 +1570,7 @@ export default function ManageQuizzes() {
                       handleDeleteAssignment(selectedAsyncQuiz, false);
                     }}
                     disabled={deletingAssignment === `${selectedAsyncQuiz.quizId}-${selectedAsyncQuiz.classId}`}
-                    className="w-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 px-3 py-4 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {deletingAssignment === `${selectedAsyncQuiz.quizId}-${selectedAsyncQuiz.classId}` ? (
                       <>
@@ -1592,8 +1595,8 @@ export default function ManageQuizzes() {
       {/* Manual Quiz Creation Modal */}
       {
         mounted && showManualModal && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4 font-Poppins animate-fadeIn">
-            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] flex flex-col animate-slideUp">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4 font-Poppins animate-overlayFade">
+            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] flex flex-col animate-popIn">
               {/* Header */}
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
                 <div className="flex items-center gap-3">
@@ -1947,8 +1950,8 @@ export default function ManageQuizzes() {
       {/* PDF Modal */}
       {
         mounted && showPdfModal && createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-fadeIn">
-            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-slideUp">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-overlayFade">
+            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-popIn">
               <div className="flex justify-between items-center p-4 md:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-2xl">
                 <div className="flex items-center gap-3">
                   <FileUp className="w-8 h-8" />
