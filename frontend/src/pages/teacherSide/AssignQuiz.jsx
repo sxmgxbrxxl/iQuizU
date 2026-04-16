@@ -138,7 +138,11 @@ export default function AssignQuizToClass() {
         });
       });
 
-      classesList.sort((a, b) => a.name.localeCompare(b.name));
+      classesList.sort((a, b) => {
+        const aName = a.classNo ? `Class ${a.classNo}` : a.name;
+        const bName = b.classNo ? `Class ${b.classNo}` : b.name;
+        return aName.localeCompare(bName);
+      });
       setAllClasses(classesList);
 
       // Check existing assignments for all classes
@@ -417,7 +421,7 @@ export default function AssignQuizToClass() {
         const result = await createAssignmentsForClass(classId);
         const classItem = allClasses.find((c) => c.id === classId);
         results.push({
-          className: classItem?.name || "Unknown",
+          className: classItem?.classNo ? `Class ${classItem.classNo}` : (classItem?.name || "Unknown"),
           ...result,
         });
       }
@@ -472,7 +476,7 @@ export default function AssignQuizToClass() {
       const selected = selectedStudentsByClass[classId] || [];
       if (selected.length === 0) {
         const classItem = allClasses.find((c) => c.id === classId);
-        showToast("warning", "No Students Selected", `Please select at least one student in ${classItem?.name || "the class"}.`);
+        showToast("warning", "No Students Selected", `Please select at least one student in ${classItem?.classNo ? `Class ${classItem.classNo}` : (classItem?.name || "the class")}.`);
         return;
       }
     }
@@ -504,14 +508,18 @@ export default function AssignQuizToClass() {
       });
 
       if (classSkipped > 0) {
-        skippedDetails.push(`${classItem.name}: ${classSkipped} student(s)`);
+        const dName = classItem.classNo ? `Class ${classItem.classNo}` : classItem.name;
+        skippedDetails.push(`${dName}: ${classSkipped} student(s)`);
       }
     });
 
     // If existing assignments found, show confirm dialog first
     if (classesWithExisting.length > 0) {
       const classNames = classesWithExisting
-        .map((id) => allClasses.find((c) => c.id === id)?.name)
+        .map((id) => {
+          const c = allClasses.find((c) => c.id === id);
+          return c?.classNo ? `Class ${c.classNo}` : c?.name;
+        })
         .join(", ");
 
       setConfirmDialog({
@@ -1017,20 +1025,38 @@ export default function AssignQuizToClass() {
 
             <div className="mb-4">
               <select
+                value=""
                 onChange={(e) => {
-                  if (e.target.value) {
+                  if (e.target.value === "SELECT_ALL") {
+                    const unselectedClassIds = allClasses
+                      .filter((c) => !selectedClasses.includes(c.id))
+                      .map((c) => c.id);
+                    if (unselectedClassIds.length > 0) {
+                      setSelectedClasses([...selectedClasses, ...unselectedClassIds]);
+                      const newExpanded = { ...expandedClasses };
+                      unselectedClassIds.forEach(id => {
+                        newExpanded[id] = true;
+                        fetchStudentsForClass(id);
+                      });
+                      setExpandedClasses(newExpanded);
+                    }
+                  } else if (e.target.value) {
                     handleAddClass(e.target.value);
-                    e.target.value = "";
                   }
                 }}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">+ Add a class...</option>
+                {allClasses.filter((c) => !selectedClasses.includes(c.id)).length > 0 && (
+                  <option value="SELECT_ALL" className="font-bold text-blue-600">
+                    + Select All Classes
+                  </option>
+                )}
                 {allClasses
                   .filter((c) => !selectedClasses.includes(c.id))
                   .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} {c.subject ? `- ${c.subject}` : ""}
+                      {c.classNo ? `Class ${c.classNo}` : c.name} {c.subject ? `- ${c.subject}` : ""}
                       {existingAssignments[c.id]?.exists ? " (Already Assigned)" : ""}
                     </option>
                   ))}
@@ -1061,7 +1087,7 @@ export default function AssignQuizToClass() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-bold text-lg">
-                              {classItem?.name || "Unknown Class"}
+                              {classItem?.classNo ? `Class ${classItem.classNo}` : (classItem?.name || "Unknown Class")}
                             </h4>
                             {hasExisting && (
                               <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
