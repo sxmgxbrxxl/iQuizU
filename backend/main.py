@@ -1,13 +1,13 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import quiz_routes, email_routes
+from app.routes import quiz_routes, email_routes, recommendation_routes
 
 app = FastAPI(
     title="Quiz Generator API",
     description="AI-powered quiz generation using Gemini",
     version="1.0.0"
-)
+)   
 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -35,6 +35,7 @@ app.add_middleware(
 
 app.include_router(quiz_routes.router, prefix="/api/quiz", tags=["Quiz"])
 app.include_router(email_routes.router, prefix="/api/email", tags=["Email"])
+app.include_router(recommendation_routes.router, prefix="/api", tags=["Recommendations"])
 
 @app.get("/")
 async def root():
