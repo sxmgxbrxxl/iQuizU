@@ -623,6 +623,7 @@ export default function QuizControlPanel() {
 
   if (!quiz || !classData) return null;
 
+  const inLobbyCount = students.filter((s) => s.status === "in_lobby").length;
   const notStartedCount = students.filter((s) => s.status === "not_started" || s.status === "pending").length;
   const inProgressCount = students.filter((s) => s.status === "in_progress").length;
   const completedCount = students.filter((s) => s.completed).length;
@@ -635,6 +636,8 @@ export default function QuizControlPanel() {
     switch (status) {
       case "in_progress":
         return { text: "In Progress", className: "bg-yellow-100 text-yellow-800", Icon: Loader };
+      case "in_lobby":
+        return { text: "In Lobby", className: "bg-purple-100 text-purple-800", Icon: Users };
       case "completed":
         return { text: "Completed", className: "bg-green-100 text-green-800", Icon: CheckCircle };
       case "not_started":
@@ -730,6 +733,26 @@ export default function QuizControlPanel() {
 
       <div className="mb-6 space-y-3">
         {quizSession.status === "not_started" && (
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-8 shadow-sm">
+             <h3 className="text-2xl font-black text-center text-purple-900 mb-6 tracking-wide drop-shadow-sm">
+                PLAYERS IN LOBBY ({inLobbyCount})
+             </h3>
+             <div className="flex flex-wrap gap-4 justify-center min-h-[80px] items-center">
+                {students.filter(s => s.status === "in_lobby").length === 0 ? (
+                  <p className="text-purple-500/80 font-bold text-lg animate-pulse tracking-widest">WAITING FOR PLAYERS...</p>
+                ) : (
+                  students.filter(s => s.status === "in_lobby").map((student) => (
+                    <div key={student.id} className="bg-white border-b-4 border-r-4 border-t-2 border-l-2 border-purple-400 text-purple-800 px-6 py-3 rounded-2xl font-bold shadow-md flex items-center gap-2 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:scale-105">
+                      <Users className="w-5 h-5 text-purple-600" />
+                      <span className="text-lg">{student.name}</span>
+                    </div>
+                  ))
+                )}
+             </div>
+          </div>
+        )}
+
+        {quizSession.status === "not_started" && (
           <button
             onClick={handleStartQuiz}
             disabled={actionLoading}
@@ -797,13 +820,23 @@ export default function QuizControlPanel() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
         <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
           <div className="flex items-center justify-between">
             <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
             <div className="text-right">
               <div className="text-xl md:text-2xl font-bold text-title">{totalStudents}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Total</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
+          <div className="flex items-center justify-between">
+            <Users className="w-6 h-6 md:w-8 md:h-8 text-purple-600 animate-pulse" />
+            <div className="text-right">
+              <div className="text-xl md:text-2xl font-bold text-title">{inLobbyCount}</div>
+              <div className="text-xs md:text-sm text-subtext font-semibold">In Lobby</div>
             </div>
           </div>
         </div>
@@ -838,7 +871,7 @@ export default function QuizControlPanel() {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl col-span-2 md:col-span-1">
+        <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl col-span-2 md:col-span-1 lg:col-span-1">
           <div className="flex items-center justify-between">
             <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
             <div className="text-right">

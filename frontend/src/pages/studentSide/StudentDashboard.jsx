@@ -530,7 +530,7 @@ export default function StudentDashboard({ user, userDoc }) {
                   {announcements.map((ann) => (
                     <div
                       key={ann.id}
-                      className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+                      className={`flex items-start gap-3 p-4 rounded-xl border transition-all font-Poppins ${
                         ann.priority === "urgent"
                           ? "bg-red-50 border-red-200 text-red-800"
                           : "bg-green-50 border-green-200 text-green-800"
