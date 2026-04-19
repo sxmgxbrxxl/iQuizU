@@ -140,6 +140,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   const pendingSaveRef = useRef(null);
   const answersRef = useRef({});
   const currentQuestionIndexRef = useRef(0);
+  const isLeavingRef = useRef(false);
 
   useEffect(() => { pendingSaveRef.current = pendingSaveTimeout; }, [pendingSaveTimeout]);
   useEffect(() => { answersRef.current = answers; }, [answers]);
@@ -167,6 +168,8 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   useEffect(() => {
     if (!assignmentId || sessionStatus !== "not_started" || quizStarted) return;
 
+    let isActive = true;
+
     const setLobbyStatus = async (statusValue) => {
       try {
         await updateDoc(doc(db, "assignedQuizzes", assignmentId), {
@@ -186,10 +189,27 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
+      isActive = false;
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      setLobbyStatus("pending");
+      if (!isLeavingRef.current && sessionStatus === "not_started" && !quizStarted) {
+         setLobbyStatus("pending");
+      }
     };
   }, [assignmentId, sessionStatus, quizStarted]);
+
+  const handleLeaveLobby = async (path) => {
+    isLeavingRef.current = true;
+    try {
+      if (assignmentId) {
+        await updateDoc(doc(db, "assignedQuizzes", assignmentId), {
+          status: "pending"
+        });
+      }
+    } catch (err) {
+      console.error("Error setting lobby status on leave:", err);
+    }
+    navigate(path);
+  };
 
   useEffect(() => {
     if (questionTimeLeft === null || questionTimeLeft <= 0 || sessionStatus !== "active" || !quizStarted) return;
@@ -565,7 +585,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   }
 
   if (sessionStatus === "not_started" && !quizStarted) {
-    return <WaitingRoom quiz={quiz} assignment={assignment} questions={questions} onNavigate={navigate} />;
+    return <WaitingRoom quiz={quiz} assignment={assignment} questions={questions} onNavigate={handleLeaveLobby} />;
   }
 
   if (sessionStatus === "ended") {

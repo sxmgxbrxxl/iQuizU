@@ -29,7 +29,6 @@ const ManageTeachers = () => {
 
   // Create Teacher states
   const [teacherEmail, setTeacherEmail] = useState("");
-  const [teacherPassword, setTeacherPassword] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -60,6 +59,30 @@ const ManageTeachers = () => {
     setMounted(true);
   }, []);
 
+  // Send Teacher Welcome Email
+  const sendTeacherWelcomeEmail = async (email, password) => {
+    try {
+      const baseUrl = "https://iquizu-backend-production-3336.up.railway.app";
+      const response = await fetch(
+        `${baseUrl}/api/email/send-teacher-welcome`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+      if (response.ok) {
+        console.log(`📧 Teacher welcome email sent to ${email}`);
+      } else {
+        const err = await response.json().catch(() => ({}));
+        console.warn(`📧 Email send failed for ${email}:`, err.detail || response.statusText);
+      }
+    } catch (error) {
+      console.warn(`📧 Could not send welcome email to ${email}:`, error.message);
+    }
+  };
+
+
   // Create Teacher Account
   const handleCreateTeacher = async (e) => {
     e.preventDefault();
@@ -70,6 +93,18 @@ const ManageTeachers = () => {
     // ✅ CRITICAL: Set flag BEFORE creating account
     setAccountCreationFlag(true);
 
+    const generatePassword = () => {
+      const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+      let password = "";
+      for (let i = 0; i < 10; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      return password;
+    };
+    
+    // Generate unique random password
+    const generatedPassword = generatePassword();
+
     try {
       // ✅ Step 1: Save current admin user
       const currentAdmin = auth.currentUser;
@@ -78,7 +113,7 @@ const ManageTeachers = () => {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         teacherEmail,
-        teacherPassword
+        generatedPassword
       );
       const teacherUser = userCredential.user;
 
@@ -92,19 +127,18 @@ const ManageTeachers = () => {
         createdAt: new Date().toISOString(),
       });
 
-      // ✅ Step 4: Send password reset email to teacher
-      await sendPasswordResetEmail(auth, teacherEmail);
+      // ✅ Step 4: Send welcome email to teacher with default password
+      await sendTeacherWelcomeEmail(teacherEmail, generatedPassword);
 
       // ✅ Step 5: Restore admin session (IMPORTANT!)
       await updateCurrentUser(auth, currentAdmin);
 
       // ✅ Step 6: Reset form and show success
       setSuccessMsg(
-        `Teacher account created! Password reset link sent to ${teacherEmail}`
+        `Teacher account created! Welcome email sent to ${teacherEmail}`
       );
       setShowSuccessDialog(true);
       setTeacherEmail("");
-      setTeacherPassword("");
 
       // Refresh teacher list
       fetchTeachers();
@@ -235,50 +269,28 @@ const ManageTeachers = () => {
                 Create Account
               </h2>
               <p className="text-sm text-gray-500 mb-6">
-                Fill in the details to invite a new teacher to the platform. They will receive a password reset link to access their account.
+                Fill in the details to invite a new teacher to the platform. They will receive a welcome email containing their credentials.
               </p>
             </div>
             
             <div className="md:w-2/3">
               <form onSubmit={handleCreateTeacher} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        type="email"
-                        value={teacherEmail}
-                        onChange={(e) => setTeacherEmail(e.target.value)}
-                        placeholder="teacher@example.com"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                        required
-                      />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-gray-400" />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">
-                      Temporary Password
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Key className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        type="password"
-                        value={teacherPassword}
-                        onChange={(e) => setTeacherPassword(e.target.value)}
-                        placeholder="Min. 6 characters"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                        required
-                        minLength={6}
-                      />
-                    </div>
+                    <input
+                      type="email"
+                      value={teacherEmail}
+                      onChange={(e) => setTeacherEmail(e.target.value)}
+                      placeholder="teacher@example.com"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      required
+                    />
                   </div>
                 </div>
 

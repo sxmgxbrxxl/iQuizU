@@ -547,7 +547,7 @@ export default function StudentDashboard({ user, userDoc }) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-sm">{ann.title}</h4>
-                        <p className="text-sm opacity-80 mt-0.5 whitespace-pre-wrap">{ann.message}</p>
+                        <p className="text-sm opacity-80 mt-0.5 whitespace-pre-wrap text-justify">{ann.message}</p>
                       </div>
                     </div>
                   ))}
