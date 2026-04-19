@@ -64,6 +64,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const [showResults, setShowResults] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
   const [selectedAnswerIndices, setSelectedAnswerIndices] = useState({});
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: "",
@@ -591,6 +592,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     // Only move forward — never allow going back or jumping ahead
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
+      setIsDropdownOpen(false);
     }
   };
 
@@ -880,18 +882,36 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           {/* Identification / Matching Type */}
           {currentQuestion.type === "identification" && (
             <div className="relative">
-              <select
-                value={answers[currentQuestionIndex] || ""}
-                onChange={(e) => handleAnswerChange(currentQuestionIndex, e.target.value)}
-                className="w-full px-4 py-3 pr-10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white text-gray-800 cursor-pointer transition text-sm sm:text-base"
+              <div
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full px-4 py-3 pr-10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-gray-800 cursor-pointer transition text-sm sm:text-base flex items-center justify-between"
                 style={{ borderColor: answers[currentQuestionIndex] ? "#2e7d32" : "#d1d5db" }}
               >
-                <option value="" disabled>Select your answer...</option>
-                {identificationChoices[currentQuestionIndex]?.map((choice, choiceIdx) => (
-                  <option key={choiceIdx} value={choice}>{choice}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                <span className={answers[currentQuestionIndex] ? "text-gray-800 block truncate" : "text-gray-500 block truncate"} style={{ width: "calc(100% - 20px)" }}>
+                  {answers[currentQuestionIndex] || "Select your answer..."}
+                </span>
+                <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+              </div>
+              {isDropdownOpen && (
+                <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto left-0 divide-y divide-gray-100">
+                  {identificationChoices[currentQuestionIndex]?.map((choice, choiceIdx) => (
+                    <div
+                      key={choiceIdx}
+                      onClick={() => {
+                        handleAnswerChange(currentQuestionIndex, choice);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="px-4 py-3 hover:bg-green-50 cursor-pointer text-sm sm:text-base transition-colors"
+                      style={{
+                        backgroundColor: answers[currentQuestionIndex] === choice ? "#f0fdf4" : "",
+                        color: answers[currentQuestionIndex] === choice ? "#1b5e20" : "#374151"
+                      }}
+                    >
+                      {choice}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

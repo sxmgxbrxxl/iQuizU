@@ -312,7 +312,7 @@ const ManageAnnouncements = () => {
                       )}
                       <h3 className="text-lg font-bold text-gray-800 truncate">{ann.title}</h3>
                     </div>
-                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">{ann.message}</p>
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap text-justify">{ann.message}</p>
 
                     <div className="flex items-center gap-3 mt-4 flex-wrap">
                       <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${getAudienceColor(ann.targetAudience)}`}>

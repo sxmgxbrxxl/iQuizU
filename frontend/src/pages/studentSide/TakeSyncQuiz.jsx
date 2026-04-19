@@ -118,6 +118,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   const [showTimeBreakdown, setShowTimeBreakdown] = useState(false);
   const [questionTimes, setQuestionTimes] = useState([]);
   const [selectedAnswerIndices, setSelectedAnswerIndices] = useState({});
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false, title: "", message: "", onConfirm: null, showCancel: true, confirmLabel: "Confirm"
   });
@@ -139,6 +140,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   const pendingSaveRef = useRef(null);
   const answersRef = useRef({});
   const currentQuestionIndexRef = useRef(0);
+  const isLeavingRef = useRef(false);
 
   useEffect(() => { pendingSaveRef.current = pendingSaveTimeout; }, [pendingSaveTimeout]);
   useEffect(() => { answersRef.current = answers; }, [answers]);
@@ -161,6 +163,53 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     });
     return () => unsubscribe();
   }, [assignmentId, quizStarted, submitting, hasAutoSubmitted, showResults]);
+
+  // Set 'in_lobby' status when waiting
+  useEffect(() => {
+    if (!assignmentId || sessionStatus !== "not_started" || quizStarted) return;
+
+    let isActive = true;
+
+    const setLobbyStatus = async (statusValue) => {
+      try {
+        await updateDoc(doc(db, "assignedQuizzes", assignmentId), {
+          status: statusValue
+        });
+      } catch (err) {
+        console.error("Error setting lobby status:", err);
+      }
+    };
+
+    setLobbyStatus("in_lobby");
+
+    const handleBeforeUnload = () => {
+      setLobbyStatus("pending");
+    };
+    
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      isActive = false;
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (!isLeavingRef.current && sessionStatus === "not_started" && !quizStarted) {
+         setLobbyStatus("pending");
+      }
+    };
+  }, [assignmentId, sessionStatus, quizStarted]);
+
+  const handleLeaveLobby = async (path) => {
+    isLeavingRef.current = true;
+    try {
+      if (assignmentId) {
+        await updateDoc(doc(db, "assignedQuizzes", assignmentId), {
+          status: "pending"
+        });
+      }
+    } catch (err) {
+      console.error("Error setting lobby status on leave:", err);
+    }
+    navigate(path);
+  };
 
   useEffect(() => {
     if (questionTimeLeft === null || questionTimeLeft <= 0 || sessionStatus !== "active" || !quizStarted) return;
@@ -393,6 +442,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
+      setIsDropdownOpen(false);
       setQuestionTimeLeft(questionTimes[nextIndex].time);
     } else {
       handleAutoSubmit();
@@ -485,6 +535,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
+      setIsDropdownOpen(false);
       setQuestionTimeLeft(questionTimes[nextIndex].time);
       if (pendingSaveTimeout) { clearTimeout(pendingSaveTimeout); setPendingSaveTimeout(null); }
       saveQuizProgress(answers, nextIndex);
@@ -534,7 +585,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   }
 
   if (sessionStatus === "not_started" && !quizStarted) {
-    return <WaitingRoom quiz={quiz} assignment={assignment} questions={questions} onNavigate={navigate} />;
+    return <WaitingRoom quiz={quiz} assignment={assignment} questions={questions} onNavigate={handleLeaveLobby} />;
   }
 
   if (sessionStatus === "ended") {
@@ -554,45 +605,45 @@ export default function TakeSyncQuiz({ user, userDoc }) {
 
   if (sessionStatus === "active" && !quizStarted) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center p-4 font-Poppins z-[9999]" style={{ background: "#eef0f3" }}>
-        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-2xl w-full">
+      <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 font-Poppins z-[9999] overflow-y-auto" style={{ background: "#eef0f3" }}>
+        <div className="bg-white mx-auto p-5 sm:p-8 rounded-2xl shadow-lg w-full max-w-lg my-auto">
           <div className="text-center">
-            <CheckCircle className="w-16 h-16 mx-auto mb-4" style={{ color: "#2e7d32" }} />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Quiz is Now Active!</h2>
-            <p className="text-gray-600 mb-6">Your teacher has started the quiz session</p>
-            <div className="text-white rounded-xl p-6 mb-6" style={{ background: "linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%)" }}>
-              <h3 className="text-xl font-bold mb-4">{quiz?.title}</h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-white bg-opacity-20 rounded-lg p-3">
-                  <p className="font-semibold">Questions</p>
-                  <p className="text-2xl font-bold">{questions.length}</p>
+            <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4" style={{ color: "#2e7d32" }} />
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Quiz is Now Active!</h2>
+            <p className="text-sm sm:text-base text-gray-600 mb-5 sm:mb-6">Your teacher has started the quiz session</p>
+            <div className="text-white rounded-xl p-5 sm:p-6 mb-5 sm:mb-6" style={{ background: "linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%)" }}>
+              <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 break-words">{quiz?.title}</h3>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
+                <div className="bg-white bg-opacity-20 rounded-lg p-2 sm:p-3">
+                  <p className="font-semibold text-xs sm:text-sm">Questions</p>
+                  <p className="text-xl sm:text-2xl font-bold">{questions.length}</p>
                 </div>
-                <div className="bg-white bg-opacity-20 rounded-lg p-3">
-                  <p className="font-semibold">Total Points</p>
-                  <p className="text-2xl font-bold">{quiz?.totalPoints || questions.length}</p>
+                <div className="bg-white bg-opacity-20 rounded-lg p-2 sm:p-3">
+                  <p className="font-semibold text-xs sm:text-sm">Total Points</p>
+                  <p className="text-xl sm:text-2xl font-bold">{quiz?.totalPoints || questions.length}</p>
                 </div>
-                <div className="bg-white bg-opacity-20 rounded-lg p-3 col-span-2">
-                  <p className="font-semibold">⏱️ Adaptive Time Per Question</p>
-                  <p className="text-sm mt-1">Time adjusts based on question complexity</p>
+                <div className="bg-white bg-opacity-20 rounded-lg p-2 sm:p-3 col-span-2">
+                  <p className="font-semibold text-xs sm:text-sm">⏱️ Adaptive Time</p>
+                  <p className="text-xs sm:text-sm mt-1">Time adjusts based on complexity</p>
                 </div>
               </div>
             </div>
             {assignment?.instructions && (
-              <div className="mb-6 p-4 rounded-xl text-left" style={{ background: "#f0fdf4", borderLeft: "5px solid #2e7d32" }}>
-                <p className="text-sm text-gray-700"><strong>Instructions:</strong> {assignment.instructions}</p>
+              <div className="mb-5 sm:mb-6 p-3 sm:p-4 rounded-xl text-left" style={{ background: "#f0fdf4", borderLeft: "4px solid #2e7d32" }}>
+                <p className="text-xs sm:text-sm text-gray-700"><strong>Instructions:</strong> {assignment.instructions}</p>
               </div>
             )}
-            <div className="flex items-start gap-3 p-4 rounded-xl mb-6" style={{ background: "#f0fdf4", border: "2px solid #2e7d32" }}>
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#2e7d32" }} />
+            <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl mb-5 sm:mb-6" style={{ background: "#f0fdf4", border: "2px solid #2e7d32" }}>
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" style={{ color: "#2e7d32" }} />
               <div className="text-left">
-                <p className="font-semibold text-sm mb-1" style={{ color: "#1b5e20" }}>Ready to Begin</p>
-                <p className="text-xs text-gray-600">Each question has its own time limit based on complexity. Your time will begin immediately.</p>
+                <p className="font-semibold text-xs sm:text-sm mb-0.5 sm:mb-1" style={{ color: "#1b5e20" }}>Ready to Begin</p>
+                <p className="text-[11px] sm:text-xs text-gray-600 leading-tight">Each question has its own time limit based on complexity. Your time will begin immediately.</p>
               </div>
             </div>
-            <button onClick={handleStartQuiz} disabled={startingQuiz} className="w-full text-white px-8 py-4 rounded-lg font-bold text-lg transition flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed" style={{ background: "#2e7d32" }}>
+            <button onClick={handleStartQuiz} disabled={startingQuiz} className="w-full text-white px-4 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed" style={{ background: "#2e7d32" }}>
               {startingQuiz ? <><Loader className="w-5 h-5 animate-spin" /> Starting Quiz...</> : <><Zap className="w-5 h-5" /> Start Quiz Now</>}
             </button>
-            <button onClick={() => navigate("/student")} disabled={startingQuiz} className="mt-3 w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition disabled:opacity-75 text-sm">
+            <button onClick={() => navigate("/student")} disabled={startingQuiz} className="mt-2 sm:mt-3 w-full bg-gray-100 text-gray-700 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold hover:bg-gray-200 transition disabled:opacity-75 text-xs sm:text-sm">
               Cancel
             </button>
           </div>
@@ -852,21 +903,39 @@ export default function TakeSyncQuiz({ user, userDoc }) {
             </div>
           )}
 
-          {/* Identification */}
+          {/* Identification / Matching Type */}
           {currentQuestion.type === "identification" && (
             <div className="relative">
-              <select
-                value={answers[currentQuestionIndex] || ""}
-                onChange={e => handleAnswerChange(currentQuestionIndex, e.target.value)}
-                className="w-full px-4 py-3 pr-10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white text-gray-800 cursor-pointer transition text-sm sm:text-base"
+              <div
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full px-4 py-3 pr-10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-gray-800 cursor-pointer transition text-sm sm:text-base flex items-center justify-between"
                 style={{ borderColor: answers[currentQuestionIndex] ? "#2e7d32" : "#d1d5db" }}
               >
-                <option value="" disabled>Select your answer...</option>
-                {identificationChoices[currentQuestionIndex]?.map((choice, choiceIdx) => (
-                  <option key={choiceIdx} value={choice}>{choice}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                <span className={answers[currentQuestionIndex] ? "text-gray-800 block truncate" : "text-gray-500 block truncate"} style={{ width: "calc(100% - 20px)" }}>
+                  {answers[currentQuestionIndex] || "Select your answer..."}
+                </span>
+                <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+              </div>
+              {isDropdownOpen && (
+                <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto left-0 divide-y divide-gray-100">
+                  {identificationChoices[currentQuestionIndex]?.map((choice, choiceIdx) => (
+                    <div
+                      key={choiceIdx}
+                      onClick={() => {
+                        handleAnswerChange(currentQuestionIndex, choice);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="px-4 py-3 hover:bg-green-50 cursor-pointer text-sm sm:text-base transition-colors"
+                      style={{
+                        backgroundColor: answers[currentQuestionIndex] === choice ? "#f0fdf4" : "",
+                        color: answers[currentQuestionIndex] === choice ? "#1b5e20" : "#374151"
+                      }}
+                    >
+                      {choice}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
