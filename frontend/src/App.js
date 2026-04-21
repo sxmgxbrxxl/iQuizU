@@ -7,7 +7,7 @@ import {
 import { useEffect, useState, useRef } from "react";
 import { auth, db } from "./firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import Lottie from "lottie-react";
 import animationData from "../src/assets/Books.json";
 
@@ -116,6 +116,28 @@ function App() {
   const [loading, setLoading] = useState(true);
   const previousAuthUserRef = useRef(null);
   const authStateChangeCountRef = useRef(0);
+  const userDocIdRef = useRef(null);
+
+  // ✅ Re-fetch user doc from Firestore (used after profile updates like photo upload)
+  const refreshUserDoc = async () => {
+    const docId = userDocIdRef.current;
+    if (!docId) return;
+    try {
+      const docSnap = await getDoc(doc(db, "users", docId));
+      if (docSnap.exists()) {
+        setUserDoc({ id: docSnap.id, ...docSnap.data() });
+      }
+    } catch (error) {
+      console.error("❌ Error refreshing user doc:", error);
+    }
+  };
+
+  // ✅ Listen for profile update events from child components
+  useEffect(() => {
+    const handleRefresh = () => refreshUserDoc();
+    window.addEventListener('refreshUserDoc', handleRefresh);
+    return () => window.removeEventListener('refreshUserDoc', handleRefresh);
+  }, []);
 
   useEffect(() => {
     console.log("🔍 Setting up auth state listener...");
@@ -154,14 +176,15 @@ function App() {
           }
 
           if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
+            const foundDoc = snapshot.docs[0];
 
             // ✅ CRITICAL FIX: Include document ID!
             const userDocWithId = {
-              id: doc.id, // <-- IMPORTANT: Document ID from Firestore
-              ...doc.data(),
+              id: foundDoc.id, // <-- IMPORTANT: Document ID from Firestore
+              ...foundDoc.data(),
             };
 
+            userDocIdRef.current = foundDoc.id;
             setUserDoc(userDocWithId);
             setRole(userDocWithId.role || null);
           } else {

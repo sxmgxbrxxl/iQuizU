@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, KeyRound, CheckCircle, XCircle, AlertTriangle, X, Mail, IdCard, Pencil } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "../../firebase/firebaseConfig";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "../../firebase/firebaseConfig";
 
 import { ProfileSkeleton } from "../../components/SkeletonLoaders";
 
@@ -116,7 +117,9 @@ export default function TeacherProfile({ user, userDoc }) {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Toast state
     const [toast, setToast] = useState(null);
@@ -137,6 +140,7 @@ export default function TeacherProfile({ user, userDoc }) {
     const [emailAddr, setEmailAddr] = useState("");
     const [phone, setPhone] = useState("");
     const [bio, setBio] = useState("");
+    const [photoURL, setPhotoURL] = useState("");
 
     // readonly info — prefer savedProfile over stale userDoc prop
     const profile = savedProfile || userDoc;
@@ -152,9 +156,62 @@ export default function TeacherProfile({ user, userDoc }) {
             setEmailAddr(userDoc?.email || user?.email || "");
             setPhone(userDoc?.phone || "");
             setBio(userDoc?.bio || "");
+            setPhotoURL(userDoc?.photoURL || "");
         }
         setLoading(false);
     }, [user, userDoc, savedProfile]);
+
+    // Handle profile photo upload to Firebase Storage
+    const handlePhotoChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            showToast("warning", "Please select an image file");
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            showToast("warning", "File size must be less than 5MB");
+            return;
+        }
+
+        if (!userDocId) {
+            showToast("error", "User document not found");
+            return;
+        }
+
+        try {
+            setUploading(true);
+
+            // Upload to Firebase Storage
+            const fileExtension = file.name.split('.').pop();
+            const storageRef = ref(storage, `profileImages/${userDocId}.${fileExtension}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // Update Firestore with the download URL
+            const userDocRef = doc(db, "users", userDocId);
+            const docSnap = await getDoc(userDocRef);
+
+            if (!docSnap.exists()) {
+                throw new Error("User document not found");
+            }
+
+            await updateDoc(userDocRef, { photoURL: downloadURL });
+            setPhotoURL(downloadURL);
+
+            // Notify App.js to refresh userDoc so sidebar + other components update
+            window.dispatchEvent(new Event('refreshUserDoc'));
+
+            showToast("success", "Profile photo updated successfully!");
+        } catch (error) {
+            console.error("Error uploading photo:", error);
+            showToast("error", "Failed to upload photo. Please try again.");
+        } finally {
+            setUploading(false);
+        }
+    };
 
     // Handle password reset email
     const handleChangePassword = () => {
@@ -291,12 +348,31 @@ export default function TeacherProfile({ user, userDoc }) {
             {/* ─── Profile Photo Section ─── */}
             <div className="flex flex-col items-center mt-8 mb-2">
                 <div className="relative group">
-                    <div className="w-32 h-32 md:w-40 md:h-40 text-4xl md:text-6xl bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
-                        {userInitial}
-                    </div>
-                    <button className="absolute bottom-1 right-1 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white">
-                        <Pencil className="w-4 h-4 text-white" />
+                    {photoURL ? (
+                        <img
+                            src={photoURL}
+                            alt="Profile"
+                            className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-xl ring-4 ring-white"
+                        />
+                    ) : (
+                        <div className="w-32 h-32 md:w-40 md:h-40 text-4xl md:text-6xl bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
+                            {userInitial}
+                        </div>
+                    )}
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="absolute bottom-1 right-1 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
+                    >
+                        {uploading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Pencil className="w-4 h-4 text-white" />}
                     </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handlePhotoChange}
+                        accept="image/*"
+                        className="hidden"
+                    />
                 </div>
                 <h2 className="text-lg md:text-xl font-bold text-title mt-4">{fullName || displayName}</h2>
                 <p className="text-subtext text-sm">{department || "Teacher"}</p>

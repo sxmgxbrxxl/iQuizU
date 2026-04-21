@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "../../firebase/firebaseConfig";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "../../firebase/firebaseConfig";
 import { ProfileSkeleton } from "../../components/SkeletonLoaders";
 
 // ─── Custom Toast Notification ───────────────────────────────────────────────
@@ -181,17 +182,7 @@ export default function StudentProfile({ user, userDoc }) {
         setLoading(false);
     }, [user, userDoc]);
 
-    // Convert image to Base64
-    const convertToBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-        });
-    };
-
-    // Handle profile photo upload
+    // Handle profile photo upload to Firebase Storage
     const handlePhotoChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -201,8 +192,8 @@ export default function StudentProfile({ user, userDoc }) {
             return;
         }
 
-        if (file.size > 500 * 1024) {
-            showToast("warning", "File size must be less than 500KB");
+        if (file.size > 5 * 1024 * 1024) {
+            showToast("warning", "File size must be less than 5MB");
             return;
         }
 
@@ -213,7 +204,14 @@ export default function StudentProfile({ user, userDoc }) {
 
         try {
             setUploading(true);
-            const base64String = await convertToBase64(file);
+
+            // Upload to Firebase Storage
+            const fileExtension = file.name.split('.').pop();
+            const storageRef = ref(storage, `profileImages/${userDocId}.${fileExtension}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // Update Firestore with the download URL
             const userDocRef = doc(db, "users", userDocId);
             const docSnap = await getDoc(userDocRef);
 
@@ -221,12 +219,16 @@ export default function StudentProfile({ user, userDoc }) {
                 throw new Error("User document not found");
             }
 
-            await updateDoc(userDocRef, { photoURL: base64String });
-            setPhotoURL(base64String);
+            await updateDoc(userDocRef, { photoURL: downloadURL });
+            setPhotoURL(downloadURL);
+
+            // Notify App.js to refresh userDoc so sidebar + other components update
+            window.dispatchEvent(new Event('refreshUserDoc'));
+
             showToast("success", "Profile photo updated successfully!");
         } catch (error) {
             console.error("Error uploading photo:", error);
-            showToast("error", "Failed to upload photo");
+            showToast("error", "Failed to upload photo. Please try again.");
         } finally {
             setUploading(false);
         }
