@@ -190,6 +190,7 @@ export default function Sidebar({ user, userDoc }) {
   const userName = userDoc?.firstName || user?.displayName || "Teacher";
   const userEmail = userDoc?.email || user?.email || userDoc?.teacherEmail || "Educator";
   const userInitial = userName.charAt(0).toUpperCase();
+  const userPhoto = userDoc?.photoURL || "";
 
   // Staggered animation delay helper
   const staggerDelay = (index) => ({ animationDelay: `${index * 0.06}s`, animationFillMode: 'both' });
@@ -225,8 +226,14 @@ export default function Sidebar({ user, userDoc }) {
               className={`flex items-center gap-2 p-2 pr-3 rounded-lg transition-all duration-200 hover:scale-105 ${profileDropdownOpen ? "bg-white/20" : "hover:bg-white/10"
                 }`}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/20">
-                {userInitial}
+              <div className="w-8 h-8 rounded-full shadow-lg ring-2 ring-white/20 overflow-hidden">
+                {userPhoto ? (
+                  <img src={userPhoto} alt={userName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-green-300 to-green-600 flex items-center justify-center text-white font-bold text-sm">
+                    {userInitial}
+                  </div>
+                )}
               </div>
             </button>
 
@@ -239,8 +246,14 @@ export default function Sidebar({ user, userDoc }) {
                 {/* User Info Header */}
                 <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-base shadow-md">
-                      {userInitial}
+                    <div className="w-10 h-10 rounded-full shadow-md overflow-hidden">
+                      {userPhoto ? (
+                        <img src={userPhoto} alt={userName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-green-300 to-green-600 flex items-center justify-center text-white font-bold text-base">
+                          {userInitial}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="font-Poppins font-semibold text-sm text-gray-800 truncate">{userName}</span>

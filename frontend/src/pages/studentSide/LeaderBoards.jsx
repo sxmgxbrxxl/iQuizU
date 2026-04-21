@@ -452,14 +452,11 @@ export default function Leaderboards({ user, userDoc }) {
                         <td className="px-6 py-4">
                           <div>
                             <p className="font-semibold text-gray-800">
-                              {student.studentName}
+                              {student.studentNo || "N/A"}
                               {student.studentId === user?.uid && (
                                 <span className="ml-2 text-xs bg-green-700 text-white px-2 py-1 rounded-full animate-pulse">You</span>
                               )}
                             </p>
-                            {student.studentNo && (
-                              <p className="text-sm text-gray-500">{student.studentNo}</p>
-                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -514,14 +511,11 @@ export default function Leaderboards({ user, userDoc }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-800 truncate">
-                          {student.studentName}
+                          {student.studentNo || "N/A"}
                           {student.studentId === user?.uid && (
                             <span className="ml-2 text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">You</span>
                           )}
                         </p>
-                        {student.studentNo && (
-                          <p className="text-xs text-gray-500">{student.studentNo}</p>
-                        )}
                         <p className="text-xs text-gray-600 mt-0.5">{student.className}</p>
                       </div>
                       <button
@@ -609,7 +603,7 @@ export default function Leaderboards({ user, userDoc }) {
                         <td className="px-4 py-3">
                           <div>
                             <p className="font-semibold text-gray-800 text-sm">
-                              {student.studentName}
+                              {student.studentNo || "N/A"}
                               {student.studentId === user?.uid && (
                                 <span className="ml-2 text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">You</span>
                               )}
