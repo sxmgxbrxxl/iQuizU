@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   doc,
@@ -33,6 +33,8 @@ import {
 
 export default function AssignQuizToClass() {
   const { quizId, classId } = useParams();
+  const mountedRef = useRef(true);
+  const isAssigningRef = useRef(false);
   const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState(null);
@@ -53,6 +55,7 @@ export default function AssignQuizToClass() {
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
 
   const [assignmentSettings, setAssignmentSettings] = useState({
+    startDate: "",
     dueDate: "",
     instructions: "",
     mode: "asynchronous",
@@ -254,6 +257,7 @@ export default function AssignQuizToClass() {
       classId: classData.id,
       className: classData.name,
       subject: classData.subject || "",
+      startDate: !isSynchronous ? assignmentSettings.startDate : null,
       dueDate: finalDueDate,
       quizMode: assignmentSettings.mode,
       instructions: assignmentSettings.instructions || "",
@@ -350,20 +354,38 @@ export default function AssignQuizToClass() {
       return;
     }
 
+    if (isAssigningRef.current) return;
+    isAssigningRef.current = true;
+    setAssigning(true);
+
     const isSynchronous = assignmentSettings.mode === "synchronous";
 
-    if (!isSynchronous && !assignmentSettings.dueDate) {
-      showToast("warning", "Due Date Required", "Please set a due date for this assignment.");
-      return;
+    if (!isSynchronous) {
+      if (!assignmentSettings.startDate || !assignmentSettings.dueDate) {
+        showToast("warning", "Dates Required", "Please set both start and due dates for this assignment.");
+        isAssigningRef.current = false;
+        setAssigning(false);
+        return;
+      }
+      if (new Date(assignmentSettings.startDate) >= new Date(assignmentSettings.dueDate)) {
+        showToast("warning", "Invalid Dates", "Start date must be before the due date.");
+        isAssigningRef.current = false;
+        setAssigning(false);
+        return;
+      }
     }
 
     if (isSynchronous && !assignmentSettings.deadline) {
       showToast("warning", "Deadline Required", "Please set an expiration deadline for synchronous mode.");
+      isAssigningRef.current = false;
+      setAssigning(false);
       return;
     }
 
     if (isSynchronous && !generatedQuizCode) {
       showToast("warning", "Quiz Code Required", "Please generate a quiz code for synchronous mode.");
+      isAssigningRef.current = false;
+      setAssigning(false);
       return;
     }
 
@@ -371,10 +393,10 @@ export default function AssignQuizToClass() {
     const existingCheck = await checkExistingAssignment(classId);
     if (existingCheck.exists) {
       showToast("error", "Already Assigned", "This quiz is already assigned to this class. Please delete the existing assignment first before assigning again.");
+      isAssigningRef.current = false;
+      setAssigning(false);
       return;
     }
-
-    setAssigning(true);
 
     try {
       await createNewAssignments();
@@ -382,6 +404,7 @@ export default function AssignQuizToClass() {
       console.error("Error assigning quiz:", error);
       showToast("error", "Assignment Failed", "Error assigning quiz. Please try again.");
     } finally {
+      isAssigningRef.current = false;
       setAssigning(false);
     }
   };
@@ -729,25 +752,46 @@ export default function AssignQuizToClass() {
 
             <div className="space-y-4">
               {!isSynchronous ? (
-                <div>
-                  <label className="block text-sm font-semibold mb-2">
-                    Due Date & Time *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={assignmentSettings.dueDate}
-                    onChange={(e) =>
-                      setAssignmentSettings({
-                        ...assignmentSettings,
-                        dueDate: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min={new Date().toISOString().slice(0, 16)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Students can take this quiz anytime before this date and time
-                  </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">
+                      Start Date & Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={assignmentSettings.startDate}
+                      onChange={(e) =>
+                        setAssignmentSettings({
+                          ...assignmentSettings,
+                          startDate: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Students can start taking this quiz from this date and time
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">
+                      Due Date & Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={assignmentSettings.dueDate}
+                      onChange={(e) =>
+                        setAssignmentSettings({
+                          ...assignmentSettings,
+                          dueDate: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min={assignmentSettings.startDate || new Date().toISOString().slice(0, 16)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Students must complete this quiz before this date and time
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div>

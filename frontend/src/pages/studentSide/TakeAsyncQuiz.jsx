@@ -363,6 +363,11 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       if (assignmentData.studentId !== currentUser.uid) { setError("This quiz is not assigned to you"); return; }
       if (assignmentData.quizMode !== "asynchronous") { setError("This quiz is not available for self-paced completion"); return; }
       if (assignmentData.completed && assignmentData.attempts >= (assignmentData.settings?.maxAttempts || 1)) { setError("You have already completed this quiz"); return; }
+      const quizStart = assignmentData.startDate;
+      if (quizStart) {
+        const startTime = new Date(quizStart);
+        if (new Date() < startTime) { setError("This quiz has not started yet. Please wait for the scheduled start time."); return; }
+      }
       const quizDeadline = assignmentData.dueDate || assignmentData.deadline;
       if (quizDeadline) {
         const deadline = new Date(quizDeadline);
@@ -504,6 +509,37 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     });
     await submitQuiz();
   };
+
+  const handleDueDateAutoSubmit = async () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Due Date Reached!",
+      message: "The deadline for this quiz has passed. Your answers will be submitted automatically.",
+      onConfirm: () => setConfirmDialog((prev) => ({ ...prev, isOpen: false })),
+      showCancel: false,
+      confirmLabel: "Okay",
+    });
+    await submitQuiz();
+  };
+
+  // ─── Auto-submit on Due Date ───
+  useEffect(() => {
+    if (!isQuizStarted || showResults || submitting || !assignment) return;
+
+    const quizDeadline = assignment.dueDate || assignment.deadline;
+    if (!quizDeadline) return;
+
+    const deadlineTime = new Date(quizDeadline).getTime();
+
+    const interval = setInterval(() => {
+      if (new Date().getTime() >= deadlineTime) {
+        clearInterval(interval);
+        handleDueDateAutoSubmit();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isQuizStarted, showResults, submitting, assignment]);
 
   const submitQuiz = async () => {
     setSubmitting(true);
