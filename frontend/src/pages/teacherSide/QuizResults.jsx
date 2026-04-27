@@ -1077,6 +1077,7 @@ export default function QuizResults() {
                 type="datetime-local"
                 value={retakeDeadline}
                 onChange={(e) => setRetakeDeadline(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
               />
             </div>
@@ -1132,6 +1133,7 @@ export default function QuizResults() {
                 type="datetime-local"
                 value={reschedDeadline}
                 onChange={(e) => setReschedDeadline(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
               />
             </div>

@@ -27,6 +27,8 @@ import {
   Clipboard,
   Timer,
   Wrench,
+  Ban,
+  UserX,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { QuizControlPanelSkeleton } from "../../components/SkeletonLoaders";
@@ -219,6 +221,7 @@ export default function QuizControlPanel() {
             quizDuration: 0,
             flaggedForReview: false,
           },
+          currentQuestionIndex: data.currentQuestionIndex ?? null,
         });
       });
 
@@ -305,6 +308,7 @@ export default function QuizControlPanel() {
               quizDuration: 0,
               flaggedForReview: false,
             },
+            currentQuestionIndex: data.currentQuestionIndex ?? null,
           });
         });
 
@@ -461,6 +465,58 @@ export default function QuizControlPanel() {
     setShowAntiCheatModal(true);
   };
 
+  // -----------------------------------------------------------------
+  // FORCE STOP STUDENT QUIZ (for violations)
+  // -----------------------------------------------------------------
+  const handleForceStopStudent = (student) => {
+    const tabCount = student.antiCheatData?.tabSwitchCount || 0;
+    showConfirm(
+      "Force Stop Student's Quiz?",
+      `Are you sure you want to force-stop the quiz for "${student.name}"?\n\n⚠️ Violations Detected:\n• Tab Switches: ${tabCount}\n• Suspicious Activities: ${student.antiCheatData?.totalSuspiciousActivities || 0}\n\nThis will immediately end their quiz session and auto-submit their current answers. This action cannot be undone.`,
+      async () => {
+        setActionLoading(true);
+        try {
+          // Find the student's specific assignment document
+          const assignmentsRef = collection(db, "assignedQuizzes");
+          const q = query(
+            assignmentsRef,
+            where("quizId", "==", quizId),
+            where("classId", "==", classId),
+            where("studentId", "==", student.id)
+          );
+          const assignmentsSnap = await getDocs(q);
+
+          const updatePromises = assignmentsSnap.docs.map((docSnap) =>
+            updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
+              forceStoppedByTeacher: true,
+              forceStoppedAt: new Date(),
+              forceStopReason: `Violations detected - Tab switches: ${tabCount}`,
+            })
+          );
+
+          await Promise.all(updatePromises);
+
+          showAlert(
+            "Student Stopped",
+            `✅ Quiz force-stopped for ${student.name}. Their current answers will be auto-submitted.`,
+            "orange"
+          );
+        } catch (error) {
+          console.error("Error force-stopping student:", error);
+          showAlert("Error", "❌ Error stopping student's quiz. Please try again.", "red");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      "red",
+      "Force Stop",
+      <Ban className="w-5 h-5" />
+    );
+  };
+
+  // -----------------------------------------------------------------
+  // EXPORT TO EXCEL
+  // -----------------------------------------------------------------
   const handleExportToExcel = () => {
     setExportLoading(true);
 
@@ -645,6 +701,8 @@ export default function QuizControlPanel() {
         return { text: "Not Started", className: "bg-gray-100 text-gray-800", Icon: Clock };
       case "expired":
         return { text: "Expired", className: "bg-red-100 text-red-800", Icon: XCircle };
+      case "force_stopped":
+        return { text: "Force Stopped", className: "bg-orange-100 text-orange-800", Icon: Ban };
       default:
         return { text: status, className: "bg-gray-100 text-gray-800", Icon: Clock };
     }
@@ -933,6 +991,7 @@ export default function QuizControlPanel() {
                     <th className="px-6 py-3 text-center font-bold text-sm">Base-50 Grade</th>
                     <th className="px-6 py-3 text-center font-bold text-sm">Time Taken</th>
                     <th className="px-6 py-3 text-center font-bold text-sm">Anti-Cheat</th>
+                    {quizSession.status === "active" && <th className="px-6 py-3 text-center font-bold text-sm">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -958,10 +1017,15 @@ export default function QuizControlPanel() {
                         <td className="px-6 py-3 font-semibold text-title">{student.name}</td>
                         <td className="px-6 py-3 text-subtext">{student.studentNo}</td>
                         <td className="px-6 py-3 text-center">
-                          <span className={`px-3 py-1 ${className} rounded-full text-xs font-bold inline-flex items-center gap-1`}>
+                          <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${className}`}>
                             <Icon className="w-4 h-4" />
                             {text}
                           </span>
+                          {student.status === "in_progress" && !student.completed && totalQuestions > 0 && student.currentQuestionIndex !== null && (
+                            <div className="text-xs text-blue-600 font-semibold mt-1">
+                              📝 Q {(student.currentQuestionIndex || 0) + 1}/{totalQuestions}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-3 text-center">
                           {student.score !== null && student.score !== undefined ? (
@@ -1023,6 +1087,26 @@ export default function QuizControlPanel() {
                             <span className="text-gray-400 text-xs">N/A</span>
                           )}
                         </td>
+                        {quizSession.status === "active" && (
+                          <td className="px-6 py-3 text-center">
+                            {student.status === "in_progress" && !student.completed ? (
+                              <button
+                                onClick={() => handleForceStopStudent(student)}
+                                disabled={actionLoading}
+                                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-white text-xs font-bold transition mx-auto disabled:bg-gray-400 ${
+                                  student.antiCheatData?.flaggedForReview || (student.antiCheatData?.tabSwitchCount > 0)
+                                    ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-md"
+                                    : "bg-orange-500 hover:bg-orange-600"
+                                }`}
+                              >
+                                <Ban className="w-4 h-4" />
+                                Force Stop
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -1061,6 +1145,19 @@ export default function QuizControlPanel() {
                         {text}
                       </span>
                     </div>
+
+                    {/* Show question progress for in-progress students */}
+                    {student.status === "in_progress" && !student.completed && totalQuestions > 0 && student.currentQuestionIndex !== null && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-blue-600 font-semibold">📝 Question {(student.currentQuestionIndex || 0) + 1} of {totalQuestions}</span>
+                          <span className="text-xs text-subsubtext">{Math.round((((student.currentQuestionIndex || 0) + 1) / totalQuestions) * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${(((student.currentQuestionIndex || 0) + 1) / totalQuestions) * 100}%` }}></div>
+                        </div>
+                      </div>
+                    )}
 
                     {student.completed && (
                       <div className="grid grid-cols-3 gap-2 mb-3">
@@ -1109,6 +1206,22 @@ export default function QuizControlPanel() {
                         </button>
                       )}
                     </div>
+
+                    {/* Mobile Force Stop Button */}
+                    {quizSession.status === "active" && student.status === "in_progress" && !student.completed && (
+                      <button
+                        onClick={() => handleForceStopStudent(student)}
+                        disabled={actionLoading}
+                        className={`w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-bold transition disabled:bg-gray-400 ${
+                          student.antiCheatData?.flaggedForReview || (student.antiCheatData?.tabSwitchCount > 0)
+                            ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-md"
+                            : "bg-orange-500 hover:bg-orange-600"
+                        }`}
+                      >
+                        <Ban className="w-4 h-4" />
+                        Force Stop Quiz
+                      </button>
+                    )}
                   </div>
                 );
               })}

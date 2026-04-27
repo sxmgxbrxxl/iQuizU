@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, CircleQuestionMark, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen, Star, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2, XCircle, AlertTriangle, Shield } from "lucide-react";
+import { Loader2, CircleQuestionMark, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen, Star, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2, XCircle, AlertTriangle, Shield, UserMinus } from "lucide-react";
 import { auth, db } from "../../firebase/firebaseConfig";
-import { doc, getDoc, collection, query, where, getDocs, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc, updateDoc, setDoc, arrayRemove } from "firebase/firestore";
 import PasswordConfirmModal from './PasswordConfirmModal';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { setAccountCreationFlag } from "../../App";
@@ -60,6 +60,9 @@ export default function ViewClassPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Drop student state
+  const [droppingStudent, setDroppingStudent] = useState(null);
 
   useEffect(() => {
     fetchClassData();
@@ -801,6 +804,71 @@ export default function ViewClassPage() {
     });
   };
 
+  // ===== DROP STUDENT HANDLER =====
+  const handleDropStudent = (student) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Drop Student?",
+      message: `Are you sure you want to remove "${student.name}" from this class? This will also remove all their quiz assignments and submissions in this class. This action cannot be undone.`,
+      confirmLabel: "Drop Student",
+      color: "red",
+      onConfirm: async () => {
+        setConfirmDialog({ isOpen: false });
+        setDroppingStudent(student.id);
+        try {
+          // 1. Remove classId from student's classIds array
+          await updateDoc(doc(db, "users", student.id), {
+            classIds: arrayRemove(classId)
+          });
+
+          // 2. Delete all assignedQuizzes for this student in this class
+          const studentAuthUID = student.authUID || student.id;
+          const assignedQ = query(
+            collection(db, "assignedQuizzes"),
+            where("classId", "==", classId),
+            where("studentId", "==", studentAuthUID)
+          );
+          const assignedSnap = await getDocs(assignedQ);
+          const assignmentIds = [];
+          for (const d of assignedSnap.docs) {
+            assignmentIds.push(d.id);
+            await deleteDoc(doc(db, "assignedQuizzes", d.id));
+          }
+
+          // 3. Delete all quizSubmissions for this student in this class
+          const subsQ = query(
+            collection(db, "quizSubmissions"),
+            where("classId", "==", classId),
+            where("studentId", "==", studentAuthUID)
+          );
+          const subsSnap = await getDocs(subsQ);
+          for (const d of subsSnap.docs) {
+            await deleteDoc(doc(db, "quizSubmissions", d.id));
+          }
+
+          // 4. Update class student count
+          if (classData) {
+            await updateDoc(doc(db, "classes", classId), {
+              studentCount: Math.max(0, (classData.studentCount || students.length) - 1)
+            });
+          }
+
+          const deletedCount = assignedSnap.size + subsSnap.size;
+          showToast("success", "Student Dropped", `${student.name} has been removed from this class.${deletedCount > 0 ? ` (${deletedCount} related records deleted)` : ""}`);
+          await fetchStudents();
+          await fetchClassData();
+        } catch (error) {
+          console.error("Error dropping student:", error);
+          showToast("error", "Drop Failed", "Failed to remove student from class.");
+        } finally {
+          setDroppingStudent(null);
+        }
+      },
+      onCancel: () => setConfirmDialog({ isOpen: false }),
+    });
+  };
+
+
   if (loading) {
     return <ClassPageSkeleton />;
   }
@@ -1097,6 +1165,7 @@ export default function ViewClassPage() {
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Program</th>
                             <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Account</th>
+                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -1116,6 +1185,22 @@ export default function ViewClassPage() {
                                     <Circle className="w-3 h-3" /> No Account
                                   </span>
                                 )}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center">
+                                  <button
+                                    onClick={() => handleDropStudent(student)}
+                                    disabled={droppingStudent === student.id}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                    title="Drop Student"
+                                  >
+                                    {droppingStudent === student.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <UserMinus className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1145,6 +1230,19 @@ export default function ViewClassPage() {
                           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-400">
                             <span className="truncate">{student.emailAddress || "No email"}</span>
                             <span>{student.program || "N/A"}</span>
+                          </div>
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              onClick={() => handleDropStudent(student)}
+                              disabled={droppingStudent === student.id}
+                              className="flex-1 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 hover:bg-red-100 transition disabled:opacity-50"
+                            >
+                              {droppingStudent === student.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <><UserMinus className="w-3.5 h-3.5" /> Drop</>
+                              )}
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -1660,6 +1758,7 @@ export default function ViewClassPage() {
         </div>,
         document.body
       )}
+
 
       <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
       <ConfirmDialog {...confirmDialog} />

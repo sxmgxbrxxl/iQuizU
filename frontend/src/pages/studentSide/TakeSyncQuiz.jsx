@@ -159,6 +159,11 @@ export default function TakeSyncQuiz({ user, userDoc }) {
           setHasAutoSubmitted(true);
           handleAutoSubmit();
         }
+        // Handle teacher force-stop for violations
+        if (data.forceStoppedByTeacher && quizStarted && !submitting && !hasAutoSubmitted && !showResults) {
+          setHasAutoSubmitted(true);
+          handleForceStopSubmit(data.forceStopReason || "Stopped by teacher due to violations");
+        }
       }
     });
     return () => unsubscribe();
@@ -450,11 +455,12 @@ export default function TakeSyncQuiz({ user, userDoc }) {
   };
 
   const calculateScore = () => {
+    const currentAnswers = answersRef.current;
     let correctPoints = 0;
     let totalPoints = 0;
     questions.forEach((question, index) => {
       totalPoints += question.points || 1;
-      const studentAnswer = answers[index];
+      const studentAnswer = currentAnswers[index];
       if (!studentAnswer || studentAnswer === "") return;
       if (question.type === "multiple_choice") {
         const correctChoice = question.choices?.find(c => c.is_correct);
@@ -488,25 +494,52 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     await submitQuiz();
   };
 
-  const submitQuiz = async () => {
+  const handleForceStopSubmit = async (reason) => {
+    if (submitting) return;
+    setConfirmDialog({
+      isOpen: true,
+      title: "⛔ Quiz Stopped by Teacher",
+      message: `Your teacher has force-stopped your quiz due to violations.\n\nReason: ${reason}\n\nYour current answers will be submitted automatically.`,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        await submitQuiz("force_stopped");
+      },
+      showCancel: false,
+      confirmLabel: "I Understand"
+    });
+  };
+
+  const submitQuiz = async (submissionType = "normal") => {
     setSubmitting(true);
     try {
       const { rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints } = calculateScore();
       const currentUser = auth.currentUser;
       const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
-      await updateDoc(assignmentRef, { status: "completed", completed: true, inProgress: false, score: correctPoints, rawScorePercentage, base50ScorePercentage, attempts: (assignment.attempts || 0) + 1, submittedAt: serverTimestamp(), finalAnswers: answers });
+      await updateDoc(assignmentRef, {
+        status: submissionType === "force_stopped" ? "force_stopped" : "completed",
+        completed: true,
+        inProgress: false,
+        score: correctPoints,
+        rawScorePercentage,
+        base50ScorePercentage,
+        attempts: (assignment.attempts || 0) + 1,
+        submittedAt: serverTimestamp(),
+        finalAnswers: answersRef.current,
+      });
       await addDoc(collection(db, "quizSubmissions"), {
         assignmentId, quizId: quiz.id, quizTitle: quiz.title || "Untitled Quiz",
         studentId: currentUser.uid, studentName: userDoc?.name || currentUser.email || "Unknown",
         studentNo: userDoc?.studentNo || assignment.studentNo || null, studentDocId: assignment.studentDocId || null,
         teacherEmail: assignment.teacherEmail || null, teacherName: assignment.teacherName || null,
         classId: assignment.classId || null, className: assignment.className || "Unknown Class",
-        subject: assignment.subject || "", answers, rawScorePercentage, base50ScorePercentage,
+        subject: assignment.subject || "", answers: answersRef.current, rawScorePercentage, base50ScorePercentage,
         correctPoints, totalPoints, totalQuestions: questions.length, submittedAt: serverTimestamp(),
         quizMode: "synchronous", sessionStatus,
-        antiCheatData: { tabSwitchCount, suspiciousActivities, totalSuspiciousActivities: suspiciousActivities.length, quizDuration: quizStartTime ? Math.round((new Date() - quizStartTime) / 1000) : 0, flaggedForReview: suspiciousActivities.length > 0 }
+        submissionType,
+        forceStoppedByTeacher: submissionType === "force_stopped",
+        antiCheatData: { tabSwitchCount: tabCountRef.current, suspiciousActivities: activitiesRef.current, totalSuspiciousActivities: activitiesRef.current.length, quizDuration: quizStartTimeRef.current ? Math.round((new Date() - quizStartTimeRef.current) / 1000) : 0, flaggedForReview: activitiesRef.current.length > 0 || tabCountRef.current > 0 }
       });
-      setQuizResults({ rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints, totalQuestions: questions.length });
+      setQuizResults({ rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints, totalQuestions: questions.length, forceStoppedByTeacher: submissionType === "force_stopped" });
       setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);

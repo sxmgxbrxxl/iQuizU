@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, X, Eye, EyeOff } from "lucide-react";
 import LOGO from "../../assets/iQuizU.svg"
 
 export default function LoginPage() {
   const [loginInput, setLoginInput] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -234,7 +235,7 @@ export default function LoginPage() {
       </Link>
 
       {/* Login Card */}
-      <div className="bg-components p-10 rounded-3xl shadow-lg md:w-96 w-full border-2 border-green-200">
+      <div className="bg-components p-10 rounded-3xl shadow-lg w-full max-w-md border-2 border-green-200">
         <form onSubmit={handleSubmit}>
           <img src={LOGO} alt="Logo" className="h-16 w-16 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-6 text-center">Log In to iQuizU</h2>
@@ -274,17 +275,27 @@ export default function LoginPage() {
             <label className="block text-gray-700 mb-2" htmlFor="password">
               Password
             </label>
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              type="password"
-              id="password"
-              placeholder="Enter your password"
-              required
-              disabled={loading}
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary pr-10"
+                type={showPassword ? "text" : "password"}
+                id="password"
+                placeholder="Enter your password"
+                required
+                disabled={loading}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 focus:outline-none"
+                disabled={loading}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           {/* Forgot Password Link */}
