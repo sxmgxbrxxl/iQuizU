@@ -120,10 +120,10 @@ Built with a scalable React frontend and a real-time Firebase backend, iQuizU of
 
 ## Contributors
 
-- **Argie Lalap**: Team Leader, Backend Developer
+- **Argie Lalap**: Project Manager, Fullstack Developer
 - **James Ronan Lodovice**: Backend Developer
 - **Sam Gabriel Advento**: Frontend Developer, UI/UX Designer
-- **Batlacan Diaz**: Documentator
+- **Batlacan Diaz**: Technical Writer
 
 ## Changelog
 

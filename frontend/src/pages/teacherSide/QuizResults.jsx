@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   Eye,
   Shield,
+  StopCircle,
+  Activity,
 } from "lucide-react";
 import {
   collection,
@@ -55,6 +57,9 @@ export default function QuizResults() {
   const [reschedDeadline, setReschedDeadline] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [liveAssignments, setLiveAssignments] = useState({});
+  const [showForceStopModal, setShowForceStopModal] = useState(false);
+  const [forceStopStudent, setForceStopStudent] = useState(null);
 
   // Custom Toast state
   const [toast, setToast] = useState({ show: false, type: "", title: "", message: "" });
@@ -225,6 +230,36 @@ export default function QuizResults() {
     }
   };
 
+  // ─── Real-time listener on assignedQuizzes for in-progress tracking ───
+  useEffect(() => {
+    if (!quizId || !classId) return;
+    const q = query(
+      collection(db, "assignedQuizzes"),
+      where("quizId", "==", quizId),
+      where("classId", "==", classId),
+      where("quizMode", "==", "asynchronous")
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      const map = {};
+      snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.studentId) {
+          map[data.studentId] = {
+            assignmentDocId: docSnap.id,
+            status: data.status,
+            currentQuestionIndex: data.currentQuestionIndex ?? null,
+            totalQuestions: data.totalQuestions ?? null,
+            antiCheatData: data.antiCheatData || null,
+            forceStoppedByTeacher: data.forceStoppedByTeacher || false,
+            completed: data.completed || false,
+          };
+        }
+      });
+      setLiveAssignments(map);
+    });
+    return () => unsub();
+  }, [quizId, classId]);
+
   // Always returns the LATEST submission for a student (fixes retake doubling)
   const getStudentResult = (studentId) => {
     const studentResults = results.filter((r) => r.studentId === studentId);
@@ -234,6 +269,32 @@ export default function QuizResults() {
       const currentTime = current.submittedAt?.seconds ?? 0;
       return currentTime > latestTime ? current : latest;
     });
+  };
+
+  // ─── Force Stop handler ───
+  const handleForceStop = async () => {
+    if (!forceStopStudent) return;
+    setActionLoading(true);
+    try {
+      const live = liveAssignments[forceStopStudent.id];
+      if (!live?.assignmentDocId) {
+        showToast("error", "Error", "No active assignment found for this student.");
+        return;
+      }
+      await updateDoc(doc(db, "assignedQuizzes", live.assignmentDocId), {
+        forceStoppedByTeacher: true,
+        forceStopReason: "Stopped by teacher due to anti-cheat violations",
+        forceStoppedAt: serverTimestamp(),
+      });
+      showToast("success", "Force Stopped", `${forceStopStudent.name}'s quiz has been force-stopped.`);
+      setShowForceStopModal(false);
+      setForceStopStudent(null);
+    } catch (err) {
+      console.error("Error force-stopping student:", err);
+      showToast("error", "Failed", "Failed to force-stop student quiz.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleViewDetails = (studentId) => {
@@ -400,17 +461,29 @@ export default function QuizResults() {
         .map(s => s.id)
         .filter(id => getStudentResult(id) !== null)
     );
+    const inProgressCount = students.filter(s => {
+      if (submittedIds.has(s.id)) return false;
+      const live = liveAssignments[s.id];
+      return live?.status === "in_progress" && !live?.completed;
+    }).length;
     const pendingStudents = students.filter(s => !submittedIds.has(s.id) && assignedStudentIds.has(s.id));
     const missed = pendingStudents.filter(s => isDeadlinePassed(s.id)).length;
-    const pending = pendingStudents.length - missed;
+    const pending = pendingStudents.length - missed - inProgressCount;
+    // Count flagged from both submissions AND live assignment data
+    const flaggedFromSubmissions = students
+      .map(s => getStudentResult(s.id))
+      .filter(r => r?.antiCheatData?.flaggedForReview).length;
+    const flaggedFromLive = students.filter(s => {
+      if (getStudentResult(s.id)) return false;
+      return liveAssignments[s.id]?.antiCheatData?.flaggedForReview;
+    }).length;
     return {
       completed: submittedIds.size,
-      pending: pending,
+      pending: Math.max(pending, 0),
       missed: missed,
+      inProgress: inProgressCount,
       notStarted: students.length - submittedIds.size,
-      flaggedForReview: students
-        .map(s => getStudentResult(s.id))
-        .filter(r => r?.antiCheatData?.flaggedForReview).length,
+      flaggedForReview: flaggedFromSubmissions + flaggedFromLive,
     };
   };
 
@@ -495,13 +568,23 @@ export default function QuizResults() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-4 mb-8">
         <div className="bg-white border border-gray-200 p-3 md:p-4 rounded-xl">
           <div className="flex items-center justify-between">
             <Users className="w-6 h-6 md:w-8 md:h-8 text-button" />
             <div className="text-right">
               <div className="text-xl md:text-2xl font-bold text-title">{students.length}</div>
               <div className="text-xs md:text-sm text-subtext font-semibold">Total</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-blue-200 p-3 md:p-4 rounded-xl">
+          <div className="flex items-center justify-between">
+            <Activity className="w-6 h-6 md:w-8 md:h-8 text-blue-500" />
+            <div className="text-right">
+              <div className="text-xl md:text-2xl font-bold text-blue-600">{stats.inProgress}</div>
+              <div className="text-xs md:text-sm text-subtext font-semibold">In Progress</div>
             </div>
           </div>
         </div>
@@ -589,11 +672,16 @@ export default function QuizResults() {
                 students.map((student, idx) => {
                   const result = getStudentResult(student.id);
                   const submitted = !!result;
+                  const live = liveAssignments[student.id];
+                  const isInProgress = !submitted && live?.status === "in_progress" && !live?.completed;
+                  const isForceStoppedLive = !submitted && live?.forceStoppedByTeacher && !isInProgress;
+                  const liveAntiCheat = live?.antiCheatData;
+                  const isFlaggedLive = liveAntiCheat?.flaggedForReview;
 
                   return (
                     <tr
                       key={student.id}
-                      className={`border-b transition ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} ${result?.antiCheatData?.flaggedForReview ? "bg-red-50" : "hover:bg-gray-100"}`}
+                      className={`border-b transition ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} ${(result?.antiCheatData?.flaggedForReview || isFlaggedLive) ? "bg-red-50" : "hover:bg-gray-100"}`}
                     >
                       <td
                         className="px-6 py-4 cursor-pointer"
@@ -653,6 +741,31 @@ export default function QuizResults() {
                           <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
                             Completed
                           </span>
+                        ) : isForceStoppedLive ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 flex items-center justify-center gap-1">
+                            <StopCircle className="w-3 h-3" />
+                            Force Stopped
+                          </span>
+                        ) : isInProgress ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 flex items-center gap-1">
+                              <Activity className="w-3 h-3 animate-pulse" />
+                              In Progress
+                            </span>
+                            {live.currentQuestionIndex !== null && live.totalQuestions ? (
+                              <div className="w-full max-w-[120px]">
+                                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-1.5 rounded-full bg-blue-500 transition-all duration-500"
+                                    style={{ width: `${((live.currentQuestionIndex + 1) / live.totalQuestions) * 100}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-blue-600 font-semibold mt-0.5">
+                                  Q{live.currentQuestionIndex + 1}/{live.totalQuestions}
+                                </p>
+                              </div>
+                            ) : null}
+                          </div>
                         ) : assignedStudentIds.has(student.id) && isDeadlinePassed(student.id) ? (
                           <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600">
                             Missed
@@ -691,6 +804,14 @@ export default function QuizResults() {
                             <Shield className="w-4 h-4" />
                             <span className="hidden sm:inline">View</span>
                           </button>
+                        ) : (isInProgress || isForceStoppedLive) && liveAntiCheat ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedAntiCheatData(liveAntiCheat); setShowAntiCheatModal(true); }}
+                            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-semibold transition ${isFlaggedLive ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-blue-500 hover:bg-blue-600"}`}
+                          >
+                            <Shield className="w-4 h-4" />
+                            <span className="hidden sm:inline">{liveAntiCheat.tabSwitchCount || 0}</span>
+                          </button>
                         ) : (
                           <span className="text-gray-400 text-xs">N/A</span>
                         )}
@@ -704,6 +825,19 @@ export default function QuizResults() {
                             >
                               <RefreshCw className="w-4 h-4" />
                               Retake
+                            </button>
+                          ) : isForceStoppedLive ? (
+                            <span className="flex items-center gap-1 px-3 py-2 text-red-600 text-xs font-semibold">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Submitting...
+                            </span>
+                          ) : isInProgress ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setForceStopStudent(student); setShowForceStopModal(true); }}
+                              className={`flex items-center gap-1 px-3 py-2 text-white text-xs font-semibold rounded-lg transition ${isFlaggedLive ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-red-500 hover:bg-red-600"}`}
+                            >
+                              <StopCircle className="w-4 h-4" />
+                              Force Stop
                             </button>
                           ) : assignedStudentIds.has(student.id) ? (
                             <button
@@ -739,11 +873,16 @@ export default function QuizResults() {
           students.map((student) => {
             const result = getStudentResult(student.id);
             const submitted = !!result;
+            const live = liveAssignments[student.id];
+            const isInProgress = !submitted && live?.status === "in_progress" && !live?.completed;
+            const isForceStoppedLive = !submitted && live?.forceStoppedByTeacher && !isInProgress;
+            const liveAntiCheat = live?.antiCheatData;
+            const isFlaggedLive = liveAntiCheat?.flaggedForReview;
 
             return (
               <div
                 key={student.id}
-                className={`bg-white rounded-xl border p-4 shadow-sm ${result?.antiCheatData?.flaggedForReview ? "border-red-300 bg-red-50" : "border-gray-200"}`}
+                className={`bg-white rounded-xl border p-4 shadow-sm ${(result?.antiCheatData?.flaggedForReview || isFlaggedLive) ? "border-red-300 bg-red-50" : "border-gray-200"}`}
                 onClick={() => submitted && handleViewDetails(student.id)}
               >
                 <div className="flex justify-between items-center mb-3">
@@ -758,6 +897,21 @@ export default function QuizResults() {
                       <CheckCircle className="w-3 h-3" />
                       Completed
                     </span>
+                  ) : isForceStoppedLive ? (
+                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 flex items-center gap-1">
+                      <StopCircle className="w-3 h-3" />
+                      Force Stopped
+                    </span>
+                  ) : isInProgress ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 flex items-center gap-1">
+                        <Activity className="w-3 h-3 animate-pulse" />
+                        In Progress
+                      </span>
+                      {live.currentQuestionIndex !== null && live.totalQuestions ? (
+                        <span className="text-[10px] text-blue-600 font-semibold">Q{live.currentQuestionIndex + 1}/{live.totalQuestions}</span>
+                      ) : null}
+                    </div>
                   ) : assignedStudentIds.has(student.id) && isDeadlinePassed(student.id) ? (
                     <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
@@ -780,6 +934,21 @@ export default function QuizResults() {
                     </span>
                   )}
                 </div>
+
+                {/* In-progress progress bar for mobile */}
+                {isInProgress && live.currentQuestionIndex !== null && live.totalQuestions ? (
+                  <div className="mb-3">
+                    <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${((live.currentQuestionIndex + 1) / live.totalQuestions) * 100}%` }} />
+                    </div>
+                    {isFlaggedLive && (
+                      <p className="text-[10px] text-red-500 font-semibold mt-1 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        {liveAntiCheat.tabSwitchCount} tab switch(es) detected
+                      </p>
+                    )}
+                  </div>
+                ) : null}
 
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   <div className="bg-gray-50 p-2 rounded-lg text-center">
@@ -821,6 +990,41 @@ export default function QuizResults() {
                       >
                         <RefreshCw className="w-3 h-3" />
                         Retake
+                      </button>
+                    </div>
+                  ) : isForceStoppedLive ? (
+                    <div className="flex w-full gap-2">
+                      {liveAntiCheat ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedAntiCheatData(liveAntiCheat); setShowAntiCheatModal(true); }}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-white text-xs font-semibold transition bg-red-500 hover:bg-red-600"
+                        >
+                          <Shield className="w-3 h-3" />
+                          {liveAntiCheat.tabSwitchCount || 0} Violations
+                        </button>
+                      ) : null}
+                      <span className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-red-600 text-xs font-semibold">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Submitting...
+                      </span>
+                    </div>
+                  ) : isInProgress ? (
+                    <div className="flex w-full gap-2">
+                      {liveAntiCheat ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedAntiCheatData(liveAntiCheat); setShowAntiCheatModal(true); }}
+                          className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-white text-xs font-semibold transition ${isFlaggedLive ? "bg-red-500 hover:bg-red-600 animate-pulse" : "bg-blue-500 hover:bg-blue-600"}`}
+                        >
+                          <Shield className="w-3 h-3" />
+                          {liveAntiCheat.tabSwitchCount || 0} Violations
+                        </button>
+                      ) : null}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setForceStopStudent(student); setShowForceStopModal(true); }}
+                        className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-white text-xs font-semibold rounded-lg transition ${isFlaggedLive ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-red-500 hover:bg-red-600"}`}
+                      >
+                        <StopCircle className="w-3 h-3" />
+                        Force Stop
                       </button>
                     </div>
                   ) : assignedStudentIds.has(student.id) ? (
@@ -1077,6 +1281,7 @@ export default function QuizResults() {
                 type="datetime-local"
                 value={retakeDeadline}
                 onChange={(e) => setRetakeDeadline(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
               />
             </div>
@@ -1132,6 +1337,7 @@ export default function QuizResults() {
                 type="datetime-local"
                 value={reschedDeadline}
                 onChange={(e) => setReschedDeadline(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
               />
             </div>
@@ -1158,6 +1364,71 @@ export default function QuizResults() {
                   <>
                     <Calendar className="w-4 h-4" />
                     Extend Deadline
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Force Stop Modal */}
+      {showForceStopModal && forceStopStudent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-overlayFade">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all animate-popIn">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <StopCircle className="w-6 h-6 text-red-600" />
+                <h3 className="text-xl font-bold text-gray-800">Force Stop Quiz</h3>
+              </div>
+              <button onClick={() => { setShowForceStopModal(false); setForceStopStudent(null); }} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-red-800 font-semibold mb-1">⚠️ This action cannot be undone</p>
+              <p className="text-red-700 text-sm">
+                Force-stopping will immediately submit <span className="font-bold">{forceStopStudent.name}</span>'s quiz with their current answers. They will not be able to continue.
+              </p>
+            </div>
+
+            {liveAssignments[forceStopStudent.id]?.antiCheatData && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                <p className="text-orange-800 font-semibold text-sm mb-1">Current Violations</p>
+                <p className="text-orange-700 text-sm">
+                  Tab switches: <span className="font-bold">{liveAssignments[forceStopStudent.id].antiCheatData.tabSwitchCount || 0}</span>
+                </p>
+                {liveAssignments[forceStopStudent.id].currentQuestionIndex !== null && (
+                  <p className="text-orange-700 text-sm">
+                    Progress: <span className="font-bold">Question {liveAssignments[forceStopStudent.id].currentQuestionIndex + 1} of {liveAssignments[forceStopStudent.id].totalQuestions}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowForceStopModal(false); setForceStopStudent(null); }}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition"
+                disabled={actionLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleForceStop}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Stopping...
+                  </>
+                ) : (
+                  <>
+                    <StopCircle className="w-4 h-4" />
+                    Force Stop
                   </>
                 )}
               </button>

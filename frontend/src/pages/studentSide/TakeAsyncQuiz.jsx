@@ -7,6 +7,7 @@ import {
   collection,
   addDoc,
   serverTimestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
 import {
@@ -78,17 +79,40 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [quizStartTime, setQuizStartTime] = useState(null);
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
 
   const tabSwitchOutTimeRef = useRef(null);
   const tabCountRef = useRef(0);
   const activitiesRef = useRef([]);
   const quizStartedRef = useRef(false);
   const quizStartTimeRef = useRef(null);
+  const submittingRef = useRef(false);
+  const answersRef = useRef({});
+  const questionsRef = useRef([]);
 
   useEffect(() => { quizStartedRef.current = isQuizStarted; }, [isQuizStarted]);
   useEffect(() => { quizStartTimeRef.current = quizStartTime; }, [quizStartTime]);
+  useEffect(() => { submittingRef.current = submitting; }, [submitting]);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
 
   const isAssignedQuiz = !!assignmentId;
+
+  // ─── Real-time listener for teacher force-stop ───
+  useEffect(() => {
+    if (!assignmentId || !isQuizStarted) return;
+    const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
+    const unsubscribe = onSnapshot(assignmentRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.forceStoppedByTeacher && !submittingRef.current && !hasAutoSubmitted && !showResults) {
+          setHasAutoSubmitted(true);
+          handleForceStopSubmit(data.forceStopReason || "Stopped by teacher due to violations");
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [assignmentId, isQuizStarted, hasAutoSubmitted, showResults]);
 
   // ─── Anti-cheat: tab visibility ───
   useEffect(() => {
@@ -363,6 +387,11 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       if (assignmentData.studentId !== currentUser.uid) { setError("This quiz is not assigned to you"); return; }
       if (assignmentData.quizMode !== "asynchronous") { setError("This quiz is not available for self-paced completion"); return; }
       if (assignmentData.completed && assignmentData.attempts >= (assignmentData.settings?.maxAttempts || 1)) { setError("You have already completed this quiz"); return; }
+      const quizStart = assignmentData.startDate;
+      if (quizStart) {
+        const startTime = new Date(quizStart);
+        if (new Date() < startTime) { setError("This quiz has not started yet. Please wait for the scheduled start time."); return; }
+      }
       const quizDeadline = assignmentData.dueDate || assignmentData.deadline;
       if (quizDeadline) {
         const deadline = new Date(quizDeadline);
@@ -397,7 +426,12 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       }
       if (assignmentData.settings?.timeLimit) setTimeLeft(assignmentData.settings.timeLimit * 60);
       if (assignmentData.status === "pending") {
-        await updateDoc(assignmentRef, { status: "in_progress", startedAt: serverTimestamp() });
+        await updateDoc(assignmentRef, {
+          status: "in_progress",
+          startedAt: serverTimestamp(),
+          currentQuestionIndex: 0,
+          totalQuestions: orderedQuestions.length,
+        });
       }
       setIsQuizStarted(true);
       setQuizStartTime(new Date());
@@ -448,9 +482,11 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const calculateScore = () => {
     let correctPoints = 0;
     let totalPoints = 0;
-    questions.forEach((question, index) => {
+    const currentQuestions = questionsRef.current;
+    const currentAnswers = answersRef.current;
+    currentQuestions.forEach((question, index) => {
       totalPoints += question.points || 1;
-      const studentAnswer = answers[index];
+      const studentAnswer = currentAnswers[index];
       if (!studentAnswer) return;
       if (question.type === "multiple_choice") {
         const correctChoice = question.choices?.find((c) => c.is_correct);
@@ -464,6 +500,21 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     const rawScorePercentage = totalPoints > 0 ? Math.round((correctPoints / totalPoints) * 100) : 0;
     const base50ScorePercentage = Math.round(50 + rawScorePercentage / 2);
     return { rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints };
+  };
+
+  const handleForceStopSubmit = async (reason) => {
+    if (submitting) return;
+    setConfirmDialog({
+      isOpen: true,
+      title: "⛔ Quiz Stopped by Teacher",
+      message: `Your teacher has force-stopped your quiz due to violations.\n\nReason: ${reason}\n\nYour current answers will be submitted automatically.`,
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        await submitQuiz("force_stopped");
+      },
+      showCancel: false,
+      confirmLabel: "I Understand",
+    });
   };
 
   const handleSubmit = async () => {
@@ -505,14 +556,45 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     await submitQuiz();
   };
 
-  const submitQuiz = async () => {
+  const handleDueDateAutoSubmit = async () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Due Date Reached!",
+      message: "The deadline for this quiz has passed. Your answers will be submitted automatically.",
+      onConfirm: () => setConfirmDialog((prev) => ({ ...prev, isOpen: false })),
+      showCancel: false,
+      confirmLabel: "Okay",
+    });
+    await submitQuiz();
+  };
+
+  // ─── Auto-submit on Due Date ───
+  useEffect(() => {
+    if (!isQuizStarted || showResults || submitting || !assignment) return;
+
+    const quizDeadline = assignment.dueDate || assignment.deadline;
+    if (!quizDeadline) return;
+
+    const deadlineTime = new Date(quizDeadline).getTime();
+
+    const interval = setInterval(() => {
+      if (new Date().getTime() >= deadlineTime) {
+        clearInterval(interval);
+        handleDueDateAutoSubmit();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isQuizStarted, showResults, submitting, assignment]);
+
+  const submitQuiz = async (submissionType = "normal") => {
     setSubmitting(true);
     try {
       const { rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints } = calculateScore();
       const currentUser = auth.currentUser;
       const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
       await updateDoc(assignmentRef, {
-        status: "completed",
+        status: submissionType === "force_stopped" ? "force_stopped" : "completed",
         completed: true,
         rawScorePercentage,
         base50ScorePercentage,
@@ -532,24 +614,26 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         classId: assignment.classId || null,
         className: assignment.className || "Unknown Class",
         subject: assignment.subject || quiz.subject || "",
-        answers,
+        answers: answersRef.current,
         rawScorePercentage,
         base50ScorePercentage,
         correctPoints,
         totalPoints,
-        totalQuestions: questions.length,
+        totalQuestions: questionsRef.current.length,
         submittedAt: serverTimestamp(),
         quizMode: "asynchronous",
+        submissionType,
+        forceStoppedByTeacher: submissionType === "force_stopped",
         antiCheatData: {
-          tabSwitchCount,
-          suspiciousActivities,
-          totalSuspiciousActivities: suspiciousActivities.length,
-          quizDuration: quizStartTime ? Math.round((new Date() - quizStartTime) / 1000) : 0,
-          flaggedForReview: suspiciousActivities.length > 0,
+          tabSwitchCount: tabCountRef.current,
+          suspiciousActivities: activitiesRef.current,
+          totalSuspiciousActivities: activitiesRef.current.length,
+          quizDuration: quizStartTimeRef.current ? Math.round((new Date() - quizStartTimeRef.current) / 1000) : 0,
+          flaggedForReview: activitiesRef.current.length > 0 || tabCountRef.current > 0,
         },
       });
       localStorage.removeItem(`quiz_progress_${assignmentId}`);
-      setQuizResults({ rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints, totalQuestions: questions.length });
+      setQuizResults({ rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints, totalQuestions: questionsRef.current.length, forceStoppedByTeacher: submissionType === "force_stopped" });
       setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);
@@ -561,6 +645,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         showCancel: false,
         confirmLabel: "Okay",
       });
+      setHasAutoSubmitted(false);
     } finally {
       setSubmitting(false);
     }
@@ -577,7 +662,7 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   };
 
   // ─── Only advance forward; enforce sequential answering ───
-  const goToNextQuestion = () => {
+  const goToNextQuestion = async () => {
     if (!isCurrentQuestionAnswered()) {
       setConfirmDialog({
         isOpen: true,
@@ -591,8 +676,21 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     }
     // Only move forward — never allow going back or jumping ahead
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
+      const nextIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextIndex);
       setIsDropdownOpen(false);
+      // Update progress in Firestore for real-time teacher monitoring
+      if (assignmentId) {
+        try {
+          const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
+          await updateDoc(assignmentRef, {
+            currentQuestionIndex: nextIndex,
+            totalQuestions: questions.length,
+          });
+        } catch (err) {
+          console.error("Error updating question progress:", err);
+        }
+      }
     }
   };
 

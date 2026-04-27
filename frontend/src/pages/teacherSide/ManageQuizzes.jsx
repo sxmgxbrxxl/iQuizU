@@ -1042,7 +1042,7 @@ export default function ManageQuizzes() {
       {mounted && selectedPublishedQuiz && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-Poppins animate-overlayFade" onClick={() => setSelectedPublishedQuiz(null)}>
           <div className="bg-white rounded-2xl w-[95%] md:w-full max-w-lg shadow-2xl animate-popIn flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            
+
             {/* Dialog Header */}
             <div className="flex items-start justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-400 rounded-t-2xl">
               <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -1357,7 +1357,7 @@ export default function ManageQuizzes() {
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-5 h-5 text-slate-400" />
                       <div className="flex flex-col">
-                        <span className="text-[12px] text-slate-400 font-semibold uppercase">Assigned</span> 
+                        <span className="text-[12px] text-slate-400 font-semibold uppercase">Assigned</span>
                         <p className="text-[15px] font-semibold text-slate-700 truncate">{selectedSyncQuiz.assignedAt ? new Date(selectedSyncQuiz.assignedAt.seconds * 1000).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}</p>
                       </div>
                     </div>
@@ -2038,7 +2038,7 @@ export default function ManageQuizzes() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-2">
-                      Identification
+                      Matching Type
                     </label>
                     <input
                       type="text"

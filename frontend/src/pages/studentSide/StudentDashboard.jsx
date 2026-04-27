@@ -259,6 +259,7 @@ export default function StudentDashboard({ user, userDoc }) {
             quizTitle: data.quizTitle || "Untitled Quiz",
             className: data.className || "Unknown Class",
             subject: data.subject || "",
+            startDate: data.startDate || null,
             dueDate: data.dueDate,
             status: data.status || "pending",
             completed: data.completed || false,
@@ -410,18 +411,24 @@ export default function StudentDashboard({ user, userDoc }) {
     });
   };
 
-  const canTakeQuiz = (quiz) => {
+  const getQuizState = (quiz) => {
     if (quiz.completed && quiz.attempts >= quiz.maxAttempts) {
-      return false;
+      return "completed";
+    }
+
+    const now = new Date();
+
+    if (quiz.startDate) {
+      const startDate = new Date(quiz.startDate);
+      if (now < startDate) return "not_started";
     }
 
     if (quiz.dueDate) {
       const dueDate = new Date(quiz.dueDate);
-      const now = new Date();
-      return now <= dueDate;
+      if (now > dueDate) return "expired";
     }
 
-    return true;
+    return "available";
   };
 
   const getScoreColor = (score) => {
@@ -660,7 +667,10 @@ export default function StudentDashboard({ user, userDoc }) {
 
                                 <div className="flex items-center gap-1 text-gray-600">
                                   <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                  <span className="truncate">Due: {formatDueDate(quiz.dueDate)}</span>
+                                  <span className="truncate">
+                                    {quiz.startDate && `Starts: ${formatDueDate(quiz.startDate)} • `}
+                                    Due: {formatDueDate(quiz.dueDate)}
+                                  </span>
                                 </div>
 
                                 {quiz.instructions && (
@@ -711,7 +721,7 @@ export default function StudentDashboard({ user, userDoc }) {
                             </div>
 
                             <div className="flex-shrink-0 w-full sm:w-auto">
-                              {canTakeQuiz(quiz) ? (
+                              {getQuizState(quiz) === "available" ? (
                                 <button
                                   onClick={() => handleTakeQuiz(quiz.id)}
                                   className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm sm:text-base transition ${hasProgress
@@ -736,13 +746,21 @@ export default function StudentDashboard({ user, userDoc }) {
                                     </>
                                   )}
                                 </button>
-                              ) : quiz.completed ? (
+                              ) : getQuizState(quiz) === "completed" ? (
                                 <button
                                   disabled
                                   className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-300 text-gray-600 px-4 py-2 rounded-lg cursor-not-allowed font-semibold text-sm sm:text-base"
                                 >
                                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                                   Completed
+                                </button>
+                              ) : getQuizState(quiz) === "not_started" ? (
+                                <button
+                                  disabled
+                                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg cursor-not-allowed font-semibold text-sm sm:text-base"
+                                >
+                                  <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                                  Not Started
                                 </button>
                               ) : (
                                 <button
