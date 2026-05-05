@@ -16,6 +16,9 @@ import {
   Shield,
   StopCircle,
   Activity,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import {
   collection,
@@ -60,6 +63,7 @@ export default function QuizResults() {
   const [liveAssignments, setLiveAssignments] = useState({});
   const [showForceStopModal, setShowForceStopModal] = useState(false);
   const [forceStopStudent, setForceStopStudent] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: "name", direction: "asc" });
 
   // Custom Toast state
   const [toast, setToast] = useState({ show: false, type: "", title: "", message: "" });
@@ -547,6 +551,85 @@ export default function QuizResults() {
 
   const stats = calculateStats();
 
+  // ─── Sorting Logic ───
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) {
+      return <ArrowUpDown className="w-3 h-3 opacity-40" />;
+    }
+    return sortConfig.direction === "asc"
+      ? <ChevronUp className="w-3 h-3" />
+      : <ChevronDown className="w-3 h-3" />;
+  };
+
+  const getStudentStatus = (student) => {
+    const result = getStudentResult(student.id);
+    const live = liveAssignments[student.id];
+    const submitted = !!result;
+    const isInProgress = !submitted && live?.status === "in_progress" && !live?.completed;
+    const isForceStoppedLive = !submitted && live?.forceStoppedByTeacher && !isInProgress;
+
+    if (submitted) return "completed";
+    if (isForceStoppedLive) return "force_stopped";
+    if (isInProgress) return "in_progress";
+    if (assignedStudentIds.has(student.id) && isDeadlinePassed(student.id)) return "missed";
+    if (assignedStudentIds.has(student.id)) return "pending";
+    if (student.id === student.docId) return "no_account";
+    return "not_assigned";
+  };
+
+  const statusOrder = {
+    in_progress: 0,
+    completed: 1,
+    pending: 2,
+    force_stopped: 3,
+    missed: 4,
+    not_assigned: 5,
+    no_account: 6,
+  };
+
+  const sortedStudents = [...students].sort((a, b) => {
+    const dir = sortConfig.direction === "asc" ? 1 : -1;
+    const resultA = getStudentResult(a.id);
+    const resultB = getStudentResult(b.id);
+
+    switch (sortConfig.key) {
+      case "name":
+        return dir * a.name.localeCompare(b.name);
+      case "studentNo":
+        return dir * (a.studentNo || "").localeCompare(b.studentNo || "");
+      case "score": {
+        const scoreA = resultA ? resultA.correctPoints : -1;
+        const scoreB = resultB ? resultB.correctPoints : -1;
+        return dir * (scoreA - scoreB);
+      }
+      case "rawScore": {
+        const rawA = resultA ? resultA.rawScorePercentage : -1;
+        const rawB = resultB ? resultB.rawScorePercentage : -1;
+        return dir * (rawA - rawB);
+      }
+      case "base50": {
+        const b50A = resultA ? resultA.base50ScorePercentage : -1;
+        const b50B = resultB ? resultB.base50ScorePercentage : -1;
+        return dir * (b50A - b50B);
+      }
+      case "status": {
+        const statusA = statusOrder[getStudentStatus(a)] ?? 99;
+        const statusB = statusOrder[getStudentStatus(b)] ?? 99;
+        return dir * (statusA - statusB);
+      }
+      default:
+        return 0;
+    }
+  });
+
   return (
     <div className="w-full font-Poppins">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2 hover:gap-6 hover:duration-200">
@@ -649,27 +732,57 @@ export default function QuizResults() {
         {/* Desktop Table View */}
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full">
-            <thead className="bg-blue-600 text-white rounded-lg">
+            <thead className="text-white rounded-lg">
               <tr>
-                <th className="px-6 py-4 text-left font-bold rounded-l-lg">Student</th>
-                <th className="px-6 py-4 text-left font-bold">Student No.</th>
-                <th className="px-6 py-4 text-center font-bold">Score</th>
-                <th className="px-6 py-4 text-center font-bold">Raw Score</th>
-                <th className="px-6 py-4 text-center font-bold">Base-50 Grade</th>
-                <th className="px-6 py-4 text-center font-bold">Status</th>
-                <th className="px-6 py-4 text-center font-bold">Anti-Cheat</th>
-                <th className="px-6 py-4 text-center font-bold rounded-r-lg">Actions</th>
+                <th
+                  className="bg-blue-600 px-6 py-4 text-left font-bold rounded-l-lg cursor-pointer select-none hover:bg-blue-700 transition-colors"
+                  onClick={() => handleSort("name")}
+                >
+                  <span className="flex items-center gap-1">Student {getSortIcon("name")}</span>
+                </th>
+                <th
+                  className="bg-blue-600 px-6 py-4 text-left font-bold cursor-pointer select-none hover:bg-blue-700 transition-colors"
+                  onClick={() => handleSort("studentNo")}
+                >
+                  <span className="flex items-center gap-1">Student No. {getSortIcon("studentNo")}</span>
+                </th>
+                <th
+                  className="bg-blue-600 px-6 py-4 text-center font-bold cursor-pointer select-none hover:bg-blue-700 transition-colors"
+                  onClick={() => handleSort("score")}
+                >
+                  <span className="flex items-center justify-center gap-1">Score {getSortIcon("score")}</span>
+                </th>
+                <th
+                  className="bg-blue-600 px-6 py-4 text-center font-bold cursor-pointer select-none hover:bg-blue-700 transition-colors"
+                  onClick={() => handleSort("rawScore")}
+                >
+                  <span className="flex items-center justify-center gap-1">Raw Score {getSortIcon("rawScore")}</span>
+                </th>
+                <th
+                  className="bg-blue-600 px-6 py-4 text-center font-bold cursor-pointer select-none hover:bg-blue-700 transition-colors"
+                  onClick={() => handleSort("base50")}
+                >
+                  <span className="flex items-center justify-center gap-1">Base-50 Grade {getSortIcon("base50")}</span>
+                </th>
+                <th
+                  className="bg-blue-600 px-6 py-4 text-center font-bold cursor-pointer select-none hover:bg-blue-700 transition-colors"
+                  onClick={() => handleSort("status")}
+                >
+                  <span className="flex items-center justify-center gap-1">Status {getSortIcon("status")}</span>
+                </th>
+                <th className="bg-blue-600 px-6 py-4 text-center font-bold">Anti-Cheat</th>
+                <th className="bg-blue-600 px-6 py-4 text-center font-bold rounded-r-lg">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {students.length === 0 ? (
+              {sortedStudents.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
                     No students in this class
                   </td>
                 </tr>
               ) : (
-                students.map((student, idx) => {
+                sortedStudents.map((student, idx) => {
                   const result = getStudentResult(student.id);
                   const submitted = !!result;
                   const live = liveAssignments[student.id];
@@ -865,12 +978,37 @@ export default function QuizResults() {
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {students.length === 0 ? (
+        {/* Mobile Sort Dropdown */}
+        <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-3">
+          <ArrowUpDown className="w-4 h-4 text-subtext" />
+          <select
+            value={`${sortConfig.key}-${sortConfig.direction}`}
+            onChange={(e) => {
+              const [key, direction] = e.target.value.split("-");
+              setSortConfig({ key, direction });
+            }}
+            className="flex-1 bg-transparent text-sm font-semibold text-title outline-none cursor-pointer"
+          >
+            <option value="name-asc">Name (A → Z)</option>
+            <option value="name-desc">Name (Z → A)</option>
+            <option value="score-desc">Score (High → Low)</option>
+            <option value="score-asc">Score (Low → High)</option>
+            <option value="rawScore-desc">Raw Score (High → Low)</option>
+            <option value="rawScore-asc">Raw Score (Low → High)</option>
+            <option value="base50-desc">Base-50 (High → Low)</option>
+            <option value="base50-asc">Base-50 (Low → High)</option>
+            <option value="status-asc">Status</option>
+            <option value="studentNo-asc">Student No. (A → Z)</option>
+            <option value="studentNo-desc">Student No. (Z → A)</option>
+          </select>
+        </div>
+
+        {sortedStudents.length === 0 ? (
           <div className="text-center text-gray-500 py-8 bg-white rounded-lg border border-gray-200">
             No students in this class
           </div>
         ) : (
-          students.map((student) => {
+          sortedStudents.map((student) => {
             const result = getStudentResult(student.id);
             const submitted = !!result;
             const live = liveAssignments[student.id];

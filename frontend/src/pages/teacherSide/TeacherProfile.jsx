@@ -264,6 +264,16 @@ export default function TeacherProfile({ user, userDoc }) {
             return;
         }
 
+        if (!fullName.trim() || !emailAddr.trim()) {
+            showToast("warning", "Full Name and Email Address cannot be empty.");
+            return;
+        }
+
+        if (fullName.length > 100) {
+            showToast("warning", "Full Name exceeds the maximum character limit.");
+            return;
+        }
+
         try {
             setSaving(true);
             const userDocRef = doc(db, "users", userDocId);
@@ -275,7 +285,7 @@ export default function TeacherProfile({ user, userDoc }) {
 
             const updatedData = {
                 firstName: fullName,
-                department: department,
+                department: "CCS",
                 email: emailAddr,
                 phone: phone,
                 bio: bio,
@@ -370,7 +380,7 @@ export default function TeacherProfile({ user, userDoc }) {
                         type="file"
                         ref={fileInputRef}
                         onChange={handlePhotoChange}
-                        accept="image/*"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                         className="hidden"
                     />
                 </div>
@@ -406,15 +416,17 @@ export default function TeacherProfile({ user, userDoc }) {
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
                                         className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                                        maxLength={100}
                                     />
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-subtext text-sm font-medium">Department</label>
                                     <input
                                         type="text"
-                                        value={department}
-                                        onChange={(e) => setDepartment(e.target.value)}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                                        value="CCS"
+                                        disabled
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        title="Department cannot be changed"
                                     />
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
@@ -422,8 +434,9 @@ export default function TeacherProfile({ user, userDoc }) {
                                     <input
                                         type="email"
                                         value={emailAddr}
-                                        onChange={(e) => setEmailAddr(e.target.value)}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                                        disabled
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        title="Email address cannot be changed directly"
                                     />
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
@@ -482,7 +495,7 @@ export default function TeacherProfile({ user, userDoc }) {
                                 <div className="border-b border-gray-50" />
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                                     <span className="sm:w-40 text-subtext text-sm font-medium">Department</span>
-                                    <span className="font-semibold text-title">{department || "-"}</span>
+                                    <span className="font-semibold text-title">CCS</span>
                                 </div>
                                 <div className="border-b border-gray-50" />
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">

@@ -36,6 +36,7 @@ import ViewClassPage from "./pages/teacherSide/ViewClassPage";
 import AssignQuizToClass from "./pages/teacherSide/AssignQuiztoClass";
 import ArchivedClasses from "./pages/teacherSide/ArchivedClasses";
 import ArchivedQuizzes from "./pages/teacherSide/ArchivedQuizzes";
+import AcademicYearSettings from "./pages/teacherSide/AcademicYearSettings";
 
 // QUIZ MANAGEMENT
 import EditQuiz from "./pages/teacherSide/EditQuiz";
@@ -398,6 +399,10 @@ function App() {
           <Route
             path="archives/quizzes"
             element={<ArchivedQuizzes user={authUser} />}
+          />
+          <Route
+            path="academic-year-settings"
+            element={<AcademicYearSettings user={authUser} />}
           />
 
           {/* QUIZ MANAGEMENT ROUTES */}

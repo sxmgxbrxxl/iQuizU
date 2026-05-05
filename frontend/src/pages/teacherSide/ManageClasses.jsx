@@ -73,6 +73,14 @@ function ClassConfirmationModal({ isOpen, classInfo, students, onConfirm, onCanc
                   {classInfo.description || "N/A"}
                 </p>
               </div>
+              <div>
+                <p className="text-xs text-blue-700 font-semibold mb-0.5">Semester</p>
+                <p className="text-sm text-gray-800 font-medium">{classInfo.semester || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-blue-700 font-semibold mb-0.5">Academic Year</p>
+                <p className="text-sm text-gray-800 font-medium">{classInfo.academicYear || "N/A"}</p>
+              </div>
             </div>
           </div>
 
@@ -246,6 +254,14 @@ export default function ManageClasses() {
     onClose: null, // optional callback when dialog closes
   });
 
+  const [updateConfirmDialog, setUpdateConfirmDialog] = useState({
+    isOpen: false,
+    duplicate: null,
+    validStudents: null,
+    file: null,
+    classInfo: null
+  });
+
   const showAlert = (type, title, message, onClose = null) => {
     setAlertDialog({ isOpen: true, type, title, message, onClose });
   };
@@ -254,6 +270,26 @@ export default function ManageClasses() {
     const cb = alertDialog.onClose;
     setAlertDialog({ isOpen: false, type: "info", title: "", message: "", onClose: null });
     if (cb) cb();
+  };
+
+  const handleCancelUpdate = () => {
+    setUpdateConfirmDialog({ isOpen: false, duplicate: null, validStudents: null, file: null, classInfo: null });
+    setFileName("");
+  };
+
+  const handleConfirmUpdate = () => {
+    const { duplicate, validStudents, file, classInfo } = updateConfirmDialog;
+    setUpdateConfirmDialog({ isOpen: false, duplicate: null, validStudents: null, file: null, classInfo: null });
+    
+    setPendingUploadData({
+      validStudents,
+      file,
+      classInfo,
+      isUpdate: true,
+      existingClassId: duplicate.id,
+      existingClassName: duplicate.name
+    });
+    setShowConfirmationModal(true);
   };
 
   // Check class count on component mount
@@ -379,6 +415,8 @@ export default function ManageClasses() {
     let classNo = "";
     let code = "";
     let description = "";
+    let semester = "";
+    let academicYear = "";
 
     // Search through the first 15 rows for class information
     for (let i = 0; i < Math.min(15, allData.length); i++) {
@@ -387,6 +425,43 @@ export default function ManageClasses() {
 
       // Convert row to string for searching
       const rowStr = Array.isArray(row) ? row.join('|').toLowerCase() : '';
+
+      // Look for Semester
+      if (rowStr.includes('semester')) {
+        const semIndex = row.findIndex(cell =>
+          cell && cell.toString().toLowerCase().includes('semester')
+        );
+        // Check if the cell itself contains the value (e.g., "Semester:" label)
+        if (semIndex !== -1) {
+          const cellValue = row[semIndex].toString().trim();
+          // If the cell is just a label like "Semester:" or "Semester", get the next cell
+          if (cellValue.toLowerCase().replace(/[:\s]/g, '') === 'semester' && row[semIndex + 1]) {
+            semester = row[semIndex + 1].toString().trim();
+          } else if (cellValue.toLowerCase() !== 'semester' && cellValue.toLowerCase() !== 'semester:') {
+            // The value might be in the same cell
+            semester = cellValue.replace(/^semester[:\s]*/i, '').trim();
+          } else if (row[semIndex + 1]) {
+            semester = row[semIndex + 1].toString().trim();
+          }
+        }
+      }
+
+      // Look for Academic Year
+      if (rowStr.includes('academic year')) {
+        const ayIndex = row.findIndex(cell =>
+          cell && cell.toString().toLowerCase().includes('academic year')
+        );
+        if (ayIndex !== -1) {
+          const cellValue = row[ayIndex].toString().trim();
+          if (cellValue.toLowerCase().replace(/[:\s]/g, '') === 'academicyear' && row[ayIndex + 1]) {
+            academicYear = row[ayIndex + 1].toString().trim();
+          } else if (cellValue.toLowerCase() !== 'academic year' && cellValue.toLowerCase() !== 'academic year:') {
+            academicYear = cellValue.replace(/^academic\s*year[:\s]*/i, '').trim();
+          } else if (row[ayIndex + 1]) {
+            academicYear = row[ayIndex + 1].toString().trim();
+          }
+        }
+      }
 
       // Look for Class No
       if (rowStr.includes('class no')) {
@@ -419,8 +494,8 @@ export default function ManageClasses() {
       }
     }
 
-    console.log("Extracted class info:", { classNo, code, description });
-    return { classNo, code, description };
+    console.log("Extracted class info:", { classNo, code, description, semester, academicYear });
+    return { classNo, code, description, semester, academicYear };
   };
 
   const checkDuplicateClass = async (classInfo, validStudents, file) => {
@@ -435,26 +510,26 @@ export default function ManageClasses() {
       );
 
       const querySnapshot = await getDocs(q);
-      const existingClasses = querySnapshot.docs.map(doc => doc.data());
+      const existingClasses = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       for (const data of existingClasses) {
         // 1. Strict Check: Same Class No.
         if (classInfo.classNo && classInfo.classNo.trim() !== "") {
           if (data.classNo === classInfo.classNo.trim()) {
-            return { type: "Class No.", value: classInfo.classNo.trim() };
+            return { type: "Class No.", value: classInfo.classNo.trim(), id: data.id, name: data.name };
           }
         }
 
         // 2. Strict Check: Same File Name
         if (data.fileName === file.name) {
-          return { type: "File Name", value: file.name };
+          return { type: "File Name", value: file.name, id: data.id, name: data.name };
         }
 
         // 3. Content Check: Same Course Code + Same Student Count
         // This catches renamed files with exactly the same students/course
         if (classInfo.code && classInfo.code.trim() !== "") {
           if (data.code === classInfo.code.trim() && data.studentCount === validStudents.length) {
-            return { type: "Content Match", value: `Course ${classInfo.code} with ${validStudents.length} students` };
+            return { type: "Content Match", value: `Course ${classInfo.code} with ${validStudents.length} students`, id: data.id, name: data.name };
           }
         }
       }
@@ -508,13 +583,14 @@ export default function ManageClasses() {
     setUploadProgress("Validating class information...");
     const duplicate = await checkDuplicateClass(classInfo, validStudents, file);
     if (duplicate) {
-      showAlert(
-        "warning", 
-        "Duplicate Detected", 
-        `This class appears to be a duplicate.\n\nReason: Existing ${duplicate.type} "${duplicate.value}" already exists in your classes.\n\nUploading identical class lists is not allowed.`
-      );
-      setFileName("");
       setUploadProgress("");
+      setUpdateConfirmDialog({
+        isOpen: true,
+        duplicate,
+        validStudents,
+        file,
+        classInfo
+      });
       return;
     }
     setUploadProgress("");
@@ -547,26 +623,45 @@ export default function ManageClasses() {
         return;
       }
 
-      const { validStudents, file, classInfo } = pendingUploadData;
+      const { validStudents, file, classInfo, isUpdate, existingClassId, existingClassName } = pendingUploadData;
       const teacherName = user.displayName || user.email?.split('@')[0] || "Teacher";
 
-      setUploadProgress(`Creating class: ${classInfo.description || file.name}`);
+      setUploadProgress(`${isUpdate ? 'Updating' : 'Creating'} class: ${classInfo.description || file.name}`);
 
-      // Save to Firestore with new structure including classNo and code
-      const classDoc = await addDoc(collection(db, "classes"), {
-        name: classInfo.description || file.name.replace(/\.(csv|xlsx|xls)$/i, ''),
-        classNo: classInfo.classNo || "",
-        code: classInfo.code || "",
-        subject: "",
-        studentCount: validStudents.length,
-        teacherId: user.uid,
-        teacherEmail: user.email,
-        teacherName: teacherName,
-        uploadedAt: new Date(),
-        fileName: file.name
-      });
+      let classDocId;
 
-      console.log(`Created class document: ${classDoc.id}`);
+      if (isUpdate) {
+        classDocId = existingClassId;
+        await updateDoc(doc(db, "classes", classDocId), {
+          name: classInfo.description || existingClassName || file.name.replace(/\.(csv|xlsx|xls)$/i, ''),
+          classNo: classInfo.classNo || "",
+          code: classInfo.code || "",
+          semester: classInfo.semester || "",
+          academicYear: classInfo.academicYear || "",
+          studentCount: validStudents.length,
+          uploadedAt: new Date(),
+          fileName: file.name
+        });
+        console.log(`Updated class document: ${classDocId}`);
+      } else {
+        // Save to Firestore with new structure including classNo, code, semester, and academicYear
+        const classDoc = await addDoc(collection(db, "classes"), {
+          name: classInfo.description || file.name.replace(/\.(csv|xlsx|xls)$/i, ''),
+          classNo: classInfo.classNo || "",
+          code: classInfo.code || "",
+          subject: "",
+          semester: classInfo.semester || "",
+          academicYear: classInfo.academicYear || "",
+          studentCount: validStudents.length,
+          teacherId: user.uid,
+          teacherEmail: user.email,
+          teacherName: teacherName,
+          uploadedAt: new Date(),
+          fileName: file.name
+        });
+        classDocId = classDoc.id;
+        console.log(`Created class document: ${classDocId}`);
+      }
 
       let newStudentCount = 0;
       let addedToExistingCount = 0;
@@ -600,7 +695,7 @@ export default function ManageClasses() {
           const existingStudent = await checkStudentExistsByEmail(cleanEmail);
 
           if (existingStudent) {
-            const updatedClassIds = [...new Set([...existingStudent.classIds, classDoc.id])];
+            const updatedClassIds = [...new Set([...existingStudent.classIds, classDocId])];
 
             await updateDoc(doc(db, "users", existingStudent.id), {
               classIds: updatedClassIds
@@ -617,7 +712,7 @@ export default function ManageClasses() {
               year: year?.toString().trim() || "",
               emailAddress: cleanEmail,
               contactNo: contactNo?.toString().trim() || "",
-              classIds: [classDoc.id],
+              classIds: [classDocId],
               role: "student",
               hasAccount: false,
               authUID: null,
@@ -633,18 +728,55 @@ export default function ManageClasses() {
         }
       }
 
+      let removedCount = 0;
+
+      // Sync: remove students who are no longer in the Excel file
+      if (isUpdate) {
+        setUploadProgress("Cleaning up unenrolled students...");
+        try {
+          const studentsQuery = query(
+            collection(db, "users"),
+            where("role", "==", "student"),
+            where("classIds", "array-contains", classDocId)
+          );
+          const studentsSnapshot = await getDocs(studentsQuery);
+
+          // Get array of valid student numbers from the new upload
+          const validStudentNos = validStudents.map(s => s["Student No."]?.toString().trim());
+
+          for (const docSnapshot of studentsSnapshot.docs) {
+            const studentData = docSnapshot.data();
+            
+            // If the enrolled student is NOT in the new uploaded file
+            if (!validStudentNos.includes(studentData.studentNo)) {
+              const updatedClassIds = (studentData.classIds || []).filter(id => id !== classDocId);
+              await updateDoc(doc(db, "users", docSnapshot.id), {
+                classIds: updatedClassIds
+              });
+              removedCount++;
+              console.log(`❌ Removed ${studentData.name} from class (not in new list)`);
+            }
+          }
+        } catch (cleanupError) {
+          console.error("Error cleaning up unenrolled students:", cleanupError);
+        }
+      }
+
       const totalCount = newStudentCount + addedToExistingCount;
       setUploadCount(totalCount);
 
-      if (totalCount > 0) {
-        let message = `New students: ${newStudentCount}\nAdded to existing: ${addedToExistingCount}`;
+      if (totalCount > 0 || isUpdate) {
+        let message = `New students added: ${newStudentCount}\nUpdated existing: ${addedToExistingCount}`;
+
+        if (isUpdate) {
+          message += `\nStudents unenrolled: ${removedCount}`;
+        }
 
         if (errorCount > 0) {
           message += `\nErrors: ${errorCount}`;
         }
 
-        const classDocId = classDoc.id;
-        showAlert("success", "Upload Complete!", message, () => {
+        showAlert("success", isUpdate ? "Class Updated!" : "Upload Complete!", message, () => {
           // Navigate after closing
           navigate(`/teacher/class/${classDocId}`);
         });
@@ -981,6 +1113,53 @@ export default function ManageClasses() {
               >
                 Okay
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Update Confirmation Dialog */}
+      {updateConfirmDialog.isOpen && createPortal(
+        <div className="font-Poppins fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] animate-fadeIn p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full animate-slideUp">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-4 rounded-full flex items-center justify-center mb-4 bg-amber-100">
+                <AlertTriangle className="text-amber-600" size={32} />
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Class Already Exists</h3>
+              <p className="text-gray-600 text-sm leading-relaxed px-2 mb-4">
+                A class matching this file already exists in your records.
+              </p>
+              
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 w-full mb-6 text-left">
+                <p className="text-sm font-semibold text-amber-800 mb-1">Existing Class:</p>
+                <p className="text-amber-900 font-bold">{updateConfirmDialog.duplicate.name || "Unnamed Class"}</p>
+                <p className="text-xs text-amber-700 mt-1">Match Reason: {updateConfirmDialog.duplicate.type} ({updateConfirmDialog.duplicate.value})</p>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-6">
+                Would you like to <strong>update</strong> the existing class with this new list? <br className="hidden md:block"/>
+                <span className="text-xs text-gray-500 block mt-2">
+                  (New students will be added, and students no longer in the list will be unenrolled.)
+                </span>
+              </p>
+
+              <div className="flex gap-3 w-full mt-2">
+                <button
+                  onClick={handleCancelUpdate}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-200 active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmUpdate}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide bg-amber-500 text-white hover:bg-amber-600 transition duration-200 active:scale-95 shadow-lg shadow-amber-200"
+                >
+                  Update Class
+                </button>
+              </div>
             </div>
           </div>
         </div>,

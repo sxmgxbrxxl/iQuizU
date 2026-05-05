@@ -387,15 +387,40 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       if (assignmentData.studentId !== currentUser.uid) { setError("This quiz is not assigned to you"); return; }
       if (assignmentData.quizMode !== "asynchronous") { setError("This quiz is not available for self-paced completion"); return; }
       if (assignmentData.completed && assignmentData.attempts >= (assignmentData.settings?.maxAttempts || 1)) { setError("You have already completed this quiz"); return; }
+      
+      // ─── Quiz Entry Window Logic ───
+      const EARLY_ACCESS_MINUTES = 10;
+      const now = new Date();
+
+      // Grace period controls how many minutes after start time a student can still enter
+      const gracePeriodMinutes = assignmentData.settings?.gracePeriod || 0;
+
       const quizStart = assignmentData.startDate;
-      if (quizStart) {
+      if (quizStart && quizStart.toString().trim() !== "") {
         const startTime = new Date(quizStart);
-        if (new Date() < startTime) { setError("This quiz has not started yet. Please wait for the scheduled start time."); return; }
+        const earlyAccessTime = new Date(startTime.getTime() - EARLY_ACCESS_MINUTES * 60000);
+        const lateEntryTime = new Date(startTime.getTime() + gracePeriodMinutes * 60000);
+
+        if (now < earlyAccessTime) {
+          setError(`Quiz is not available yet. Early access opens at ${earlyAccessTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`);
+          return;
+        }
+
+        if (now < startTime) {
+          setError(`Quiz starts at ${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}. Please wait...`);
+          return;
+        }
+
+        // Enforce grace period late entry rule, BUT allow students who already started to resume
+        if (assignmentData.status !== "in_progress" && now > lateEntryTime) {
+          setError(`Late entry is closed. You must start the quiz within ${gracePeriodMinutes} minutes of the scheduled start time (${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}).`);
+          return;
+        }
       }
       const quizDeadline = assignmentData.dueDate || assignmentData.deadline;
       if (quizDeadline) {
-        const deadline = new Date(quizDeadline);
-        if (new Date() > deadline) { setError("This quiz is past its due date"); return; }
+        const deadlineTime = new Date(quizDeadline).getTime();
+        if (new Date().getTime() > deadlineTime) { setError("This quiz is past its due date"); return; }
       }
       setAssignment({ id: assignmentSnap.id, ...assignmentData });
       if (assignmentData.antiCheatData) {

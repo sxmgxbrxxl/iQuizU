@@ -166,6 +166,7 @@ export default function StudentPerformance({ user, userDoc }) {
                         base50ScorePercentage: data.base50ScorePercentage,
                         attempts: data.attempts || 0,
                         maxAttempts: data.settings?.maxAttempts || 1,
+                        gracePeriod: data.settings?.gracePeriod || 0,
                         assignedAt: data.assignedAt,
                         submittedAt: data.submittedAt,
                         instructions: data.instructions || "",

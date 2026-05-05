@@ -271,6 +271,21 @@ export default function ArchivedClasses({ user }) {
                     <span>{classItem.studentCount || 0} students</span>
                   </div>
 
+                  {(classItem.semester || classItem.academicYear) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {classItem.semester && (
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-medium">
+                          {classItem.semester}
+                        </span>
+                      )}
+                      {classItem.academicYear && (
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-xs font-medium">
+                          A.Y. {classItem.academicYear}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
                     <span>Archived: {formatDate(classItem.archivedAt)}</span>

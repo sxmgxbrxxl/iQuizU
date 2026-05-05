@@ -1,0 +1,121 @@
+erDiagram
+    TEACHERS ||--o{ CLASSES : ""
+    TEACHERS ||--o{ QUIZZES : ""
+    
+    STUDENTS }o--o{ CLASSES : ""
+    STUDENTS ||--o{ ASSIGNED_QUIZZES : ""
+    STUDENTS ||--o{ QUIZ_SUBMISSIONS : ""
+    
+    ADMINS ||--o{ ANNOUNCEMENTS : ""
+    
+    CLASSES ||--o{ ASSIGNED_QUIZZES : ""
+    
+    QUIZZES ||--|{ QUESTIONS : ""
+    QUIZZES ||--o{ ASSIGNED_QUIZZES : ""
+    QUIZZES ||--o{ QUIZ_SUBMISSIONS : ""
+    
+    ASSIGNED_QUIZZES ||--o| QUIZ_SUBMISSIONS : ""
+
+    STUDENTS {
+        string studentId
+        string studentNo
+        string name
+        string emailAddress
+        string contactNo
+        string gender
+        string program
+        string year
+        boolean hasAccount
+        timestamp createdAt
+    }
+
+    TEACHERS {
+        string teacherId
+        string name
+        string emailAddress
+        string contactNo
+        string gender
+        boolean hasAccount
+        timestamp createdAt
+    }
+
+    ADMINS {
+        string adminId
+        string name
+        string emailAddress
+        timestamp createdAt
+    }
+
+    CLASSES {
+        string classId
+        string name
+        string classNo
+        string code
+        string subject
+        string semester
+        string academicYear
+        number studentCount
+        timestamp uploadedAt
+        string fileName
+    }
+
+    QUIZZES {
+        string quizId
+        string title
+        string code
+        string mode
+        number totalPoints
+        string status
+        map settings
+        map classificationStats
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    QUESTIONS {
+        string questionId
+        string type
+        string question
+        number points
+        string correct_answer
+        array choices
+        string bloom_classification
+        string cognitive_level
+        string difficulty
+    }
+
+    ASSIGNED_QUIZZES {
+        string assignmentId
+        string status
+        string sessionStatus
+        timestamp startDate
+        timestamp dueDate
+        timestamp assignedAt
+        number score
+        number attempts
+        map currentAnswers
+        boolean forceStoppedByTeacher
+        map antiCheatData
+        map settings
+    }
+
+    QUIZ_SUBMISSIONS {
+        string submissionId
+        array answers
+        number correctPoints
+        number totalPoints
+        number rawScorePercentage
+        number base50ScorePercentage
+        string submissionType
+        timestamp submittedAt
+        map antiCheatData
+    }
+
+    ANNOUNCEMENTS {
+        string announcementId
+        string title
+        string message
+        string targetAudience
+        string priority
+        timestamp createdAt
+    }

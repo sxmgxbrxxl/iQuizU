@@ -70,6 +70,7 @@ export default function AssignQuizToClass() {
     showCorrectAnswers: true,
     passingScore: 60,
     maxAttempts: 1,
+    gracePeriod: 0,
   });
 
   useEffect(() => {
@@ -121,6 +122,7 @@ export default function AssignQuizToClass() {
           showResults: quizData.settings.showResults !== false,
           allowReview: quizData.settings.allowReview !== false,
           showCorrectAnswers: quizData.settings.showCorrectAnswers !== false,
+          gracePeriod: quizData.settings.gracePeriod || 0,
         }));
       }
 
@@ -361,6 +363,7 @@ export default function AssignQuizToClass() {
         showCorrectAnswers: !!assignmentSettings.showCorrectAnswers,
         passingScore: Number(assignmentSettings.passingScore) || 60,
         maxAttempts: Number(assignmentSettings.maxAttempts) || 1,
+        gracePeriod: Number(assignmentSettings.gracePeriod) || 0,
       },
     };
 
@@ -984,6 +987,27 @@ export default function AssignQuizToClass() {
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Students must complete this quiz before this date and time
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">
+                      Late Entry Grace Period (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={assignmentSettings.gracePeriod || ""}
+                      onChange={(e) =>
+                        setAssignmentSettings({
+                          ...assignmentSettings,
+                          gracePeriod: e.target.value ? parseInt(e.target.value) : 0,
+                        })
+                      }
+                      placeholder="0 for no grace period"
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      How many minutes after the start time students can still enter the quiz (e.g., 10 = students can join up to 10 min late)
                     </p>
                   </div>
                 </div>

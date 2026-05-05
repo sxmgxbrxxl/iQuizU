@@ -1006,7 +1006,7 @@ export default function ViewClassPage() {
         <div className="relative z-10 flex flex-col h-full gap-3">
           <div className="mb-1 md:mb-2 pb-4 md:pb-6 border-b border-blue-400/50">
             <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">{classData?.name}</h2>
-            <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4 md:mt-6">
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
               <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
                 <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Class No.</p>
                 <p className="text-base md:text-xl font-bold text-white mt-1">#{classData?.classNo || "N/A"}</p>
@@ -1018,6 +1018,14 @@ export default function ViewClassPage() {
               <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
                 <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Students</p>
                 <p className="text-base md:text-xl font-bold text-white mt-1">{students.length}</p>
+              </div>
+              <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
+                <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Semester</p>
+                <p className="text-sm md:text-base font-bold text-white mt-1 truncate">{classData?.semester || "N/A"}</p>
+              </div>
+              <div className="bg-blue-700/30 p-3 md:p-4 rounded-xl border border-blue-500/30 backdrop-blur-sm">
+                <p className="text-xs md:text-sm text-blue-200 font-semibold uppercase tracking-wider">Academic Year</p>
+                <p className="text-sm md:text-base font-bold text-white mt-1 truncate">{classData?.academicYear || "N/A"}</p>
               </div>
             </div>
           </div>

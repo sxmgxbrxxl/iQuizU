@@ -267,6 +267,7 @@ export default function StudentDashboard({ user, userDoc }) {
             base50ScorePercentage: data.base50ScorePercentage,
             attempts: data.attempts || 0,
             maxAttempts: data.settings?.maxAttempts || 1,
+            gracePeriod: data.settings?.gracePeriod || 0,
             assignedAt: data.assignedAt,
             submittedAt: data.submittedAt,
             instructions: data.instructions || "",
@@ -411,25 +412,36 @@ export default function StudentDashboard({ user, userDoc }) {
     });
   };
 
-  const getQuizState = (quiz) => {
-    if (quiz.completed && quiz.attempts >= quiz.maxAttempts) {
-      return "completed";
-    }
+    const LATE_ENTRY_MINUTES = 15;
 
-    const now = new Date();
+    const getQuizState = (quiz) => {
+        if (quiz.completed && quiz.attempts >= quiz.maxAttempts) {
+            return "completed";
+        }
 
-    if (quiz.startDate) {
-      const startDate = new Date(quiz.startDate);
-      if (now < startDate) return "not_started";
-    }
+        const now = new Date();
 
-    if (quiz.dueDate) {
-      const dueDate = new Date(quiz.dueDate);
-      if (now > dueDate) return "expired";
-    }
+        if (quiz.startDate) {
+            const startDate = new Date(quiz.startDate);
+            // Use teacher-configured gracePeriod for late entry window, fallback to default
+            const lateEntryMinutes = quiz.gracePeriod > 0 ? quiz.gracePeriod : LATE_ENTRY_MINUTES;
+            const lateEntryTime = new Date(startDate.getTime() + lateEntryMinutes * 60000);
+            
+            if (now < startDate) return "not_started";
+            
+            // If it's past the late entry time, and they haven't started yet, it's closed for entry
+            if (now > lateEntryTime && quiz.status !== "in_progress") {
+                return "late_entry_closed";
+            }
+        }
 
-    return "available";
-  };
+        if (quiz.dueDate) {
+            const dueDate = new Date(quiz.dueDate);
+            if (now > dueDate) return "expired";
+        }
+
+        return "available";
+    };
 
   const getScoreColor = (score) => {
     if (score >= 85) return "text-green-600";
@@ -762,15 +774,23 @@ export default function StudentDashboard({ user, userDoc }) {
                                   <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                                   Not Started
                                 </button>
-                              ) : (
-                                <button
-                                  disabled
-                                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-300 text-red-700 px-4 py-2 rounded-lg cursor-not-allowed font-semibold text-sm sm:text-base"
-                                >
-                                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                                  Expired
-                                </button>
-                              )}
+                              ) : getQuizState(quiz) === "late_entry_closed" ? (
+                            <button
+                                disabled
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-100 text-red-700 px-4 py-2.5 sm:py-2 rounded-lg cursor-not-allowed font-semibold text-sm sm:text-base border border-red-300"
+                            >
+                                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                                Entry Closed
+                            </button>
+                        ) : (
+                            <button
+                                disabled
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-300 text-red-700 px-4 py-2.5 sm:py-2 rounded-lg cursor-not-allowed font-semibold text-sm sm:text-base"
+                            >
+                                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                                Expired
+                            </button>
+                        )}
                             </div>
                           </div>
                         </div>

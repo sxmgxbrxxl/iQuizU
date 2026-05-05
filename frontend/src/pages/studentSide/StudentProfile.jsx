@@ -241,6 +241,16 @@ export default function StudentProfile({ user, userDoc }) {
             return;
         }
 
+        if (!fullName.trim() || !emailAddr.trim()) {
+            showToast("warning", "Full Name and Email Address cannot be empty.");
+            return;
+        }
+
+        if (fullName.length > 100 || department.length > 100) {
+            showToast("warning", "Input fields exceed the maximum character limit.");
+            return;
+        }
+
         try {
             setSaving(true);
             const userDocRef = doc(db, "users", userDocId);
@@ -365,7 +375,7 @@ export default function StudentProfile({ user, userDoc }) {
                         type="file"
                         ref={fileInputRef}
                         onChange={handlePhotoChange}
-                        accept="image/*"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                         className="hidden"
                     />
                 </div>
@@ -378,15 +388,6 @@ export default function StudentProfile({ user, userDoc }) {
                 <div className="bg-white rounded-2xl overflow-hidden border border-green-500">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                         <h3 className="text-base md:text-lg font-bold text-green-600">Personal Details</h3>
-                        {!editing && (
-                            <button
-                                onClick={() => setEditing(true)}
-                                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition"
-                            >
-                                <Pencil className="w-4 h-4" />
-                                Edit
-                            </button>
-                        )}
                     </div>
 
                     <div className="p-6">
@@ -412,6 +413,7 @@ export default function StudentProfile({ user, userDoc }) {
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
                                         className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                        maxLength={100}
                                     />
                                 </div>
 
@@ -423,6 +425,7 @@ export default function StudentProfile({ user, userDoc }) {
                                         value={department}
                                         onChange={(e) => setDepartment(e.target.value)}
                                         className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                        maxLength={100}
                                     />
                                 </div>
 
@@ -465,8 +468,9 @@ export default function StudentProfile({ user, userDoc }) {
                                     <input
                                         type="email"
                                         value={emailAddr}
-                                        onChange={(e) => setEmailAddr(e.target.value)}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
+                                        disabled
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        title="Email address cannot be changed directly"
                                     />
                                 </div>
 

@@ -20,6 +20,7 @@ import {
   Settings,
   PanelLeft,
   PanelLeftClose,
+  CalendarRange,
 } from "lucide-react";
 
 export default function Sidebar({ user, userDoc }) {
@@ -567,13 +568,13 @@ export default function Sidebar({ user, userDoc }) {
                 style={staggerDelay(4)}
                 className={`flex items-center rounded-xl transition-all duration-200 group w-full animate-sidebarSlideIn
                 ${shouldExpand
-                    ? `gap-3 px-3 py-2.5 ${location.pathname.includes('/teacher/archives') ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" : "text-gray-500 hover:bg-gray-100"}`
-                    : `justify-center py-3 ${!location.pathname.includes('/teacher/archives') ? "text-gray-500 hover:bg-gray-100" : ""}`
+                    ? `gap-3 px-3 py-2.5 ${(location.pathname.includes('/teacher/archives') || location.pathname.includes('/teacher/academic-year-settings')) ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" : "text-gray-500 hover:bg-gray-100"}`
+                    : `justify-center py-3 ${!(location.pathname.includes('/teacher/archives') || location.pathname.includes('/teacher/academic-year-settings')) ? "text-gray-500 hover:bg-gray-100" : ""}`
                   }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && location.pathname.includes('/teacher/archives') ? "bg-blue-600 shadow-lg shadow-blue-600/25" : ""
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${!shouldExpand && (location.pathname.includes('/teacher/archives') || location.pathname.includes('/teacher/academic-year-settings')) ? "bg-blue-600 shadow-lg shadow-blue-600/25" : ""
                   }`}>
-                  <Archive size={22} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/archives') ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
+                  <Archive size={22} className={`transition-colors duration-200 ${(location.pathname.includes('/teacher/archives') || location.pathname.includes('/teacher/academic-year-settings')) ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
                 </div>
                 <span
                   className={`font-Poppins font-medium text-sm transition-all duration-300 whitespace-nowrap flex-1 text-left ${shouldExpand
@@ -585,7 +586,7 @@ export default function Sidebar({ user, userDoc }) {
                 </span>
                 {shouldExpand && (
                   <div className={`transition-transform duration-300 ${archiveOpen ? "rotate-180" : ""}`}>
-                    <ChevronDown size={18} className={`transition-colors duration-200 ${location.pathname.includes('/teacher/archives')
+                    <ChevronDown size={18} className={`transition-colors duration-200 ${(location.pathname.includes('/teacher/archives') || location.pathname.includes('/teacher/academic-year-settings'))
                       ? "text-white/70"
                       : "text-gray-400 group-hover:text-gray-600"
                       }`} />
@@ -627,6 +628,23 @@ export default function Sidebar({ user, userDoc }) {
                   >
                     <FileText size={18} className={`transition-all duration-300 group-hover:scale-110 ${location.pathname === '/teacher/archives/quizzes' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'}`} />
                     <span className="font-Poppins text-sm font-medium">Archived Quizzes</span>
+                  </Link>
+
+                  <Link
+                    to={isAccountCreationActive() ? '#' : "/teacher/academic-year-settings"}
+                    onClick={(e) => {
+                      if (isAccountCreationActive()) {
+                        e.preventDefault();
+                        return;
+                      }
+                      setIsMobileOpen(false);
+                    }}
+                    style={staggerDelay(2)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:translate-x-1 transition-all duration-200 group animate-sidebarSlideIn ${location.pathname === '/teacher/academic-year-settings' ? 'bg-blue-50 text-blue-700' : ''
+                      }`}
+                  >
+                    <CalendarRange size={18} className={`transition-all duration-300 group-hover:scale-110 ${location.pathname === '/teacher/academic-year-settings' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'}`} />
+                    <span className="font-Poppins text-sm font-medium">Academic Year</span>
                   </Link>
                 </div>
               )}

@@ -26,6 +26,8 @@ export default function LoginPage() {
     try {
       const input = loginInput.trim();
       let userEmail = "";
+      let userRole = null;
+      let userAuthUID = null;
 
       if (input.includes("@")) {
         const usersRef = collection(db, "users");
@@ -34,14 +36,18 @@ export default function LoginPage() {
 
         if (!snapshot.empty) {
           userEmail = snapshot.docs[0].data().email;
+          userRole = snapshot.docs[0].data().role;
+          userAuthUID = snapshot.docs[0].id;
         } else {
           q = query(usersRef, where("emailAddress", "==", input.toLowerCase()));
           snapshot = await getDocs(q);
-          
+
           if (!snapshot.empty) {
             const userData = snapshot.docs[0].data();
             userEmail = userData.emailAddress;
-            
+            userRole = userData.role;
+            userAuthUID = userData.authUID || snapshot.docs[0].id;
+
             if (!userData.hasAccount) {
               setError("Your account hasn't been created yet. Please contact your teacher.");
               setLoading(false);
@@ -66,6 +72,8 @@ export default function LoginPage() {
 
         const userData = snapshot.docs[0].data();
         userEmail = userData.emailAddress;
+        userRole = userData.role;
+        userAuthUID = userData.authUID || snapshot.docs[0].id;
 
         if (!userEmail) {
           setError("No email address found for this student. Please contact your teacher.");
@@ -75,6 +83,103 @@ export default function LoginPage() {
 
         if (!userData.hasAccount) {
           setError("Your account hasn't been created yet. Please contact your teacher.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // ─── LOGIN TIME FRAME RESTRICTION FOR STUDENTS ───
+      if (userRole === "student" && userAuthUID) {
+        const assignedRef = collection(db, "assignedQuizzes");
+        const q = query(assignedRef, where("studentId", "==", userAuthUID));
+        const assignedSnap = await getDocs(q);
+
+        const now = new Date();
+        const EARLY_ACCESS_MINUTES = 10;
+        const LATE_ENTRY_MINUTES = 15;
+
+        let hasInProgressQuiz = false;
+        let hasPendingQuizzes = false;
+        let isBlockedByUpcomingQuiz = false;
+        let hasQuizInWindow = false;
+        let nextQuizTime = null;
+
+        assignedSnap.forEach((docSnap) => {
+          const data = docSnap.data();
+          // Skip completed quizzes or synchronous quizzes that have been ended by the teacher
+          if (data.completed || data.sessionStatus === "ended") return;
+
+          hasPendingQuizzes = true;
+
+          // If the student has already started a quiz, always allow login to resume
+          if (data.status === "in_progress") {
+            hasInProgressQuiz = true;
+            return;
+          }
+
+          // Check if quiz has a startDate (use trim to catch empty strings)
+          const hasStartDate = data.startDate && data.startDate.toString().trim() !== "";
+          const hasDueDate = data.dueDate && data.dueDate.toString().trim() !== "";
+
+          // Grace period controls late entry window after start time
+          const gracePeriodMinutes = data.settings?.gracePeriod || 0;
+          const lateEntryMinutes = gracePeriodMinutes > 0 ? gracePeriodMinutes : LATE_ENTRY_MINUTES;
+
+          if (hasStartDate) {
+            const startDate = new Date(data.startDate);
+            const earlyAccessTime = new Date(startDate.getTime() - EARLY_ACCESS_MINUTES * 60000);
+            const lateEntryTime = new Date(startDate.getTime() + lateEntryMinutes * 60000);
+
+            if (now < earlyAccessTime) {
+              // Quiz hasn't reached early access yet — BLOCK login
+              isBlockedByUpcomingQuiz = true;
+              if (!nextQuizTime || startDate < nextQuizTime) {
+                nextQuizTime = startDate;
+              }
+            } else if (now >= earlyAccessTime && now <= lateEntryTime) {
+              // Within the access window — allow
+              hasQuizInWindow = true;
+            }
+            // else: past late entry — missed it, doesn't block or allow
+          } else if (hasDueDate) {
+            // Quiz has a due date but no start date — allow if not expired
+            const dueDate = new Date(data.dueDate);
+            if (now <= dueDate) {
+              hasQuizInWindow = true;
+            }
+          } else {
+            // No startDate AND no dueDate — allow (edge case)
+            hasQuizInWindow = true;
+          }
+        });
+
+        // Determine if student can login:
+        // 1. If they have an in-progress quiz → always allow (to resume)
+        // 2. If blocked by an upcoming quiz → DENY (even if other quizzes are accessible)
+        // 3. If a quiz is in its access window and no blocking quiz → allow
+        // 4. If no pending quizzes → allow (to check dashboard/records)
+        let canLogin = false;
+
+        if (hasInProgressQuiz) {
+          canLogin = true;
+        } else if (!hasPendingQuizzes) {
+          canLogin = true;
+        } else if (isBlockedByUpcomingQuiz) {
+          canLogin = false;
+        } else if (hasQuizInWindow) {
+          canLogin = true;
+        }
+
+        if (!canLogin) {
+          if (nextQuizTime) {
+            const earlyTime = new Date(nextQuizTime.getTime() - EARLY_ACCESS_MINUTES * 60000);
+            const isToday = nextQuizTime.toDateString() === now.toDateString();
+            const dayString = isToday ? "today" : "on " + nextQuizTime.toLocaleDateString();
+            
+            setError(`You have an upcoming quiz scheduled ${dayString} at ${nextQuizTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. You can log in 10 minutes early (starting at ${earlyTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).`);
+          } else {
+            setError("You don't have any available quizzes to take at this time. Please wait for your scheduled quiz window.");
+          }
           setLoading(false);
           return;
         }
@@ -135,16 +240,16 @@ export default function LoginPage() {
         } else {
           q = query(usersRef, where("emailAddress", "==", trimmedInput.toLowerCase()));
           snapshot = await getDocs(q);
-          
+
           if (!snapshot.empty) {
             const userData = snapshot.docs[0].data();
-            
+
             if (userData.hasAccount === false) {
               setError("Your account hasn't been created yet. Please contact your teacher.");
               setRecoveryLoading(false);
               return;
             }
-            
+
             emailToSend = userData.emailAddress;
           } else {
             setError("No account found with this email.");
