@@ -33,7 +33,7 @@ async def generate_quiz_from_file(
         if not any(file.filename.lower().endswith(ext) for ext in valid_extensions):
             raise HTTPException(status_code=400, detail=f"Only {', '.join(valid_extensions)} files are allowed")
         
-        print(f"📄 Processing file: {file.filename}")
+        print(f"Processing file: {file.filename}")
         
         # Save uploaded file
         file_path = os.path.join(settings.UPLOAD_DIR, file.filename)
@@ -41,16 +41,16 @@ async def generate_quiz_from_file(
             shutil.copyfileobj(file.file, buffer)
         
         # Extract text from file
-        print("📖 Extracting text from file...")
+        print("Extracting text from file...")
         extracted_text = extract_text_from_file(file_path)
         
         if not extracted_text:
             raise HTTPException(status_code=400, detail="Failed to extract text from file")
         
-        print(f"✓ Extracted {len(extracted_text)} characters")
+        print(f"Extracted {len(extracted_text)} characters")
         
         # Generate quiz using Gemini
-        print(f"🤖 Generating quiz (MC: {num_multiple_choice}, TF: {num_true_false}, ID: {num_identification})...")
+        print(f"Generating quiz (MC: {num_multiple_choice}, TF: {num_true_false}, ID: {num_identification})...")
         quiz_data = generate_quiz_from_text(
             extracted_text,
             num_multiple_choice,
@@ -62,7 +62,7 @@ async def generate_quiz_from_file(
         formatted_quiz = format_quiz_for_frontend(quiz_data, title)
         
         # ⭐ Fast Classification based on Gemini output ⭐
-        print("🧠 Classifying questions (LOTS/HOTS via LLM Output)...")
+        print("Classifying questions (LOTS/HOTS via LLM Output)...")
         questions = formatted_quiz.get('questions', [])
         
         if questions:
@@ -88,7 +88,7 @@ async def generate_quiz_from_file(
                 'hots_percentage': round((hots_count / total) * 100, 2) if total > 0 else 0,
             }
             
-            print(f"✓ Classification complete: {lots_count} LOTS, {hots_count} HOTS")
+            print(f"Classification complete: {lots_count} LOTS, {hots_count} HOTS")
         
         return JSONResponse(content={
             "success": True,
@@ -99,7 +99,7 @@ async def generate_quiz_from_file(
     except HTTPException as he:
         raise he
     except Exception as e:
-        print(f"❌ Error generating quiz: {e}")
+        print(f"Error generating quiz: {e}")
         import traceback
         traceback.print_exc()
         
@@ -115,7 +115,7 @@ async def generate_quiz_from_file(
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print(f"🗑️ Cleaned up: {file.filename}")
+                print(f"Cleaned up: {file.filename}")
             except:
                 pass
 

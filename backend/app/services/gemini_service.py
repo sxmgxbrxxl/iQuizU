@@ -300,7 +300,7 @@ IMPORTANT:
                 raise Exception("Failed to parse Gemini response.")
             except Exception as e:
                 error_message = str(e)
-                print(f"🚫 Gemini API Error (Attempt {attempt+1}/{max_attempts}): {error_message}")
+                print(f"Gemini API Error (Attempt {attempt+1}/{max_attempts}): {error_message}")
 
                 if any(code in error_message.lower() for code in ["429", "quota", "permission", "key", "unauthorized"]):
                     print("🔄 Rotating to next API key...")

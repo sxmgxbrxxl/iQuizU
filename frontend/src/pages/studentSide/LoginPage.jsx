@@ -181,7 +181,7 @@ export default function LoginPage() {
             const earlyTime = new Date(nextQuizTime.getTime() - EARLY_ACCESS_MINUTES * 60000);
             const isToday = nextQuizTime.toDateString() === now.toDateString();
             const dayString = isToday ? "today" : "on " + nextQuizTime.toLocaleDateString();
-            
+
             setError(`You have an upcoming quiz scheduled ${dayString} at ${nextQuizTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. You can log in 10 minutes early (starting at ${earlyTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).`);
           } else {
             setError("You don't have any available quizzes to take at this time. Please wait for your scheduled quiz window.");
