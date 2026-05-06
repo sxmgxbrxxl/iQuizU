@@ -390,16 +390,19 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
       
       // ─── Quiz Entry Window Logic ───
       const EARLY_ACCESS_MINUTES = 10;
+      const DEFAULT_LATE_ENTRY_MINUTES = 15;
       const now = new Date();
 
       // Grace period controls how many minutes after start time a student can still enter
+      // Use teacher-configured gracePeriod for late entry window, fallback to default (must match dashboard logic)
       const gracePeriodMinutes = assignmentData.settings?.gracePeriod || 0;
+      const lateEntryMinutes = gracePeriodMinutes > 0 ? gracePeriodMinutes : DEFAULT_LATE_ENTRY_MINUTES;
 
       const quizStart = assignmentData.startDate;
       if (quizStart && quizStart.toString().trim() !== "") {
         const startTime = new Date(quizStart);
         const earlyAccessTime = new Date(startTime.getTime() - EARLY_ACCESS_MINUTES * 60000);
-        const lateEntryTime = new Date(startTime.getTime() + gracePeriodMinutes * 60000);
+        const lateEntryTime = new Date(startTime.getTime() + lateEntryMinutes * 60000);
 
         if (now < earlyAccessTime) {
           setError(`Quiz is not available yet. Early access opens at ${earlyAccessTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`);
@@ -411,9 +414,9 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
           return;
         }
 
-        // Enforce grace period late entry rule, BUT allow students who already started to resume
+        // Enforce late entry rule, BUT allow students who already started to resume
         if (assignmentData.status !== "in_progress" && now > lateEntryTime) {
-          setError(`Late entry is closed. You must start the quiz within ${gracePeriodMinutes} minutes of the scheduled start time (${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}).`);
+          setError(`Late entry is closed. You must start the quiz within ${lateEntryMinutes} minutes of the scheduled start time (${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}).`);
           return;
         }
       }

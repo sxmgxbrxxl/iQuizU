@@ -102,7 +102,7 @@ export default function LoginPage() {
         const LATE_ENTRY_MINUTES = 15;
 
         let hasInProgressQuiz = false;
-        let hasPendingQuizzes = false;
+        let hasActionableQuiz = false;  // quizzes the student can actually take right now
         let isBlockedByUpcomingQuiz = false;
         let hasQuizInWindow = false;
         let nextQuizTime = null;
@@ -111,8 +111,6 @@ export default function LoginPage() {
           const data = docSnap.data();
           // Skip completed quizzes or synchronous quizzes that have been ended by the teacher
           if (data.completed || data.sessionStatus === "ended") return;
-
-          hasPendingQuizzes = true;
 
           // If the student has already started a quiz, always allow login to resume
           if (data.status === "in_progress") {
@@ -136,36 +134,43 @@ export default function LoginPage() {
             if (now < earlyAccessTime) {
               // Quiz hasn't reached early access yet — BLOCK login
               isBlockedByUpcomingQuiz = true;
+              hasActionableQuiz = true;
               if (!nextQuizTime || startDate < nextQuizTime) {
                 nextQuizTime = startDate;
               }
             } else if (now >= earlyAccessTime && now <= lateEntryTime) {
               // Within the access window — allow
               hasQuizInWindow = true;
+              hasActionableQuiz = true;
             }
-            // else: past late entry — missed it, doesn't block or allow
+            // else: past late entry — missed it, don't count as actionable
           } else if (hasDueDate) {
-            // Quiz has a due date but no start date — allow if not expired
+            // Quiz has a due date but no start date (e.g. retake/reschedule) — allow if not expired
             const dueDate = new Date(data.dueDate);
             if (now <= dueDate) {
               hasQuizInWindow = true;
+              hasActionableQuiz = true;
             }
+            // else: past due date — expired, don't count as actionable
           } else {
             // No startDate AND no dueDate — allow (edge case)
             hasQuizInWindow = true;
+            hasActionableQuiz = true;
           }
         });
 
         // Determine if student can login:
         // 1. If they have an in-progress quiz → always allow (to resume)
-        // 2. If blocked by an upcoming quiz → DENY (even if other quizzes are accessible)
-        // 3. If a quiz is in its access window and no blocking quiz → allow
-        // 4. If no pending quizzes → allow (to check dashboard/records)
+        // 2. If no actionable quizzes at all → allow (to check dashboard/records)
+        // 3. If blocked by an upcoming quiz → DENY (must wait for scheduled time)
+        // 4. If a quiz is in its access window and no blocking quiz → allow
+        // 5. Otherwise → allow (all quizzes are expired/missed, let them see dashboard)
         let canLogin = false;
 
         if (hasInProgressQuiz) {
           canLogin = true;
-        } else if (!hasPendingQuizzes) {
+        } else if (!hasActionableQuiz) {
+          // All quizzes are either completed, expired, or missed — allow login to dashboard
           canLogin = true;
         } else if (isBlockedByUpcomingQuiz) {
           canLogin = false;

@@ -363,11 +363,15 @@ export default function QuizResults() {
         await updateDoc(doc(db, "assignedQuizzes", assignmentDoc.id), {
           dueDate: retakeDeadline,
           deadline: newDeadlineDate,
+          startDate: null,
           status: "pending",
           completed: false,
           attempts: 0,
           isRetake: true,
           retakeGrantedAt: serverTimestamp(),
+          forceStoppedByTeacher: false,
+          forceStopReason: null,
+          antiCheatData: null,
         });
         
         const submissionsQuery = query(
@@ -439,7 +443,12 @@ export default function QuizResults() {
       await updateDoc(doc(db, "assignedQuizzes", assignmentDoc.id), {
         dueDate: reschedDeadline,
         deadline: new Date(reschedDeadline),
+        startDate: null,
+        status: "pending",
+        completed: false,
         rescheduledAt: serverTimestamp(),
+        forceStoppedByTeacher: false,
+        forceStopReason: null,
       });
 
       showToast("success", "Rescheduled!", `Quiz rescheduled for ${selectedStudentForAction.name}!`);
