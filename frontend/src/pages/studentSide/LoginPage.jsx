@@ -88,6 +88,9 @@ export default function LoginPage() {
         }
       }
 
+      // ─── AUTHENTICATE FIRST (validate password before checking quiz schedule) ───
+      await signInWithEmailAndPassword(auth, userEmail, password);
+
       // ─── LOGIN TIME FRAME RESTRICTION FOR STUDENTS ───
       if (userRole === "student" && userAuthUID) {
         const assignedRef = collection(db, "assignedQuizzes");
@@ -171,6 +174,9 @@ export default function LoginPage() {
         }
 
         if (!canLogin) {
+          // Sign out the user since they authenticated but can't access yet
+          await auth.signOut();
+
           if (nextQuizTime) {
             const earlyTime = new Date(nextQuizTime.getTime() - EARLY_ACCESS_MINUTES * 60000);
             const isToday = nextQuizTime.toDateString() === now.toDateString();
@@ -184,8 +190,6 @@ export default function LoginPage() {
           return;
         }
       }
-
-      await signInWithEmailAndPassword(auth, userEmail, password);
     } catch (err) {
       console.error("Login error:", err);
 
