@@ -494,7 +494,7 @@ export default function StudentDashboard({ user, userDoc }) {
   const isMainDashboard =
     location.pathname === "/student" || location.pathname === "/student/";
 
-  const name = userDoc?.firstName || userDoc?.name || "Student";
+  const name = userDoc?.name || userDoc?.firstName || "Student";
   const surname = name.split(",")[0];
   const formattedSurname = surname.charAt(0).toUpperCase() + surname.slice(1).toLowerCase();
 

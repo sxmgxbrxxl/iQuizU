@@ -161,7 +161,7 @@ export default function StudentSidebar({ user, userDoc }) {
     return location.pathname.includes(path);
   };
 
-  const userName = userDoc?.firstName || userDoc?.name || "Student";
+  const userName = userDoc?.name || userDoc?.firstName || "Student";
   const userEmail = userDoc?.email || user?.email || "Learner";
   const userInitial = userName.charAt(0).toUpperCase();
   const userPhoto = userDoc?.photoURL || "";

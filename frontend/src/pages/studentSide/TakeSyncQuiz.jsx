@@ -579,7 +579,7 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     switch (type) {
       case "multiple_choice": return "Multiple Choice";
       case "true_false": return "True or False";
-      case "identification": return "Identification";
+      case "identification": return "Matching Type";
       default: return type;
     }
   };

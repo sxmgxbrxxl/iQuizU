@@ -853,7 +853,7 @@ export default function ReportsAnalytics() {
       case "true_false":
         return "True/False";
       case "identification":
-        return "Identification";
+        return "Matching Type";
       default:
         return type;
     }

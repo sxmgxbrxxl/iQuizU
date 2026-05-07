@@ -188,7 +188,7 @@ export default function Sidebar({ user, userDoc }) {
     return location.pathname.includes(`/teacher/class/${classId}`);
   };
 
-  const userName = userDoc?.firstName || user?.displayName || "Teacher";
+  const userName = userDoc?.name || userDoc?.firstName || user?.displayName || "Teacher";
   const userEmail = userDoc?.email || user?.email || userDoc?.teacherEmail || "Educator";
   const userInitial = userName.charAt(0).toUpperCase();
   const userPhoto = userDoc?.photoURL || "";

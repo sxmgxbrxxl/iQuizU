@@ -533,7 +533,7 @@ export default function TeacherDashboard({ user, userDoc }) {
                   <div className="relative z-10">
                     <h1 className="text-xl md:text-2xl font-bold tracking-tight">
                       {getGreeting()},{" "}
-                      {userDoc?.firstName || user?.displayName || "Teacher"}!
+                      {userDoc?.name || userDoc?.firstName || user?.displayName || "Teacher"}!
                     </h1>
                     <p className="text-sm md:text-base text-blue-100 mt-1">
                       Manage your classes, quizzes, and view student performance analytics

@@ -102,7 +102,8 @@ export default function ManageQuizzes() {
   const tabContent = [
     { id: "multiple_choice", label: "Multiple Choice", icon: <Users className="w-4 h-4" /> },
     { id: "true_false", label: "True/False", icon: <CheckCircle className="w-4 h-4" /> },
-    { id: "identification", label: "Identification", icon: <Pen className="w-4 h-4" /> },
+    { id: "identification", label: "Matching Type", icon: <Pen className="w-4 h-4" /> },
+    { id: "tos", label: "Table of Specs", icon: <Brain className="w-4 h-4" /> },
   ];
 
 
@@ -566,7 +567,7 @@ export default function ManageQuizzes() {
 
     try {
       const res = await fetch(
-        "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-file",
+        "http://127.0.0.1:8000/api/quiz/generate-from-file",
         {
           method: "POST",
           body: fd,
@@ -934,6 +935,75 @@ export default function ManageQuizzes() {
   };
 
   // -----------------------------------------------------------------
+  // TABLE OF SPECIFICATIONS (TOS)
+  // -----------------------------------------------------------------
+  const renderTableOfSpecifications = (questions, title) => {
+    const counts = {
+      remembering: 0,
+      understanding: 0,
+      application: 0,
+      analysis: 0,
+      evaluation: 0,
+      creating: 0
+    };
+
+    questions.forEach(q => {
+      const level = (q.cognitive_level || "remembering").toLowerCase();
+      if (counts[level] !== undefined) counts[level]++;
+    });
+
+    const lotsTotal = counts.remembering + counts.understanding + counts.application;
+    const hotsTotal = counts.analysis + counts.evaluation + counts.creating;
+    const total = lotsTotal + hotsTotal;
+
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 overflow-x-auto">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Table of Specifications</h3>
+        <table className="w-full text-sm text-center border-collapse border border-gray-300">
+          <thead className="bg-gray-100">
+            <tr>
+              <th rowSpan="2" className="border border-gray-300 p-2 font-semibold text-gray-700 align-middle">TOPIC</th>
+              <th colSpan="3" className="border border-gray-300 p-2 font-semibold text-gray-700 bg-blue-50">LOTS ({total > 0 ? ((lotsTotal/total)*100).toFixed(0) : 0}%)</th>
+              <th colSpan="3" className="border border-gray-300 p-2 font-semibold text-gray-700 bg-purple-50">HOTS ({total > 0 ? ((hotsTotal/total)*100).toFixed(0) : 0}%)</th>
+              <th rowSpan="2" className="border border-gray-300 p-2 font-semibold text-gray-700 align-middle">TOTAL</th>
+            </tr>
+            <tr className="bg-gray-50 text-xs">
+              <th className="border border-gray-300 p-2 text-gray-600">Recalling</th>
+              <th className="border border-gray-300 p-2 text-gray-600">Comprehending</th>
+              <th className="border border-gray-300 p-2 text-gray-600">Applying</th>
+              <th className="border border-gray-300 p-2 text-gray-600">Analyzing</th>
+              <th className="border border-gray-300 p-2 text-gray-600">Evaluating</th>
+              <th className="border border-gray-300 p-2 text-gray-600">Synthesizing or Creating</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="border border-gray-300 p-3 text-left font-medium text-gray-700">{title || "Quiz"}</td>
+              <td className="border border-gray-300 p-3">{counts.remembering}</td>
+              <td className="border border-gray-300 p-3">{counts.understanding}</td>
+              <td className="border border-gray-300 p-3">{counts.application}</td>
+              <td className="border border-gray-300 p-3">{counts.analysis}</td>
+              <td className="border border-gray-300 p-3">{counts.evaluation}</td>
+              <td className="border border-gray-300 p-3">{counts.creating}</td>
+              <td className="border border-gray-300 p-3 font-bold">{total}</td>
+            </tr>
+            <tr className="bg-gray-50 font-bold">
+              <td className="border border-gray-300 p-3 text-right">TOTAL</td>
+              <td className="border border-gray-300 p-3 text-blue-700">{counts.remembering}</td>
+              <td className="border border-gray-300 p-3 text-blue-700">{counts.understanding}</td>
+              <td className="border border-gray-300 p-3 text-blue-700">{counts.application}</td>
+              <td className="border border-gray-300 p-3 text-purple-700">{counts.analysis}</td>
+              <td className="border border-gray-300 p-3 text-purple-700">{counts.evaluation}</td>
+              <td className="border border-gray-300 p-3 text-purple-700">{counts.creating}</td>
+              <td className="border border-gray-300 p-3 text-gray-900">{total}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // -----------------------------------------------------------------
   // RENDER
   // -----------------------------------------------------------------
   return (
@@ -1125,7 +1195,7 @@ export default function ManageQuizzes() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-slate-700 flex items-center gap-2 font-medium">
-                          <div className="w-2 h-2 rounded-full bg-teal-500" />Identification
+                          <div className="w-2 h-2 rounded-full bg-teal-500" />Matching Type
                         </span>
                         <span className="text-sm font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg">
                           {selectedPublishedQuiz.questions.filter(q => q.type === 'identification').length}
@@ -1652,7 +1722,7 @@ export default function ManageQuizzes() {
                       onClick={() => addManualQuestion("identification")}
                       className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
                     >
-                      <PlusCircle className="w-5 h-5" /> Identification
+                      <PlusCircle className="w-5 h-5" /> Matching Type
                     </button>
                   </div>
                 </div>
@@ -1855,7 +1925,7 @@ export default function ManageQuizzes() {
                           </div>
                         )}
 
-                        {/* Identification Answer */}
+                        {/* Matching Type Answer */}
                         {q.type === "identification" && (
                           <div>
                             <label className="block text-sm font-semibold mb-2 text-gray-700">
@@ -2188,12 +2258,14 @@ export default function ManageQuizzes() {
                           {tab.icon}
                         </span>
                         {tab.label}
-                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-slate-200 text-slate-600"
-                          }`}>
-                          {count}
-                        </span>
+                        {tab.id !== "tos" && (
+                          <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-slate-200 text-slate-600"
+                            }`}>
+                            {count}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -2203,6 +2275,10 @@ export default function ManageQuizzes() {
               {/* Questions Content */}
               <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
                 {(() => {
+                  if (activeTab === "tos") {
+                    return renderTableOfSpecifications(generatedQuiz.questions, generatedQuiz.title);
+                  }
+
                   // Filter by active tab
                   const currentTabQuestions = generatedQuiz.questions.filter(q => q.type === activeTab);
 
@@ -2470,7 +2546,7 @@ export default function ManageQuizzes() {
                                         q.type === 'true_false' ? 'bg-purple-50 text-purple-600 border-purple-100' :
                                           'bg-teal-50 text-teal-600 border-teal-100'
                                         }`}>
-                                        {q.type.replace("_", " ")}
+                                        {q.type === 'identification' ? 'MATCHING TYPE' : q.type.replace("_", " ")}
                                       </span>
                                       <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                                         {q.points} pts
@@ -2583,7 +2659,7 @@ export default function ManageQuizzes() {
 
                         try {
                           const res = await fetch(
-                            "https://iquizu-backend-production-3336.up.railway.app/api/quiz/generate-from-file",
+                            "http://127.0.0.1:8000/api/quiz/generate-from-file",
                             {
                               method: "POST",
                               body: fd,

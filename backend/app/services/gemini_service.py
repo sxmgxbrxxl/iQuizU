@@ -103,13 +103,24 @@ def calculate_blooms_distribution(total_questions: int) -> dict:
     LOTS = Remembering + Understanding + Application = 60%
     HOTS = Analysis + Evaluation + Creating = 40%
     """
+    lots_total = round(total_questions * 0.60)
+    hots_total = total_questions - lots_total
+
+    remembering = round(total_questions * 0.10)
+    understanding = round(total_questions * 0.20)
+    application = lots_total - remembering - understanding
+
+    analysis = round(total_questions * 0.15)
+    evaluation = round(total_questions * 0.15)
+    creating = hots_total - analysis - evaluation
+
     return {
-        "remembering": max(1, round(total_questions * 0.10)),
-        "understanding": max(1, round(total_questions * 0.20)),
-        "application": max(1, round(total_questions * 0.30)),
-        "analysis": max(1, round(total_questions * 0.15)),
-        "evaluation": max(1, round(total_questions * 0.15)),
-        "creating": max(1, round(total_questions * 0.10))
+        "remembering": max(0, remembering),
+        "understanding": max(0, understanding),
+        "application": max(0, application),
+        "analysis": max(0, analysis),
+        "evaluation": max(0, evaluation),
+        "creating": max(0, creating)
     }
 
 
@@ -381,24 +392,58 @@ def verify_and_rebalance_questions(quiz_data: dict, target_distribution: dict) -
     """
     Verify cognitive levels based on Gemini's output and adjust difficulty.
     Bypasses the slow local BERT classifier and relies on the LLM's inherently good classification.
+    We strictly enforce the 60/40 LOTS/HOTS distribution.
     """
+    all_questions = []
     for q_type in ["multiple_choice", "true_false", "identification"]:
         for idx, q in enumerate(quiz_data.get(q_type, [])):
-            declared_level = q.get("cognitive_level", "remembering").lower()
+            all_questions.append((q_type, idx, q.get("cognitive_level", "remembering").lower()))
 
-            # Ensure the level is one of the 6 standard ones
-            valid_levels = ["remembering", "understanding", "application", "analysis", "evaluation", "creating"]
-            if declared_level not in valid_levels:
-                declared_level = "remembering"
-                
-            quiz_data[q_type][idx]["cognitive_level"] = declared_level
+    total_remaining = len(all_questions)
+    actual_target = calculate_blooms_distribution(total_remaining)
 
-            if declared_level in ["remembering", "understanding", "application"]:
-                quiz_data[q_type][idx]["difficulty"] = "easy"
-            elif declared_level in ["analysis", "evaluation"]:
-                quiz_data[q_type][idx]["difficulty"] = "average"
-            else:
-                quiz_data[q_type][idx]["difficulty"] = "difficult"
+    level_pools = {
+        "remembering": [],
+        "understanding": [],
+        "application": [],
+        "analysis": [],
+        "evaluation": [],
+        "creating": []
+    }
+    
+    for q_type, idx, declared_level in all_questions:
+        if declared_level not in level_pools:
+            declared_level = "remembering"
+        level_pools[declared_level].append((q_type, idx))
+
+    final_assignments = []
+    
+    for level, target_count in actual_target.items():
+        while target_count > 0 and len(level_pools[level]) > 0:
+            item = level_pools[level].pop()
+            final_assignments.append((item[0], item[1], level))
+            target_count -= 1
+            
+        while target_count > 0:
+            for backup_level, pool in level_pools.items():
+                if len(pool) > 0:
+                    item = pool.pop()
+                    final_assignments.append((item[0], item[1], level))
+                    target_count -= 1
+                    break
+                    
+    for q_type, idx, new_level in final_assignments:
+        quiz_data[q_type][idx]["cognitive_level"] = new_level
+        
+        if new_level in ["remembering", "understanding", "application"]:
+            quiz_data[q_type][idx]["difficulty"] = "easy"
+            quiz_data[q_type][idx]["bloom_classification"] = "LOTS"
+        elif new_level in ["analysis", "evaluation"]:
+            quiz_data[q_type][idx]["difficulty"] = "average"
+            quiz_data[q_type][idx]["bloom_classification"] = "HOTS"
+        else:
+            quiz_data[q_type][idx]["difficulty"] = "difficult"
+            quiz_data[q_type][idx]["bloom_classification"] = "HOTS"
 
     return quiz_data
 
@@ -424,6 +469,7 @@ def format_quiz_for_frontend(quiz_data: dict, title: str) -> dict:
             "choices": choices,
             "points": mc.get("points", 2),
             "cognitive_level": mc.get("cognitive_level", "remembering"),
+            "bloom_classification": mc.get("bloom_classification", "LOTS"),
             "difficulty": mc.get("difficulty", "easy")
         })
         total_points += mc.get("points", 2)
@@ -435,6 +481,7 @@ def format_quiz_for_frontend(quiz_data: dict, title: str) -> dict:
             "correct_answer": "True" if tf["correct_answer"] else "False",
             "points": tf.get("points", 1),
             "cognitive_level": tf.get("cognitive_level", "understanding"),
+            "bloom_classification": tf.get("bloom_classification", "LOTS"),
             "difficulty": tf.get("difficulty", "easy")
         })
         total_points += tf.get("points", 1)
@@ -446,6 +493,7 @@ def format_quiz_for_frontend(quiz_data: dict, title: str) -> dict:
             "correct_answer": id_q["correct_answer"],
             "points": id_q.get("points", 2),
             "cognitive_level": id_q.get("cognitive_level", "remembering"),
+            "bloom_classification": id_q.get("bloom_classification", "LOTS"),
             "difficulty": id_q.get("difficulty", "easy")
         })
         total_points += id_q.get("points", 2)

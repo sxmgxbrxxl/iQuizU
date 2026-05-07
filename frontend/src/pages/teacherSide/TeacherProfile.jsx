@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Loader2, KeyRound, CheckCircle, XCircle, AlertTriangle, X, Mail, IdCard, Pencil } from "lucide-react";
+import { Loader2, KeyRound, CheckCircle, XCircle, AlertTriangle, X, Mail, IdCard, Pencil, Trash2 } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -144,14 +144,14 @@ export default function TeacherProfile({ user, userDoc }) {
 
     // readonly info — prefer savedProfile over stale userDoc prop
     const profile = savedProfile || userDoc;
-    const displayName = profile?.firstName || user?.displayName || "Teacher";
+    const displayName = profile?.name || profile?.firstName || user?.displayName || "Teacher";
     const userInitial = (displayName && displayName.charAt(0).toUpperCase()) || "T";
     const userDocId = profile?.id || userDoc?.id || user?.uid || null;
 
     useEffect(() => {
         // Only initialize from userDoc if we haven't saved locally yet
         if (!savedProfile) {
-            setFullName(userDoc?.firstName || user?.displayName || "");
+            setFullName(userDoc?.name || userDoc?.firstName || user?.displayName || "");
             setDepartment(userDoc?.department || "");
             setEmailAddr(userDoc?.email || user?.email || "");
             setPhone(userDoc?.phone || "");
@@ -198,8 +198,11 @@ export default function TeacherProfile({ user, userDoc }) {
                 throw new Error("User document not found");
             }
 
-            await updateDoc(userDocRef, { photoURL: downloadURL });
-            setPhotoURL(downloadURL);
+            // Add cache-buster so browser forces image refresh
+            const uniqueURL = `${downloadURL}&t=${Date.now()}`;
+
+            await updateDoc(userDocRef, { photoURL: uniqueURL });
+            setPhotoURL(uniqueURL);
 
             // Notify App.js to refresh userDoc so sidebar + other components update
             window.dispatchEvent(new Event('refreshUserDoc'));
@@ -211,6 +214,36 @@ export default function TeacherProfile({ user, userDoc }) {
         } finally {
             setUploading(false);
         }
+    };
+
+    // Handle profile photo removal
+    const handleRemovePhoto = async () => {
+        if (!userDocId) return;
+        setConfirmDialog({
+            isOpen: true,
+            title: "Remove Profile Photo",
+            message: "Are you sure you want to remove your profile photo?",
+            confirmLabel: "Remove",
+            color: "red",
+            icon: <Trash2 className="w-6 h-6 text-red-600" />,
+            onConfirm: async () => {
+                setConfirmDialog({ isOpen: false });
+                try {
+                    setUploading(true);
+                    const userDocRef = doc(db, "users", userDocId);
+                    await updateDoc(userDocRef, { photoURL: "" });
+                    setPhotoURL("");
+                    window.dispatchEvent(new Event('refreshUserDoc'));
+                    showToast("success", "Profile photo removed successfully!");
+                } catch (error) {
+                    console.error("Error removing photo:", error);
+                    showToast("error", "Failed to remove photo.");
+                } finally {
+                    setUploading(false);
+                }
+            },
+            onCancel: () => setConfirmDialog({ isOpen: false }),
+        });
     };
 
     // Handle password reset email
@@ -274,14 +307,14 @@ export default function TeacherProfile({ user, userDoc }) {
             return;
         }
         if (/\d/.test(fullName)) {
-        showToast("warning", "Full Name must not contain numbers.");
-        return;
+            showToast("warning", "Full Name must not contain numbers.");
+            return;
+        }
 
         if (/[^a-zA-Z\s\-'.ÑñÁáÉéÍíÓóÚú]/.test(fullName)) {
-    showToast("warning", "Full Name contains invalid characters.");
-    return;
-}
-}
+            showToast("warning", "Full Name contains invalid characters.");
+            return;
+        }
 
         try {
             setSaving(true);
@@ -293,7 +326,7 @@ export default function TeacherProfile({ user, userDoc }) {
             }
 
             const updatedData = {
-                firstName: fullName,
+                name: fullName,
                 department: "CCS",
                 email: emailAddr,
                 phone: phone,
@@ -309,6 +342,9 @@ export default function TeacherProfile({ user, userDoc }) {
                 ...updatedData,
                 id: userDocId,
             });
+
+            // Notify App.js to refresh userDoc so sidebar + other components update
+            window.dispatchEvent(new Event('refreshUserDoc'));
 
             showToast("success", "Profile updated successfully!");
             setEditing(false);
@@ -368,11 +404,21 @@ export default function TeacherProfile({ user, userDoc }) {
             <div className="flex flex-col items-center mt-8 mb-2">
                 <div className="relative group">
                     {photoURL ? (
-                        <img
-                            src={photoURL}
-                            alt="Profile"
-                            className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-xl ring-4 ring-white"
-                        />
+                        <>
+                            <img
+                                src={photoURL}
+                                alt="Profile"
+                                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-xl ring-4 ring-white"
+                            />
+                            <button
+                                onClick={handleRemovePhoto}
+                                disabled={uploading}
+                                className="absolute bottom-1 left-1 w-10 h-10 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
+                                title="Remove Photo"
+                            >
+                                <Trash2 className="w-4 h-4 text-white" />
+                            </button>
+                        </>
                     ) : (
                         <div className="w-32 h-32 md:w-40 md:h-40 text-4xl md:text-6xl bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
                             {userInitial}
@@ -382,6 +428,7 @@ export default function TeacherProfile({ user, userDoc }) {
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
                         className="absolute bottom-1 right-1 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
+                        title={photoURL ? "Change Photo" : "Upload Photo"}
                     >
                         {uploading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Pencil className="w-4 h-4 text-white" />}
                     </button>
@@ -483,7 +530,7 @@ export default function TeacherProfile({ user, userDoc }) {
                                             setEditing(false);
                                             // Revert to savedProfile (latest saved) or original userDoc
                                             const src = savedProfile || userDoc;
-                                            setFullName(src?.firstName || user?.displayName || "");
+                                            setFullName(src?.name || src?.firstName || user?.displayName || "");
                                             setDepartment(src?.department || "");
                                             setEmailAddr(src?.email || user?.email || "");
                                             setPhone(src?.phone || "");

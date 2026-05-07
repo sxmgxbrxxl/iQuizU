@@ -292,7 +292,7 @@ export default function EditQuiz() {
   const typeLabels = {
     multiple_choice: "Multiple Choice",
     true_false: "True/False",
-    identification: "Identification"
+    identification: "Matching Type"
   };
   // Always show all three sections so teachers can add any type
   const allTypes = ["multiple_choice", "true_false", "identification"];
@@ -530,7 +530,7 @@ export default function EditQuiz() {
                             </div>
                           )}
 
-                          {/* Identification */}
+                          {/* Matching Type */}
                           {editForm.type === "identification" && (
                             <div>
                               <label className="block text-sm font-bold mb-1.5 text-gray-700">Correct Answer *</label>

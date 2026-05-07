@@ -62,7 +62,7 @@ const ManageTeachers = () => {
   // Send Teacher Welcome Email
   const sendTeacherWelcomeEmail = async (email, password) => {
     try {
-      const baseUrl = "https://iquizu-backend-production-3336.up.railway.app";
+      const baseUrl = "http://127.0.0.1:8000";
       const response = await fetch(
         `${baseUrl}/api/email/send-teacher-welcome`,
         {

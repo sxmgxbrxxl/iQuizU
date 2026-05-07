@@ -99,7 +99,7 @@ export default function AdminTopbar({ user, userDoc }) {
     return location.pathname.includes(path);
   };
 
-  const userName = userDoc?.firstName || user?.displayName || "Admin";
+  const userName = userDoc?.name || userDoc?.firstName || user?.displayName || "Admin";
   const userEmail = userDoc?.email || user?.email || "Administrator";
   const userInitial = userName.charAt(0).toUpperCase();
 

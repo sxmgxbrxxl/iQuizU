@@ -770,6 +770,7 @@ export default function AssignQuizToClass() {
                         })
                       }
                       className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Students can start taking this quiz from this date and time
@@ -789,7 +790,7 @@ export default function AssignQuizToClass() {
                         })
                       }
                       className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min={assignmentSettings.startDate || new Date().toISOString().slice(0, 16)}
+                      min={assignmentSettings.startDate || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Students must complete this quiz before this date and time
@@ -802,14 +803,17 @@ export default function AssignQuizToClass() {
                     <input
                       type="number"
                       min="0"
-                      value={assignmentSettings.gracePeriod || ""}
-                      onChange={(e) =>
+                      max="20"
+                      value={assignmentSettings.gracePeriod === 0 ? "0" : (assignmentSettings.gracePeriod || "")}
+                      onChange={(e) => {
+                        let val = parseInt(e.target.value) || 0;
+                        if (val > 20) val = 20;
                         setAssignmentSettings({
                           ...assignmentSettings,
-                          gracePeriod: e.target.value ? parseInt(e.target.value) : 0,
-                        })
-                      }
-                      placeholder="0 for no grace period"
+                          gracePeriod: val,
+                        });
+                      }}
+                      placeholder="0 for no grace period (Max: 20)"
                       className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -832,7 +836,7 @@ export default function AssignQuizToClass() {
                       })
                     }
                     className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Assignment expires if not started before this time

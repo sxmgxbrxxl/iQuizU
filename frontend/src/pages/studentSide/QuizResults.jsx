@@ -33,7 +33,7 @@ export default function QuizResults({ quiz = { title: "Sample Quiz" }, assignmen
       const analysis = analyzeAllQuestions();
 
       // Use backend proxy to call Gemini — the API key stays on the server
-      const backendUrl = "https://iquizu-backend-production-3336.up.railway.app/api/generate-recommendations";
+      const backendUrl = "http://127.0.0.1:8000/api/generate-recommendations";
 
       try {
         const response = await fetch(backendUrl, {

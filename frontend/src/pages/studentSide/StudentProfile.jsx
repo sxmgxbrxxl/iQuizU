@@ -9,6 +9,7 @@ import {
     X,
     Mail,
     Pencil,
+    Trash2,
 } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
@@ -219,8 +220,11 @@ export default function StudentProfile({ user, userDoc }) {
                 throw new Error("User document not found");
             }
 
-            await updateDoc(userDocRef, { photoURL: downloadURL });
-            setPhotoURL(downloadURL);
+            // Add cache-buster so browser forces image refresh
+            const uniqueURL = `${downloadURL}&t=${Date.now()}`;
+
+            await updateDoc(userDocRef, { photoURL: uniqueURL });
+            setPhotoURL(uniqueURL);
 
             // Notify App.js to refresh userDoc so sidebar + other components update
             window.dispatchEvent(new Event('refreshUserDoc'));
@@ -232,6 +236,37 @@ export default function StudentProfile({ user, userDoc }) {
         } finally {
             setUploading(false);
         }
+    };
+
+    // Handle profile photo removal
+    const handleRemovePhoto = async () => {
+        if (!userDocId) return;
+        setConfirmDialog({
+            isOpen: true,
+            title: "Remove Profile Photo",
+            message: "Are you sure you want to remove your profile photo?",
+            confirmLabel: "Remove",
+            color: "red",
+            icon: <Trash2 className="w-6 h-6 text-red-600" />,
+            font: "Poppins",
+            onConfirm: async () => {
+                setConfirmDialog({ isOpen: false });
+                try {
+                    setUploading(true);
+                    const userDocRef = doc(db, "users", userDocId);
+                    await updateDoc(userDocRef, { photoURL: "" });
+                    setPhotoURL("");
+                    window.dispatchEvent(new Event('refreshUserDoc'));
+                    showToast("success", "Profile photo removed successfully!");
+                } catch (error) {
+                    console.error("Error removing photo:", error);
+                    showToast("error", "Failed to remove photo.");
+                } finally {
+                    setUploading(false);
+                }
+            },
+            onCancel: () => setConfirmDialog({ isOpen: false }),
+        });
     };
 
     // Handle profile save
@@ -270,6 +305,9 @@ export default function StudentProfile({ user, userDoc }) {
                 gender: gender,
                 studentNo: studentNo
             });
+
+            // Notify App.js to refresh userDoc so sidebar + other components update
+            window.dispatchEvent(new Event('refreshUserDoc'));
 
             showToast("success", "Profile updated successfully!");
             setEditing(false);
@@ -354,11 +392,21 @@ export default function StudentProfile({ user, userDoc }) {
             <div className="flex flex-col items-center mt-5 mb-2">
                 <div className="relative group">
                     {photoURL ? (
-                        <img
-                            src={photoURL}
-                            alt="Profile"
-                            className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-xl ring-4 ring-white"
-                        />
+                        <>
+                            <img
+                                src={photoURL}
+                                alt="Profile"
+                                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-xl ring-4 ring-white"
+                            />
+                            <button
+                                onClick={handleRemovePhoto}
+                                disabled={uploading}
+                                className="absolute bottom-1 left-1 w-10 h-10 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
+                                title="Remove Photo"
+                            >
+                                <Trash2 className="w-4 h-4 text-white" />
+                            </button>
+                        </>
                     ) : (
                         <div className="w-32 h-32 md:w-40 md:h-40 text-4xl md:text-6xl bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-white">
                             {userInitial}
@@ -368,6 +416,7 @@ export default function StudentProfile({ user, userDoc }) {
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
                         className="absolute bottom-1 right-1 w-10 h-10 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 ring-3 ring-white disabled:opacity-50"
+                        title={photoURL ? "Change Photo" : "Upload Photo"}
                     >
                         {uploading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Pencil className="w-4 h-4 text-white" />}
                     </button>
