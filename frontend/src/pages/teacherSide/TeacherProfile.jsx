@@ -269,10 +269,19 @@ export default function TeacherProfile({ user, userDoc }) {
             return;
         }
 
-        if (fullName.length > 100) {
+        if (fullName.length > 70) {
             showToast("warning", "Full Name exceeds the maximum character limit.");
             return;
         }
+        if (/\d/.test(fullName)) {
+        showToast("warning", "Full Name must not contain numbers.");
+        return;
+
+        if (/[^a-zA-Z\s\-'.ÑñÁáÉéÍíÓóÚú]/.test(fullName)) {
+    showToast("warning", "Full Name contains invalid characters.");
+    return;
+}
+}
 
         try {
             setSaving(true);
@@ -414,9 +423,9 @@ export default function TeacherProfile({ user, userDoc }) {
                                     <input
                                         type="text"
                                         value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
+                                       onChange={(e) => setFullName(e.target.value.replace(/[^a-zA-Z\s\-'.ÑñÁáÉéÍíÓóÚú]/g, ""))}
                                         className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
-                                        maxLength={100}
+                                        maxLength={70}
                                     />
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">

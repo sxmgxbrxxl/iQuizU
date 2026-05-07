@@ -162,11 +162,9 @@ function ClassConfirmationModal({ isOpen, classInfo, students, onConfirm, onCanc
                     {/* Page Numbers */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter(page => {
-                        // Logic to show a window of pages around current page
                         return page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1);
                       })
                       .map((page, index, array) => {
-                        // Add ellipsis if there's a gap
                         const prevPage = array[index - 1];
                         const showEllipsisBefore = prevPage && page - prevPage > 1;
 
@@ -248,10 +246,10 @@ export default function ManageClasses() {
   // Custom Alert Dialog state
   const [alertDialog, setAlertDialog] = useState({
     isOpen: false,
-    type: "info", // "success" | "error" | "warning" | "info"
+    type: "info",
     title: "",
     message: "",
-    onClose: null, // optional callback when dialog closes
+    onClose: null,
   });
 
   const [updateConfirmDialog, setUpdateConfirmDialog] = useState({
@@ -280,7 +278,7 @@ export default function ManageClasses() {
   const handleConfirmUpdate = () => {
     const { duplicate, validStudents, file, classInfo } = updateConfirmDialog;
     setUpdateConfirmDialog({ isOpen: false, duplicate: null, validStudents: null, file: null, classInfo: null });
-    
+
     setPendingUploadData({
       validStudents,
       file,
@@ -316,12 +314,10 @@ export default function ManageClasses() {
       const querySnapshot = await getDocs(q);
       const count = querySnapshot.size;
 
-      // Log class IDs for debugging
       const classIds = querySnapshot.docs.map(doc => doc.id);
       console.log(`Teacher has ${count}/${MAX_CLASSES} classes`);
       console.log("Class IDs:", classIds);
 
-      // Log class details to identify incomplete classes
       if (count > 0) {
         querySnapshot.docs.forEach(doc => {
           const data = doc.data();
@@ -358,7 +354,6 @@ export default function ManageClasses() {
         const existingDoc = querySnapshot.docs[0];
         const docData = existingDoc.data();
 
-        // Verify document has required data
         if (!docData) {
           console.warn("Empty document data for:", emailAddress);
           return null;
@@ -423,7 +418,6 @@ export default function ManageClasses() {
       const row = allData[i];
       if (!row || row.length === 0) continue;
 
-      // Convert row to string for searching
       const rowStr = Array.isArray(row) ? row.join('|').toLowerCase() : '';
 
       // Look for Semester
@@ -431,14 +425,11 @@ export default function ManageClasses() {
         const semIndex = row.findIndex(cell =>
           cell && cell.toString().toLowerCase().includes('semester')
         );
-        // Check if the cell itself contains the value (e.g., "Semester:" label)
         if (semIndex !== -1) {
           const cellValue = row[semIndex].toString().trim();
-          // If the cell is just a label like "Semester:" or "Semester", get the next cell
           if (cellValue.toLowerCase().replace(/[:\s]/g, '') === 'semester' && row[semIndex + 1]) {
             semester = row[semIndex + 1].toString().trim();
           } else if (cellValue.toLowerCase() !== 'semester' && cellValue.toLowerCase() !== 'semester:') {
-            // The value might be in the same cell
             semester = cellValue.replace(/^semester[:\s]*/i, '').trim();
           } else if (row[semIndex + 1]) {
             semester = row[semIndex + 1].toString().trim();
@@ -498,12 +489,87 @@ export default function ManageClasses() {
     return { classNo, code, description, semester, academicYear };
   };
 
+  /**
+   * NEW: Check if the same semester + academic year already exists
+   * in active classes OR archived classes for this teacher.
+   * Returns an object describing the conflict, or null if none.
+   */
+  const checkSemesterAcademicYearDuplicate = async (classInfo) => {
+    const user = auth.currentUser;
+    if (!user) return null;
+
+    const semester = classInfo.semester?.trim() || "";
+    const academicYear = classInfo.academicYear?.trim() || "";
+
+    // Only validate when both values are present
+    if (!semester || !academicYear) return null;
+
+    try {
+      // Check active classes
+      const activeQ = query(
+        collection(db, "classes"),
+        where("teacherId", "==", user.uid)
+      );
+      const activeSnapshot = await getDocs(activeQ);
+
+      for (const docSnap of activeSnapshot.docs) {
+        const data = docSnap.data();
+        const existingSem = data.semester?.trim() || "";
+        const existingAY = data.academicYear?.trim() || "";
+
+        if (
+          existingSem.toLowerCase() === semester.toLowerCase() &&
+          existingAY.toLowerCase() === academicYear.toLowerCase()
+        ) {
+          return {
+            source: "active",
+            classId: docSnap.id,
+            className: data.name || data.code || "Unnamed Class",
+            semester: existingSem,
+            academicYear: existingAY,
+          };
+        }
+      }
+
+      // Check archived classes
+      const archivedQ = query(
+        collection(db, "archivedClasses"),
+        where("teacherId", "==", user.uid)
+      );
+      const archivedSnapshot = await getDocs(archivedQ);
+
+      for (const docSnap of archivedSnapshot.docs) {
+        const data = docSnap.data();
+        const existingSem = data.semester?.trim() || "";
+        const existingAY = data.academicYear?.trim() || "";
+
+        if (
+          existingSem.toLowerCase() === semester.toLowerCase() &&
+          existingAY.toLowerCase() === academicYear.toLowerCase()
+        ) {
+          return {
+            source: "archived",
+            classId: docSnap.id,
+            className: data.name || data.code || "Unnamed Class",
+            semester: existingSem,
+            academicYear: existingAY,
+          };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error checking semester/academic year duplicate:", error);
+      return null;
+    }
+  };
+
   const checkDuplicateClass = async (classInfo, validStudents, file) => {
     try {
       const user = auth.currentUser;
       if (!user) return null;
 
-      // Fetch all classes for the teacher (Max 8 classes, so this is very fast and avoids Firestore index issues)
+      // Fetch all classes for the teacher (Max 8 classes, so this is very fast)
       const q = query(
         collection(db, "classes"),
         where("teacherId", "==", user.uid)
@@ -526,7 +592,6 @@ export default function ManageClasses() {
         }
 
         // 3. Content Check: Same Course Code + Same Student Count
-        // This catches renamed files with exactly the same students/course
         if (classInfo.code && classInfo.code.trim() !== "") {
           if (data.code === classInfo.code.trim() && data.studentCount === validStudents.length) {
             return { type: "Content Match", value: `Course ${classInfo.code} with ${validStudents.length} students`, id: data.id, name: data.name };
@@ -579,6 +644,29 @@ export default function ManageClasses() {
     }
 
     const classInfo = extractClassInfo(allData);
+
+    // ── NEW: Semester + Academic Year duplicate check ──────────────────────
+    setUploadProgress("Checking semester and academic year...");
+    const semAYDuplicate = await checkSemesterAcademicYearDuplicate(classInfo);
+
+    if (semAYDuplicate) {
+      setUploadProgress("");
+      const sourceLabel = semAYDuplicate.source === "archived" ? "archived classes" : "your active classes";
+      showAlert(
+        "error",
+        "Duplicate Semester & Academic Year",
+        `A class with the same Semester and Academic Year already exists in ${sourceLabel}.\n\n` +
+        `Semester: ${semAYDuplicate.semester}\n` +
+        `Academic Year: ${semAYDuplicate.academicYear}\n\n` +
+        `Existing class: "${semAYDuplicate.className}"\n\n` +
+        (semAYDuplicate.source === "archived"
+          ? "Please restore or permanently delete the archived class before adding a new one with the same semester and academic year."
+          : "Each semester and academic year combination must be unique. Please update the existing class instead.")
+      );
+      setFileName("");
+      return;
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     setUploadProgress("Validating class information...");
     const duplicate = await checkDuplicateClass(classInfo, validStudents, file);
@@ -644,7 +732,7 @@ export default function ManageClasses() {
         });
         console.log(`Updated class document: ${classDocId}`);
       } else {
-        // Save to Firestore with new structure including classNo, code, semester, and academicYear
+        // Save to Firestore with new structure
         const classDoc = await addDoc(collection(db, "classes"), {
           name: classInfo.description || file.name.replace(/\.(csv|xlsx|xls)$/i, ''),
           classNo: classInfo.classNo || "",
@@ -741,13 +829,11 @@ export default function ManageClasses() {
           );
           const studentsSnapshot = await getDocs(studentsQuery);
 
-          // Get array of valid student numbers from the new upload
           const validStudentNos = validStudents.map(s => s["Student No."]?.toString().trim());
 
           for (const docSnapshot of studentsSnapshot.docs) {
             const studentData = docSnapshot.data();
-            
-            // If the enrolled student is NOT in the new uploaded file
+
             if (!validStudentNos.includes(studentData.studentNo)) {
               const updatedClassIds = (studentData.classIds || []).filter(id => id !== classDocId);
               await updateDoc(doc(db, "users", docSnapshot.id), {
@@ -777,14 +863,11 @@ export default function ManageClasses() {
         }
 
         showAlert("success", isUpdate ? "Class Updated!" : "Upload Complete!", message, () => {
-          // Navigate after closing
           navigate(`/teacher/class/${classDocId}`);
         });
 
-        // Update class count
         await checkClassLimit();
 
-        // Trigger real-time update
         console.log("📢 Dispatching classesUpdated event...");
         window.dispatchEvent(new Event('classesUpdated'));
       } else {
@@ -795,7 +878,6 @@ export default function ManageClasses() {
       setUploadProgress("");
       setPendingUploadData(null);
 
-      // Trigger sidebar refresh
       window.dispatchEvent(new Event('classesUpdated'));
     } catch (error) {
       console.error("Error saving to Firestore:", error);
@@ -936,10 +1018,10 @@ export default function ManageClasses() {
       <div className="relative bg-blue-600 rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden p-6 md:p-8 group text-white border border-blue-500 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         {/* Background blob design */}
         <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
-        
+
         <div className="relative z-10">
           <h2 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
-             Add New Class
+            Add New Class
           </h2>
           <p className="text-sm md:text-base text-blue-100 mt-2">
             Upload a classlist to create a new class ({classCount}/{MAX_CLASSES} classes)
@@ -1024,10 +1106,7 @@ export default function ManageClasses() {
               {uploadProgress}
             </p>
           )}
-
         </div>
-
-
 
         {errorMessage && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -1132,7 +1211,7 @@ export default function ManageClasses() {
               <p className="text-gray-600 text-sm leading-relaxed px-2 mb-4">
                 A class matching this file already exists in your records.
               </p>
-              
+
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 w-full mb-6 text-left">
                 <p className="text-sm font-semibold text-amber-800 mb-1">Existing Class:</p>
                 <p className="text-amber-900 font-bold">{updateConfirmDialog.duplicate.name || "Unnamed Class"}</p>
@@ -1140,7 +1219,7 @@ export default function ManageClasses() {
               </div>
 
               <p className="text-sm text-gray-600 mb-6">
-                Would you like to <strong>update</strong> the existing class with this new list? <br className="hidden md:block"/>
+                Would you like to <strong>update</strong> the existing class with this new list? <br className="hidden md:block" />
                 <span className="text-xs text-gray-500 block mt-2">
                   (New students will be added, and students no longer in the list will be unenrolled.)
                 </span>
