@@ -1011,7 +1011,7 @@ export default function ManageQuizzes() {
         ]
       ];
 
-      const csvContent = String.fromCharCode(0xFEFF) + rows.map(row => row.map(v => `"${v}"`).join(",")).join("\r\n");
+      const csvContent = rows.map(row => row.map(v => `"${v}"`).join(",")).join("\\n");
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -1028,7 +1028,7 @@ export default function ManageQuizzes() {
         <div className="flex justify-between items-center mb-4">
           <div className="w-24"></div> {/* Spacer to center the title */}
           <h3 className="text-xl font-bold text-gray-800 text-center">Table of Specifications</h3>
-          <button 
+          <button
             onClick={exportToCSV}
             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium text-sm shadow-sm"
             title="Export to CSV (Excel compatible)"
@@ -1041,8 +1041,8 @@ export default function ManageQuizzes() {
           <thead className="bg-gray-100">
             <tr>
               <th rowSpan="2" className="border border-gray-300 p-2 font-semibold text-gray-700 align-middle">TOPIC</th>
-              <th colSpan="3" className="border border-gray-300 p-2 font-semibold text-gray-700 bg-blue-50">LOTS ({total > 0 ? ((lotsTotal/total)*100).toFixed(0) : 0}%)</th>
-              <th colSpan="3" className="border border-gray-300 p-2 font-semibold text-gray-700 bg-purple-50">HOTS ({total > 0 ? ((hotsTotal/total)*100).toFixed(0) : 0}%)</th>
+              <th colSpan="3" className="border border-gray-300 p-2 font-semibold text-gray-700 bg-blue-50">LOTS ({total > 0 ? ((lotsTotal / total) * 100).toFixed(0) : 0}%)</th>
+              <th colSpan="3" className="border border-gray-300 p-2 font-semibold text-gray-700 bg-purple-50">HOTS ({total > 0 ? ((hotsTotal / total) * 100).toFixed(0) : 0}%)</th>
               <th rowSpan="2" className="border border-gray-300 p-2 font-semibold text-gray-700 align-middle">TOTAL</th>
             </tr>
             <tr className="bg-gray-50 text-xs">
@@ -2148,19 +2148,17 @@ export default function ManageQuizzes() {
                     />
                     <label
                       htmlFor="pdf-upload"
-                      className={`flex items-center justify-center w-full p-8 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 ${
-                        selectedFile 
-                          ? 'border-green-400 bg-green-50/50 hover:bg-green-50' 
+                      className={`flex items-center justify-center w-full p-8 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 ${selectedFile
+                          ? 'border-green-400 bg-green-50/50 hover:bg-green-50'
                           : 'border-blue-300 bg-blue-50/30 hover:bg-blue-50 hover:border-blue-400'
-                      }`}
+                        }`}
                     >
                       <div className="flex flex-col items-center gap-4 text-center">
-                        <div className={`p-4 rounded-full transition-transform duration-300 shadow-sm ${
-                          selectedFile ? 'bg-green-100 text-green-600' : 'bg-white text-blue-500 group-hover:-translate-y-1'
-                        }`}>
+                        <div className={`p-4 rounded-full transition-transform duration-300 shadow-sm ${selectedFile ? 'bg-green-100 text-green-600' : 'bg-white text-blue-500 group-hover:-translate-y-1'
+                          }`}>
                           {selectedFile ? <CheckCircle className="w-8 h-8" /> : <FileUp className="w-8 h-8" />}
                         </div>
-                        
+
                         <div className="flex flex-col gap-1.5">
                           <span className="text-base font-bold text-slate-800">
                             {selectedFile ? (

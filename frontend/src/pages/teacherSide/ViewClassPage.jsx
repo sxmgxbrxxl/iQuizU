@@ -1307,11 +1307,10 @@ export default function ViewClassPage() {
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              className={`w-9 h-9 flex items-center justify-center rounded-lg border text-sm font-medium transition ${
-                                pageNum === safePage
+                              className={`w-9 h-9 flex items-center justify-center rounded-lg border text-sm font-medium transition ${pageNum === safePage
                                   ? "bg-blue-600 border-blue-600 text-white shadow-sm"
                                   : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-                              }`}
+                                }`}
                             >
                               {pageNum}
                             </button>
