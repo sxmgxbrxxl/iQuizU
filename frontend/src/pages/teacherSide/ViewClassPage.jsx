@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, CircleQuestionMark, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen, Star, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2, XCircle, AlertTriangle, Shield, UserMinus } from "lucide-react";
+import { Loader2, CircleQuestionMark, Circle, School, Trash, Eye, Pen, Zap, Users, Trash2, PlusCircle, X, BookOpen, Star, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2, XCircle, AlertTriangle, Shield, UserMinus, Mail, Check } from "lucide-react";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, updateDoc, setDoc, arrayRemove } from "firebase/firestore";
 import PasswordConfirmModal from './PasswordConfirmModal';
@@ -63,6 +63,11 @@ export default function ViewClassPage() {
 
   // Drop student state
   const [droppingStudent, setDroppingStudent] = useState(null);
+
+  // Edit email state
+  const [editingEmailStudent, setEditingEmailStudent] = useState(null);
+  const [editEmailValue, setEditEmailValue] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
 
   useEffect(() => {
     fetchClassData();
@@ -803,6 +808,60 @@ export default function ViewClassPage() {
       onCancel: () => setConfirmDialog({ isOpen: false }),
     });
   };
+  // ===== EDIT STUDENT EMAIL HANDLER =====
+  const handleOpenEditEmail = (student) => {
+    setEditingEmailStudent(student);
+    setEditEmailValue(student.emailAddress || "");
+  };
+
+  const handleCancelEditEmail = () => {
+    setEditingEmailStudent(null);
+    setEditEmailValue("");
+    setSavingEmail(false);
+  };
+
+  const handleSaveEmail = async () => {
+    if (!editingEmailStudent) return;
+
+    const trimmedEmail = editEmailValue.trim().toLowerCase();
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      showToast("warning", "Invalid Email", "Please enter a valid email address.");
+      return;
+    }
+
+    setSavingEmail(true);
+    try {
+      // Check if email already exists in users collection
+      const existingCheck = await checkExistingAccountByEmail(trimmedEmail);
+      if (existingCheck.exists && existingCheck.studentId !== editingEmailStudent.id) {
+        showToast("error", "Email Exists", `This email is already in use by another student (${existingCheck.name}).`);
+        setSavingEmail(false);
+        return;
+      }
+
+      // Update Firestore
+      await updateDoc(doc(db, "users", editingEmailStudent.id), {
+        emailAddress: trimmedEmail
+      });
+
+      showToast("success", "Email Updated", `Successfully updated email for ${editingEmailStudent.name}`);
+      
+      // Update local state to reflect change immediately
+      setStudents(prev => prev.map(s => 
+        s.id === editingEmailStudent.id ? { ...s, emailAddress: trimmedEmail } : s
+      ));
+      
+      handleCancelEditEmail();
+    } catch (error) {
+      console.error("Error updating email:", error);
+      showToast("error", "Update Failed", "Failed to update email address.");
+    } finally {
+      setSavingEmail(false);
+    }
+  };
 
   // ===== DROP STUDENT HANDLER =====
   const handleDropStudent = (student) => {
@@ -1181,7 +1240,20 @@ export default function ViewClassPage() {
                             <tr key={student.id} className={`hover:bg-gray-50 transition ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
                               <td className="px-6 py-4 text-sm text-gray-800 font-medium">{student.studentNo}</td>
                               <td className="px-6 py-4 text-sm text-gray-800 font-medium">{student.name}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600">{student.emailAddress || "N/A"}</td>
+                              <td className="px-6 py-4 text-sm text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="truncate max-w-[200px]">{student.emailAddress || "N/A"}</span>
+                                  {!student.hasAccount && (
+                                    <button
+                                      onClick={() => handleOpenEditEmail(student)}
+                                      className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                                      title="Edit Email"
+                                    >
+                                      <Pen className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
                               <td className="px-6 py-4 text-sm text-gray-600">{student.program || "N/A"}</td>
                               <td className="px-6 py-4 text-center">
                                 {student.hasAccount ? (
@@ -1195,7 +1267,16 @@ export default function ViewClassPage() {
                                 )}
                               </td>
                               <td className="px-6 py-4">
-                                <div className="flex items-center justify-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  {!student.hasAccount && (
+                                    <button
+                                      onClick={() => handleOpenEditEmail(student)}
+                                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Edit Email"
+                                    >
+                                      <Mail className="w-4 h-4" />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleDropStudent(student)}
                                     disabled={droppingStudent === student.id}
@@ -1240,6 +1321,14 @@ export default function ViewClassPage() {
                             <span>{student.program || "N/A"}</span>
                           </div>
                           <div className="mt-2 flex gap-2">
+                            {!student.hasAccount && (
+                              <button
+                                onClick={() => handleOpenEditEmail(student)}
+                                className="flex-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 hover:bg-blue-100 transition"
+                              >
+                                <Mail className="w-3.5 h-3.5" /> Edit Email
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDropStudent(student)}
                               disabled={droppingStudent === student.id}
@@ -1766,6 +1855,100 @@ export default function ViewClassPage() {
         document.body
       )}
 
+      {/* ===== EDIT EMAIL MODAL ===== */}
+      {mounted && editingEmailStudent && createPortal(
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] font-Poppins animate-fadeIn"
+          onClick={handleCancelEditEmail}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <Mail className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold">Edit Student Email</h3>
+                    <p className="text-blue-100 text-xs mt-0.5">Update email address</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCancelEditEmail}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-blue-800 font-medium">Important Note</p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Please ensure the new email is active. This will be used when their account is created.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Student</label>
+                <p className="text-sm font-bold text-gray-800">{editingEmailStudent.name}</p>
+                <p className="text-xs text-gray-500">{editingEmailStudent.studentNo}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={editEmailValue}
+                    onChange={(e) => setEditEmailValue(e.target.value)}
+                    placeholder="Enter new email address..."
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow text-sm"
+                    autoFocus
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end">
+              <button
+                onClick={handleCancelEditEmail}
+                disabled={savingEmail}
+                className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEmail}
+                disabled={savingEmail || !editEmailValue.trim()}
+                className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm hover:shadow transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingEmail ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" /> Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
       <ConfirmDialog {...confirmDialog} />
