@@ -21,6 +21,7 @@ import {
   Calendar,
   Clock,
   Archive,
+  Download,
 } from "lucide-react";
 import {
   collection,
@@ -57,6 +58,7 @@ export default function ManageQuizzes() {
   const [numTF, setNumTF] = useState(5);
   const [numID, setNumID] = useState(5);
   const [loading, setLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState("");
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
@@ -549,21 +551,29 @@ export default function ManageQuizzes() {
     if (!selectedFile) return showToast("warning", "Missing File", "Please select a document file");
     if (!quizTitle.trim()) return showToast("warning", "Missing Title", "Please enter a quiz title");
 
-    const mc = numMC === "" ? 0 : numMC;
-    const tf = numTF === "" ? 0 : numTF;
-    const id = numID === "" ? 0 : numID;
+    const mc = numMC === "" ? 0 : Math.min(numMC, 100);
+    const tf = numTF === "" ? 0 : Math.min(numTF, 100);
+    const id = numID === "" ? 0 : Math.min(numID, 100);
 
     if (mc === 0 && tf === 0 && id === 0) {
       return showToast("warning", "Invalid Questions", "Please enter at least one question count");
     }
 
+    const totalQ = mc + tf + id;
     setLoading(true);
+    setLoadingProgress(totalQ > 25 ? `Generating ${totalQ} questions in batches... This may take a few minutes.` : "Generating quiz...");
+
     const fd = new FormData();
     fd.append("file", selectedFile);
-    fd.append("num_multiple_choice", numMC === "" ? 0 : numMC);
-    fd.append("num_true_false", numTF === "" ? 0 : numTF);
-    fd.append("num_identification", numID === "" ? 0 : numID);
+    fd.append("num_multiple_choice", mc);
+    fd.append("num_true_false", tf);
+    fd.append("num_identification", id);
     fd.append("title", quizTitle || "Generated Quiz");
+
+    // Use AbortController with a generous timeout for bulk generation
+    const controller = new AbortController();
+    const timeoutMs = totalQ > 25 ? 600000 : 120000; // 10 min for bulk, 2 min for small
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const res = await fetch(
@@ -571,19 +581,28 @@ export default function ManageQuizzes() {
         {
           method: "POST",
           body: fd,
+          signal: controller.signal,
         }
       );
+      clearTimeout(timeoutId);
       const data = await res.json();
       if (data.success) {
         setGeneratedQuiz(data.quiz);
         setShowPdfModal(false);
         setShowPreviewModal(true);
+        showToast("success", "Quiz Generated!", `Successfully generated ${data.quiz?.questions?.length || totalQ} questions.`);
       } else showToast("error", "Generation Failed", data.message);
     } catch (e) {
+      clearTimeout(timeoutId);
       console.error(e);
-      showToast("error", "Error", "Generation error – check backend.");
+      if (e.name === "AbortError") {
+        showToast("error", "Timeout", "Generation took too long. Try reducing the number of questions.");
+      } else {
+        showToast("error", "Error", "Generation error – check backend.");
+      }
     } finally {
       setLoading(false);
+      setLoadingProgress("");
     }
   };
 
@@ -956,9 +975,68 @@ export default function ManageQuizzes() {
     const hotsTotal = counts.analysis + counts.evaluation + counts.creating;
     const total = lotsTotal + hotsTotal;
 
+    const exportToCSV = () => {
+      const lotsPercent = total > 0 ? ((lotsTotal / total) * 100).toFixed(0) : 0;
+      const hotsPercent = total > 0 ? ((hotsTotal / total) * 100).toFixed(0) : 0;
+
+      // Create a CSV layout that matches the HTML table visually
+      const rows = [
+        ["Table of Specifications"],
+        [], // Empty row for spacing
+        // Header Row 1
+        ["TOPIC", `LOTS (${lotsPercent}%)`, "", "", `HOTS (${hotsPercent}%)`, "", "", "TOTAL"],
+        // Header Row 2
+        ["", "Recalling", "Comprehending", "Applying", "Analyzing", "Evaluating", "Synthesizing or Creating", ""],
+        // Data Row
+        [
+          title || "Quiz",
+          counts.remembering,
+          counts.understanding,
+          counts.application,
+          counts.analysis,
+          counts.evaluation,
+          counts.creating,
+          total
+        ],
+        // Total Row
+        [
+          "TOTAL",
+          counts.remembering,
+          counts.understanding,
+          counts.application,
+          counts.analysis,
+          counts.evaluation,
+          counts.creating,
+          total
+        ]
+      ];
+
+      const csvContent = String.fromCharCode(0xFEFF) + rows.map(row => row.map(v => `"${v}"`).join(",")).join("\r\n");
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${title || "Quiz"}_TOS.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 overflow-x-auto">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Table of Specifications</h3>
+        <div className="flex justify-between items-center mb-4">
+          <div className="w-24"></div> {/* Spacer to center the title */}
+          <h3 className="text-xl font-bold text-gray-800 text-center">Table of Specifications</h3>
+          <button 
+            onClick={exportToCSV}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium text-sm shadow-sm"
+            title="Export to CSV (Excel compatible)"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
+        </div>
         <table className="w-full text-sm text-center border-collapse border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
@@ -1030,7 +1108,11 @@ export default function ManageQuizzes() {
         </h3>
         <div className="flex flex-col md:flex-row gap-3 md:gap-4">
           <button
-            onClick={() => setShowPdfModal(true)}
+            onClick={() => {
+              setSelectedFile(null);
+              setQuizTitle("");
+              setShowPdfModal(true);
+            }}
             className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 md:py-2 rounded-lg hover:bg-blue-700 transition w-full md:w-auto"
           >
             <FileUp className="w-5 h-5" /> Upload File (AI Generate)
@@ -2056,17 +2138,48 @@ export default function ManageQuizzes() {
                   <label className="block text-sm font-semibold mb-2">
                     Upload Document (PDF, Word, or PPT)
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx"
-                    onChange={handleFileSelect}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                  {selectedFile && (
-                    <p className="text-sm text-blue mt-2">
-                      Selected: {selectedFile.name}
-                    </p>
-                  )}
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      id="pdf-upload"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="pdf-upload"
+                      className={`flex items-center justify-center w-full p-8 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 ${
+                        selectedFile 
+                          ? 'border-green-400 bg-green-50/50 hover:bg-green-50' 
+                          : 'border-blue-300 bg-blue-50/30 hover:bg-blue-50 hover:border-blue-400'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-4 text-center">
+                        <div className={`p-4 rounded-full transition-transform duration-300 shadow-sm ${
+                          selectedFile ? 'bg-green-100 text-green-600' : 'bg-white text-blue-500 group-hover:-translate-y-1'
+                        }`}>
+                          {selectedFile ? <CheckCircle className="w-8 h-8" /> : <FileUp className="w-8 h-8" />}
+                        </div>
+                        
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-base font-bold text-slate-800">
+                            {selectedFile ? (
+                              <span className="text-green-700">{selectedFile.name}</span>
+                            ) : (
+                              "Click to upload or drag and drop"
+                            )}
+                          </span>
+                          <span className="text-sm font-medium text-slate-500">
+                            {selectedFile ? (
+                              "Click here to change file"
+                            ) : (
+                              "PDF, DOC, DOCX, PPT, PPTX (Max 50MB)"
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2082,11 +2195,13 @@ export default function ManageQuizzes() {
                         const val = e.target.value;
                         if (val === "") setNumMC("");
                         else if (/^\d*$/.test(val)) {
-                          setNumMC(parseInt(val, 10));
+                          setNumMC(Math.min(parseInt(val, 10), 100));
                         }
                       }}
+                      placeholder="0-100"
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    <span className="text-xs text-gray-400 mt-1">Max: 100</span>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-2">
@@ -2100,11 +2215,13 @@ export default function ManageQuizzes() {
                         const val = e.target.value;
                         if (val === "") setNumTF("");
                         else if (/^\d*$/.test(val)) {
-                          setNumTF(parseInt(val, 10));
+                          setNumTF(Math.min(parseInt(val, 10), 100));
                         }
                       }}
+                      placeholder="0-100"
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    <span className="text-xs text-gray-400 mt-1">Max: 100</span>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-2">
@@ -2118,11 +2235,13 @@ export default function ManageQuizzes() {
                         const val = e.target.value;
                         if (val === "") setNumID("");
                         else if (/^\d*$/.test(val)) {
-                          setNumID(parseInt(val, 10));
+                          setNumID(Math.min(parseInt(val, 10), 100));
                         }
                       }}
+                      placeholder="0-100"
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    <span className="text-xs text-gray-400 mt-1">Max: 100</span>
                   </div>
                 </div>
 
@@ -2132,12 +2251,24 @@ export default function ManageQuizzes() {
                   className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400 flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Generating…
-                    </>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Generating…</span>
+                      </div>
+                      {loadingProgress && (
+                        <span className="text-xs font-normal opacity-80">{loadingProgress}</span>
+                      )}
+                    </div>
                   ) : (
-                    "Generate Quiz"
+                    <>
+                      Generate Quiz
+                      {((numMC || 0) + (numTF || 0) + (numID || 0)) > 0 && (
+                        <span className="ml-1 text-sm opacity-80">
+                          ({Math.min(numMC || 0, 100) + Math.min(numTF || 0, 100) + Math.min(numID || 0, 100)} questions)
+                        </span>
+                      )}
+                    </>
                   )}
                 </button>
               </div>

@@ -5,6 +5,7 @@ import re
 import time
 import sys
 import os
+import math
 
 def _configure_gemini():
     """Internal helper to reconfigure Gemini with the current active API key."""
@@ -124,23 +125,33 @@ def calculate_blooms_distribution(total_questions: int) -> dict:
     }
 
 
-def generate_quiz_from_text(
-    text: str,
-    num_multiple_choice: int = 5,
-    num_true_false: int = 5,
-    num_identification: int = 5
+# ---------------------------------------------------------------------------
+# BATCH SIZE for bulk generation
+# ---------------------------------------------------------------------------
+MAX_QUESTIONS_PER_BATCH = 25  # Safe limit per single Gemini call
+
+
+def _generate_single_batch(
+    cleaned_text: str,
+    batch_mc: int,
+    batch_tf: int,
+    batch_id: int,
+    batch_number: int,
+    total_batches: int,
 ) -> dict:
     """
-    Generates a balanced quiz following Bloom's Taxonomy distribution.
-    60% LOTS (Easy) / 40% HOTS (Average-Difficulty)
+    Generate a single batch of questions via Gemini.
+    Returns raw quiz_data dict with multiple_choice / true_false / identification lists.
     """
-    # ✅ CLEAN AND SANITIZE THE TEXT FIRST
-    print("🧹 Cleaning PDF text...")
-    cleaned_text = clean_pdf_text(text)
-    print(f"✅ Text cleaned: {len(text)} → {len(cleaned_text)} characters")
+    total_questions = batch_mc + batch_tf + batch_id
+    if total_questions == 0:
+        return {"multiple_choice": [], "true_false": [], "identification": []}
 
-    total_questions = num_multiple_choice + num_true_false + num_identification
     distribution = calculate_blooms_distribution(total_questions)
+
+    # Use more source text for bigger quizzes (up to 12 000 chars)
+    text_limit = min(len(cleaned_text), 12000)
+    source_text = cleaned_text[:text_limit]
 
     attempt = 0
     max_attempts = len(settings.api_keys)
@@ -157,7 +168,7 @@ def generate_quiz_from_text(
 You are an expert college professor creating a comprehensive assessment following Bloom's Taxonomy.
 
 TEXT CONTENT (Focus on concepts and ideas):
-{cleaned_text[:4000]}
+{source_text}
 
 🚨 CRITICAL CONTENT RULES:
 1. Generate questions about CONCEPTS, THEORIES, and IDEAS in the text
@@ -207,10 +218,11 @@ DIFFICULT ITEMS (10% - HOTS):
 - {distribution['creating']} Creating questions (10%): Use "design", "create", "formulate", "propose", "develop"
 
 Distribute these {total_questions} questions across:
-- {num_multiple_choice} Multiple Choice (all cognitive levels)
-- {num_true_false} True/False (all cognitive levels)
-- {num_identification} Identification (all cognitive levels)
+- {batch_mc} Multiple Choice (all cognitive levels)
+- {batch_tf} True/False (all cognitive levels)
+- {batch_id} Identification (all cognitive levels)
 
+This is batch {batch_number} of {total_batches}. Generate UNIQUE questions that are different from any previous batch.
 Generate EXACTLY {total_questions} questions following the distribution above.
 
 Return ONLY valid JSON in this exact format:
@@ -261,7 +273,7 @@ IMPORTANT:
                     "temperature": 0.7,
                     "top_p": 0.95,
                     "top_k": 40,
-                    "max_output_tokens": 8192,
+                    "max_output_tokens": 65536,
                 }
 
                 response = model.generate_content(
@@ -291,27 +303,17 @@ IMPORTANT:
                 if not all(key in quiz_data for key in ["multiple_choice", "true_false", "identification"]):
                     raise ValueError("Invalid quiz data structure")
 
-                # ✅ VALIDATE QUESTION QUALITY
-                print("🔍 Validating question quality...")
-                quiz_data = validate_and_filter_questions(quiz_data)
-
-                # Verify and rebalance using BERT classifier
-                quiz_data = verify_and_rebalance_questions(quiz_data, distribution)
-
-                # Check distribution
-                actual_dist = count_cognitive_levels(quiz_data)
-                print(f"✅ Quiz generated with distribution:")
-                print(f"   LOTS (60%): Remembering={actual_dist['remembering']}, Understanding={actual_dist['understanding']}, Application={actual_dist['application']}")
-                print(f"   HOTS (40%): Analysis={actual_dist['analysis']}, Evaluation={actual_dist['evaluation']}, Creating={actual_dist['creating']}")
-
                 return quiz_data
 
             except json.JSONDecodeError as e:
-                print(f"⚠️ JSON Parse Error: {e}")
-                raise Exception("Failed to parse Gemini response.")
+                print(f"⚠️ Batch {batch_number} JSON Parse Error: {e}")
+                if generation_attempt < max_generation_attempts - 1:
+                    print(f"🔄 Retrying batch {batch_number} (attempt {generation_attempt + 2}/{max_generation_attempts})...")
+                    break  # Break inner while, continue outer for-loop to retry
+                raise Exception(f"Failed to parse Gemini response for batch {batch_number}.")
             except Exception as e:
                 error_message = str(e)
-                print(f"Gemini API Error (Attempt {attempt+1}/{max_attempts}): {error_message}")
+                print(f"Gemini API Error batch {batch_number} (Attempt {attempt+1}/{max_attempts}): {error_message}")
 
                 if any(code in error_message.lower() for code in ["429", "quota", "permission", "key", "unauthorized"]):
                     print("🔄 Rotating to next API key...")
@@ -323,7 +325,209 @@ IMPORTANT:
                 else:
                     raise Exception(f"Gemini error: {error_message}")
 
-    raise Exception("❌ All API keys exhausted.")
+    raise Exception(f"❌ All API keys exhausted on batch {batch_number}.")
+
+
+def _split_into_batches(total: int, batch_size: int) -> list:
+    """Split a total count into a list of batch sizes."""
+    if total <= 0:
+        return []
+    batches = []
+    remaining = total
+    while remaining > 0:
+        chunk = min(remaining, batch_size)
+        batches.append(chunk)
+        remaining -= chunk
+    return batches
+
+
+def generate_quiz_from_text(
+    text: str,
+    num_multiple_choice: int = 5,
+    num_true_false: int = 5,
+    num_identification: int = 5
+) -> dict:
+    """
+    Generates a balanced quiz following Bloom's Taxonomy distribution.
+    60% LOTS (Easy) / 40% HOTS (Average-Difficulty)
+
+    Supports bulk generation up to 100 per type (300 total) by splitting
+    into smaller batches of ~25 questions each.
+
+    Includes a top-up mechanism: if validation rejects some questions,
+    extra replacement questions are generated to fill the gap.
+    """
+    # ✅ CLEAN AND SANITIZE THE TEXT FIRST
+    print("🧹 Cleaning PDF text...")
+    cleaned_text = clean_pdf_text(text)
+    print(f"✅ Text cleaned: {len(text)} → {len(cleaned_text)} characters")
+
+    total_questions = num_multiple_choice + num_true_false + num_identification
+
+    # -----------------------------------------------------------------------
+    # Decide whether we need batched generation
+    # -----------------------------------------------------------------------
+    if total_questions <= MAX_QUESTIONS_PER_BATCH:
+        # Small quiz – single call (original fast path)
+        print(f"📝 Generating {total_questions} questions in a single batch...")
+        quiz_data = _generate_single_batch(
+            cleaned_text, num_multiple_choice, num_true_false, num_identification,
+            batch_number=1, total_batches=1
+        )
+
+        # Validate & rebalance
+        print("🔍 Validating question quality...")
+        quiz_data = validate_and_filter_questions(quiz_data)
+
+        # Top-up for small quizzes too
+        quiz_data = _top_up_if_needed(
+            quiz_data, cleaned_text,
+            num_multiple_choice, num_true_false, num_identification
+        )
+
+        distribution = calculate_blooms_distribution(
+            len(quiz_data["multiple_choice"]) + len(quiz_data["true_false"]) + len(quiz_data["identification"])
+        )
+        quiz_data = verify_and_rebalance_questions(quiz_data, distribution)
+
+        actual_dist = count_cognitive_levels(quiz_data)
+        print(f"✅ Quiz generated with distribution:")
+        print(f"   LOTS (60%): Remembering={actual_dist['remembering']}, Understanding={actual_dist['understanding']}, Application={actual_dist['application']}")
+        print(f"   HOTS (40%): Analysis={actual_dist['analysis']}, Evaluation={actual_dist['evaluation']}, Creating={actual_dist['creating']}")
+        return quiz_data
+
+    # -----------------------------------------------------------------------
+    # BULK generation – split each type into batches
+    # -----------------------------------------------------------------------
+    mc_batches = _split_into_batches(num_multiple_choice, MAX_QUESTIONS_PER_BATCH)
+    tf_batches = _split_into_batches(num_true_false, MAX_QUESTIONS_PER_BATCH)
+    id_batches = _split_into_batches(num_identification, MAX_QUESTIONS_PER_BATCH)
+
+    # Pad shorter lists so we can zip them
+    max_len = max(len(mc_batches), len(tf_batches), len(id_batches))
+    mc_batches += [0] * (max_len - len(mc_batches))
+    tf_batches += [0] * (max_len - len(tf_batches))
+    id_batches += [0] * (max_len - len(id_batches))
+
+    # Merge small batches: combine entries where individual counts are tiny
+    combined_batches = []
+    for i in range(max_len):
+        mc_c, tf_c, id_c = mc_batches[i], tf_batches[i], id_batches[i]
+        if mc_c + tf_c + id_c > 0:
+            combined_batches.append((mc_c, tf_c, id_c))
+
+    total_batches = len(combined_batches)
+    print(f"📦 Bulk generation: {total_questions} questions in {total_batches} batches")
+
+    merged_quiz = {"multiple_choice": [], "true_false": [], "identification": []}
+
+    for batch_idx, (b_mc, b_tf, b_id) in enumerate(combined_batches, start=1):
+        batch_total = b_mc + b_tf + b_id
+        print(f"\n🔄 Batch {batch_idx}/{total_batches}: {b_mc} MC, {b_tf} TF, {b_id} ID ({batch_total} questions)")
+
+        batch_data = _generate_single_batch(
+            cleaned_text, b_mc, b_tf, b_id,
+            batch_number=batch_idx, total_batches=total_batches
+        )
+
+        # Validate each batch individually
+        batch_data = validate_and_filter_questions(batch_data)
+
+        merged_quiz["multiple_choice"].extend(batch_data.get("multiple_choice", []))
+        merged_quiz["true_false"].extend(batch_data.get("true_false", []))
+        merged_quiz["identification"].extend(batch_data.get("identification", []))
+
+        generated_so_far = (
+            len(merged_quiz["multiple_choice"])
+            + len(merged_quiz["true_false"])
+            + len(merged_quiz["identification"])
+        )
+        print(f"   ✅ Batch {batch_idx} done — {generated_so_far}/{total_questions} total so far")
+
+        # Small delay between batches to avoid rate-limiting
+        if batch_idx < total_batches:
+            time.sleep(1)
+
+    # -----------------------------------------------------------------------
+    # TOP-UP: generate replacements for rejected questions
+    # -----------------------------------------------------------------------
+    merged_quiz = _top_up_if_needed(
+        merged_quiz, cleaned_text,
+        num_multiple_choice, num_true_false, num_identification
+    )
+
+    # -----------------------------------------------------------------------
+    # Final rebalance on the merged set
+    # -----------------------------------------------------------------------
+    final_total = (
+        len(merged_quiz["multiple_choice"])
+        + len(merged_quiz["true_false"])
+        + len(merged_quiz["identification"])
+    )
+    distribution = calculate_blooms_distribution(final_total)
+    merged_quiz = verify_and_rebalance_questions(merged_quiz, distribution)
+
+    actual_dist = count_cognitive_levels(merged_quiz)
+    print(f"\n✅ Bulk quiz generated — {final_total} questions total")
+    print(f"   LOTS (60%): Remembering={actual_dist['remembering']}, Understanding={actual_dist['understanding']}, Application={actual_dist['application']}")
+    print(f"   HOTS (40%): Analysis={actual_dist['analysis']}, Evaluation={actual_dist['evaluation']}, Creating={actual_dist['creating']}")
+
+    return merged_quiz
+
+
+def _top_up_if_needed(
+    quiz_data: dict,
+    cleaned_text: str,
+    target_mc: int,
+    target_tf: int,
+    target_id: int,
+    max_top_up_attempts: int = 2
+) -> dict:
+    """
+    Check if any question type has fewer questions than requested (due to
+    validation rejecting low-quality questions). If so, generate replacement
+    questions in a small top-up batch and validate them again.
+
+    Tries up to `max_top_up_attempts` rounds to fill the gaps.
+    """
+    for attempt in range(max_top_up_attempts):
+        mc_gap = max(0, target_mc - len(quiz_data.get("multiple_choice", [])))
+        tf_gap = max(0, target_tf - len(quiz_data.get("true_false", [])))
+        id_gap = max(0, target_id - len(quiz_data.get("identification", [])))
+
+        total_gap = mc_gap + tf_gap + id_gap
+        if total_gap == 0:
+            return quiz_data  # All counts match — nothing to do
+
+        print(f"\n🔧 Top-up attempt {attempt + 1}/{max_top_up_attempts}: "
+              f"need {mc_gap} MC, {tf_gap} TF, {id_gap} ID ({total_gap} missing)")
+
+        try:
+            top_up_data = _generate_single_batch(
+                cleaned_text, mc_gap, tf_gap, id_gap,
+                batch_number=99, total_batches=99  # special marker for top-up
+            )
+            top_up_data = validate_and_filter_questions(top_up_data)
+
+            quiz_data["multiple_choice"].extend(top_up_data.get("multiple_choice", []))
+            quiz_data["true_false"].extend(top_up_data.get("true_false", []))
+            quiz_data["identification"].extend(top_up_data.get("identification", []))
+
+            new_mc = len(quiz_data["multiple_choice"])
+            new_tf = len(quiz_data["true_false"])
+            new_id = len(quiz_data["identification"])
+            print(f"   ✅ After top-up: {new_mc} MC, {new_tf} TF, {new_id} ID")
+
+        except Exception as e:
+            print(f"   ⚠️ Top-up attempt {attempt + 1} failed: {e}")
+            # Continue to next attempt or give up gracefully
+
+    # Final trim — if top-up over-generated, trim to exact targets
+    quiz_data["multiple_choice"] = quiz_data["multiple_choice"][:target_mc]
+    quiz_data["true_false"] = quiz_data["true_false"][:target_tf]
+    quiz_data["identification"] = quiz_data["identification"][:target_id]
+
+    return quiz_data
 
 
 def validate_and_filter_questions(quiz_data: dict) -> dict:
