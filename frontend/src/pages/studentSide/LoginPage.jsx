@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, updateDoc, deleteField } from "firebase/firestore";
 import { ChevronLeft, X, Eye, EyeOff } from "lucide-react";
 import LOGO from "../../assets/iQuizU.svg"
 
@@ -28,6 +28,8 @@ export default function LoginPage() {
       let userEmail = "";
       let userRole = null;
       let userAuthUID = null;
+      let firestoreDocId = null;  // Track Firestore doc ID for auto-repair
+      let authEmail = null;       // The email Firebase Auth actually knows
 
       if (input.includes("@")) {
         const usersRef = collection(db, "users");
@@ -38,6 +40,7 @@ export default function LoginPage() {
           userEmail = snapshot.docs[0].data().email;
           userRole = snapshot.docs[0].data().role;
           userAuthUID = snapshot.docs[0].id;
+          firestoreDocId = snapshot.docs[0].id;
         } else {
           q = query(usersRef, where("emailAddress", "==", input.toLowerCase()));
           snapshot = await getDocs(q);
@@ -47,6 +50,8 @@ export default function LoginPage() {
             userEmail = userData.emailAddress;
             userRole = userData.role;
             userAuthUID = userData.authUID || snapshot.docs[0].id;
+            firestoreDocId = snapshot.docs[0].id;
+            authEmail = userData.authEmail || null;
 
             if (!userData.hasAccount) {
               setError("Your account hasn't been created yet. Please contact your teacher.");
@@ -54,9 +59,29 @@ export default function LoginPage() {
               return;
             }
           } else {
-            setError("Account not found. Please check your email.");
-            setLoading(false);
-            return;
+            // Also try searching by pendingEmail (student typed their new unverified email)
+            q = query(usersRef, where("pendingEmail", "==", input.toLowerCase()));
+            snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+              const userData = snapshot.docs[0].data();
+              // Use the ACTUAL emailAddress (the one Firebase Auth knows)
+              userEmail = userData.emailAddress;
+              userRole = userData.role;
+              userAuthUID = userData.authUID || snapshot.docs[0].id;
+              firestoreDocId = snapshot.docs[0].id;
+              authEmail = userData.authEmail || null;
+
+              if (!userData.hasAccount) {
+                setError("Your account hasn't been created yet. Please contact your teacher.");
+                setLoading(false);
+                return;
+              }
+            } else {
+              setError("Account not found. Please check your email.");
+              setLoading(false);
+              return;
+            }
           }
         }
       } else {
@@ -74,6 +99,8 @@ export default function LoginPage() {
         userEmail = userData.emailAddress;
         userRole = userData.role;
         userAuthUID = userData.authUID || snapshot.docs[0].id;
+        firestoreDocId = snapshot.docs[0].id;
+        authEmail = userData.authEmail || null;
 
         if (!userEmail) {
           setError("No email address found for this student. Please contact your teacher.");
@@ -88,8 +115,48 @@ export default function LoginPage() {
         }
       }
 
-      // ─── AUTHENTICATE FIRST (validate password before checking quiz schedule) ───
-      await signInWithEmailAndPassword(auth, userEmail, password);
+      // ─── AUTHENTICATE (with fallback for mismatched email) ───
+      // If the Firestore emailAddress was changed by the old broken flow but
+      // Firebase Auth still has the original email, the first attempt will fail.
+      // We retry with authEmail if available, then auto-repair the Firestore doc.
+      let authSucceeded = false;
+      try {
+        await signInWithEmailAndPassword(auth, userEmail, password);
+        authSucceeded = true;
+      } catch (authError) {
+        // If credentials are invalid AND we have an alternate authEmail, try that
+        if (
+          authEmail &&
+          authEmail !== userEmail &&
+          (authError.code === "auth/invalid-credential" ||
+           authError.code === "auth/wrong-password" ||
+           authError.code === "auth/user-not-found")
+        ) {
+          try {
+            await signInWithEmailAndPassword(auth, authEmail, password);
+            authSucceeded = true;
+
+            // Auto-repair: clear any stale pendingEmail field.
+            // We do NOT revert emailAddress — the student intentionally changed it.
+            // The authEmail field is what's used for authentication going forward.
+            if (firestoreDocId) {
+              console.log(`🔧 Auto-repair: clearing stale pendingEmail for ${firestoreDocId}`);
+              try {
+                await updateDoc(doc(db, "users", firestoreDocId), {
+                  pendingEmail: deleteField(),
+                });
+              } catch (repairErr) {
+                console.warn("Auto-repair failed (non-critical):", repairErr);
+              }
+            }
+          } catch {
+            // Both attempts failed — re-throw the original error
+            throw authError;
+          }
+        } else {
+          throw authError;
+        }
+      }
 
       // ─── LOGIN TIME FRAME RESTRICTION FOR STUDENTS ───
       if (userRole === "student" && userAuthUID) {

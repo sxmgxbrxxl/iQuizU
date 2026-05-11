@@ -15,6 +15,7 @@ import {
   PanelLeftClose,
   Megaphone,
   Layers,
+  Building2,
 } from "lucide-react";
 import { auth } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
@@ -91,6 +92,7 @@ export default function AdminTopbar({ user, userDoc }) {
     { to: "/admin/students", icon: NotebookTabs, label: "Manage Students" },
     { to: "/admin/announcements", icon: Megaphone, label: "Announcements" },
     { to: "/admin/content", icon: Layers, label: "Manage Content" },
+    { to: "/admin/departments", icon: Building2, label: "Departments" },
     { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   ];
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, KeyRound, CheckCircle, XCircle, AlertTriangle, X, Mail, IdCard, Pencil, Trash2, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "../../firebase/firebaseConfig";
 import { ProfileSkeleton } from "../../components/SkeletonLoaders";
@@ -168,6 +168,9 @@ export default function TeacherProfile({ user, userDoc }) {
     // Saved profile state — keeps the latest saved values so we don't depend on stale props
     const [savedProfile, setSavedProfile] = useState(null);
 
+    // Department options from admin-maintained Firestore collection
+    const [departmentsList, setDepartmentsList] = useState([]);
+
     // form state (initialized from user / userDoc)
     const [fullName, setFullName] = useState("");
     const [department, setDepartment] = useState("");
@@ -181,6 +184,21 @@ export default function TeacherProfile({ user, userDoc }) {
     const displayName = profile?.name || profile?.firstName || user?.displayName || "Teacher";
     const userInitial = (displayName && displayName.charAt(0).toUpperCase()) || "T";
     const userDocId = profile?.id || userDoc?.id || user?.uid || null;
+
+    // Fetch admin-maintained department list
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                const q = query(collection(db, "departments"), orderBy("name", "asc"));
+                const snapshot = await getDocs(q);
+                const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+                setDepartmentsList(list);
+            } catch (error) {
+                console.error("Error fetching departments:", error);
+            }
+        };
+        fetchDepartments();
+    }, []);
 
     useEffect(() => {
         // Only initialize from userDoc if we haven't saved locally yet
@@ -366,7 +384,7 @@ export default function TeacherProfile({ user, userDoc }) {
 
             const updatedData = {
                 name: fullName,
-                department: "CCS",
+                department: department,
                 email: emailAddr,
                 phone: phone,
                 bio: bio,
@@ -516,13 +534,18 @@ export default function TeacherProfile({ user, userDoc }) {
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-subtext text-sm font-medium">Department</label>
-                                    <input
-                                        type="text"
-                                        value="CCS"
-                                        disabled
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed"
-                                        title="Department cannot be changed"
-                                    />
+                                    <select
+                                        value={department}
+                                        onChange={(e) => setDepartment(e.target.value)}
+                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition bg-white"
+                                    >
+                                        <option value="">— Select Department —</option>
+                                        {departmentsList.map((dept) => (
+                                            <option key={dept.id} value={dept.name}>
+                                                {dept.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-subtext text-sm font-medium">Email Address</label>
@@ -590,7 +613,7 @@ export default function TeacherProfile({ user, userDoc }) {
                                 <div className="border-b border-gray-50" />
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                                     <span className="sm:w-40 text-subtext text-sm font-medium">Department</span>
-                                    <span className="font-semibold text-title">CCS</span>
+                                    <span className="font-semibold text-title">{department || "-"}</span>
                                 </div>
                                 <div className="border-b border-gray-50" />
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">

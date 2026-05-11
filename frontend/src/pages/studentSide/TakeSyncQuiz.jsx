@@ -190,14 +190,14 @@ export default function TakeSyncQuiz({ user, userDoc }) {
     const handleBeforeUnload = () => {
       setLobbyStatus("pending");
     };
-    
+
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
       isActive = false;
       window.removeEventListener("beforeunload", handleBeforeUnload);
       if (!isLeavingRef.current && sessionStatus === "not_started" && !quizStarted) {
-         setLobbyStatus("pending");
+        setLobbyStatus("pending");
       }
     };
   }, [assignmentId, sessionStatus, quizStarted]);

@@ -52,6 +52,7 @@ import ManageStudents from "./pages/adminSide/ManageStudents";
 import AdminAnalytics from "./pages/adminSide/AdminAnalytics";
 import ManageAnnouncements from "./pages/adminSide/ManageAnnouncements";
 import ManageContent from "./pages/adminSide/ManageContent";
+import ManageDepartments from "./pages/adminSide/ManageDepartments";
 
 // COMPONENTS
 import StudentSidebar from "./components/StudentSideBar";
@@ -454,6 +455,7 @@ function App() {
           <Route path="announcements" element={<ManageAnnouncements />} />
           <Route path="content" element={<ManageContent />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="departments" element={<ManageDepartments />} />
         </Route>
 
         {/* CATCH-ALL */}

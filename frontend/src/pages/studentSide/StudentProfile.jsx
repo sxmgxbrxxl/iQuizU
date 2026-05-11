@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
     Loader2,
@@ -14,8 +14,12 @@ import {
     EyeOff,
     ShieldCheck,
 } from "lucide-react";
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import {
+    updatePassword,
+    reauthenticateWithCredential,
+    EmailAuthProvider,
+} from "firebase/auth";
+import { doc, updateDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "../../firebase/firebaseConfig";
 import { ProfileSkeleton } from "../../components/SkeletonLoaders";
@@ -33,6 +37,10 @@ const isPasswordValid = (password) => {
     const v = validatePassword(password);
     return v.length && v.hasLetter && v.hasNumber && v.hasSymbol && v.startsWithUppercase;
 };
+
+// ─── Email Validation Helper ──────────────────────────────────────────────────
+const isValidEmail = (email) =>
+    /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,6}$/.test(email.trim());
 
 // ─── Custom Toast Notification ───────────────────────────────────────────────
 function Toast({ toast, onClose }) {
@@ -138,6 +146,7 @@ function ConfirmDialog({ isOpen, title, message, confirmLabel, cancelLabel, onCo
     );
 }
 
+
 // Helper functions for year handling
 const normalizeYear = (yearValue) => {
     if (!yearValue) return "";
@@ -166,6 +175,12 @@ export default function StudentProfile({ user, userDoc }) {
     const [showCurrentPw, setShowCurrentPw] = useState(false);
     const [showNewPw, setShowNewPw] = useState(false);
     const [showConfirmPw, setShowConfirmPw] = useState(false);
+    const [emailError, setEmailError] = useState("");
+    const [checkingEmail, setCheckingEmail] = useState(false);
+
+
+
+    const emailCheckTimer = useRef(null);
     const fileInputRef = useRef(null);
 
     const pwValidation = validatePassword(newPassword);
@@ -192,6 +207,65 @@ export default function StudentProfile({ user, userDoc }) {
     // Confirm dialog state
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
 
+    // readonly info
+    const displayName = userDoc?.name || user?.displayName || "Student";
+    const userInitial = (displayName && displayName.charAt(0).toUpperCase()) || "S";
+    const userDocId = userDoc?.id || user?.uid || null;
+
+    // The original email from Firestore
+    const originalEmail = useMemo(
+        () => (userDoc?.emailAddress || user?.email || "").toLowerCase().trim(),
+        [userDoc, user]
+    );
+
+    // ─── Email Duplicate Checker (debounced) ─────────────────────────────────
+    const checkEmailExists = useCallback(async (email) => {
+        const trimmed = email.toLowerCase().trim();
+
+        if (!trimmed) {
+            setEmailError("Email Address cannot be empty.");
+            setCheckingEmail(false);
+            return;
+        }
+
+        if (!isValidEmail(trimmed)) {
+            setEmailError("Please enter a valid email address.");
+            setCheckingEmail(false);
+            return;
+        }
+
+        if (trimmed === originalEmail) {
+            setEmailError("");
+            setCheckingEmail(false);
+            return;
+        }
+
+        try {
+            setCheckingEmail(true);
+            const q = query(
+                collection(db, "users"),
+                where("emailAddress", "==", trimmed)
+            );
+            const snap = await getDocs(q);
+            const taken = snap.docs.some((d) => d.id !== userDocId);
+            setEmailError(taken ? "This email is already in use by another account." : "");
+        } catch (err) {
+            console.error("Error checking email:", err);
+            setEmailError("");
+        } finally {
+            setCheckingEmail(false);
+        }
+    }, [originalEmail, userDocId]);
+
+    const handleEmailChange = useCallback((value) => {
+        setEmailAddr(value);
+        setEmailError("");
+        if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current);
+        emailCheckTimer.current = setTimeout(() => {
+            checkEmailExists(value);
+        }, 500);
+    }, [checkEmailExists]);
+
     // form state
     const [fullName, setFullName] = useState("");
     const [department, setDepartment] = useState("");
@@ -202,11 +276,6 @@ export default function StudentProfile({ user, userDoc }) {
     const [year, setYear] = useState("");
     const [gender, setGender] = useState("");
     const [studentNo, setStudentNo] = useState("");
-
-    // readonly info
-    const displayName = userDoc?.name || user?.displayName || "Student";
-    const userInitial = (displayName && displayName.charAt(0).toUpperCase()) || "S";
-    const userDocId = userDoc?.id || user?.uid || null;
 
     useEffect(() => {
         setFullName(userDoc?.name || user?.displayName || "");
@@ -221,7 +290,7 @@ export default function StudentProfile({ user, userDoc }) {
         setLoading(false);
     }, [user, userDoc]);
 
-    // Handle profile photo upload to Firebase Storage
+    // Handle profile photo upload
     const handlePhotoChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -243,30 +312,21 @@ export default function StudentProfile({ user, userDoc }) {
 
         try {
             setUploading(true);
-
-            // Upload to Firebase Storage
             const fileExtension = file.name.split('.').pop();
             const storageRef = ref(storage, `profileImages/${userDocId}.${fileExtension}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
-            // Update Firestore with the download URL
             const userDocRef = doc(db, "users", userDocId);
             const docSnap = await getDoc(userDocRef);
 
-            if (!docSnap.exists()) {
-                throw new Error("User document not found");
-            }
+            if (!docSnap.exists()) throw new Error("User document not found");
 
-            // Add cache-buster so browser forces image refresh
             const uniqueURL = `${downloadURL}&t=${Date.now()}`;
-
             await updateDoc(userDocRef, { photoURL: uniqueURL });
             setPhotoURL(uniqueURL);
 
-            // Notify App.js to refresh userDoc so sidebar + other components update
             window.dispatchEvent(new Event('refreshUserDoc'));
-
             showToast("success", "Profile photo updated successfully!");
         } catch (error) {
             console.error("Error uploading photo:", error);
@@ -286,7 +346,6 @@ export default function StudentProfile({ user, userDoc }) {
             confirmLabel: "Remove",
             color: "red",
             icon: <Trash2 className="w-6 h-6 text-red-600" />,
-            font: "Poppins",
             onConfirm: async () => {
                 setConfirmDialog({ isOpen: false });
                 try {
@@ -307,58 +366,95 @@ export default function StudentProfile({ user, userDoc }) {
         });
     };
 
-    // Handle profile save
+    // ─── Core email save logic ────────────────────────────────────────────────
+    // We ONLY update the Firestore emailAddress field. We do NOT touch
+    // Firebase Auth email — it stays as the original forever and is used
+    // solely for authentication via signInWithEmailAndPassword.
+    // This completely avoids the Auth ↔ Firestore email mismatch bug.
+    const performEmailUpdate = useCallback(async (trimmedEmail) => {
+        try {
+            const currentAuthEmail = auth.currentUser?.email || originalEmail;
+            const userDocRef = doc(db, "users", userDocId);
+            await updateDoc(userDocRef, {
+                emailAddress: trimmedEmail,
+                // Store the original Auth email so the login page can always
+                // authenticate using it, regardless of emailAddress changes.
+                authEmail: currentAuthEmail,
+            });
+
+            window.dispatchEvent(new Event('refreshUserDoc'));
+            showToast("success", "Email updated successfully!");
+            setEditing(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (error) {
+            console.error("Error updating email:", error);
+            throw error;
+        }
+    }, [userDocId, showToast, originalEmail]);
+
+    // ─── Handle profile save ──────────────────────────────────────────────────
     const handleSaveProfile = async () => {
         if (!userDocId) {
             showToast("error", "User document not found");
             return;
         }
 
-        if (!fullName.trim() || !emailAddr.trim()) {
-            showToast("warning", "Full Name and Email Address cannot be empty.");
+        if (!emailAddr.trim()) {
+            showToast("warning", "Email Address cannot be empty.");
             return;
         }
 
-        if (fullName.length > 100 || department.length > 100) {
-            showToast("warning", "Input fields exceed the maximum character limit.");
+        if (!isValidEmail(emailAddr)) {
+            showToast("warning", "Please enter a valid email address.");
             return;
+        }
+
+        if (emailError) {
+            showToast("warning", emailError);
+            return;
+        }
+
+        if (checkingEmail) {
+            showToast("info", "Please wait while we verify your email.");
+            return;
+        }
+
+        const trimmedEmail = emailAddr.toLowerCase().trim();
+
+        // No change — nothing to do
+        if (trimmedEmail === originalEmail) {
+            setEditing(false);
+            return;
+        }
+
+        // Final duplicate check
+        try {
+            const q = query(
+                collection(db, "users"),
+                where("emailAddress", "==", trimmedEmail)
+            );
+            const snap = await getDocs(q);
+            const taken = snap.docs.some((d) => d.id !== userDocId);
+            if (taken) {
+                showToast("warning", "This email is already in use by another account.");
+                setEmailError("This email is already in use by another account.");
+                return;
+            }
+        } catch (err) {
+            console.error("Error in final email check:", err);
         }
 
         try {
             setSaving(true);
-            const userDocRef = doc(db, "users", userDocId);
-            const docSnap = await getDoc(userDocRef);
-
-            if (!docSnap.exists()) {
-                throw new Error("User document not found");
-            }
-
-            await updateDoc(userDocRef, {
-                name: fullName,
-                program: department,
-                emailAddress: emailAddr,
-                contactNo: phone,
-                bio: bio,
-                year: year,
-                gender: gender,
-                studentNo: studentNo
-            });
-
-            // Notify App.js to refresh userDoc so sidebar + other components update
-            window.dispatchEvent(new Event('refreshUserDoc'));
-
-            showToast("success", "Profile updated successfully!");
-            setEditing(false);
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            await performEmailUpdate(trimmedEmail);
         } catch (error) {
-            console.error("Error updating profile:", error);
-            showToast("error", "Failed to update profile");
+            showToast("error", "Failed to update email. Please try again.");
         } finally {
             setSaving(false);
         }
     };
 
-    // Handle inline password change with Firebase reauthentication
+    // ─── Handle password change ───────────────────────────────────────────────
     const handleChangePassword = async () => {
         if (!currentPassword) {
             showToast("warning", "Please enter your current password.");
@@ -380,7 +476,6 @@ export default function StudentProfile({ user, userDoc }) {
             confirmLabel: "Change Password",
             cancelLabel: "Cancel",
             color: "orange",
-            font: "Poppins",
             icon: <ShieldCheck className="w-6 h-6 text-orange-600" />,
             onConfirm: async () => {
                 setConfirmDialog({ isOpen: false });
@@ -425,14 +520,12 @@ export default function StudentProfile({ user, userDoc }) {
                 onCancel={confirmDialog.onCancel}
                 icon={confirmDialog.icon}
                 color={confirmDialog.color}
-                font={confirmDialog.font}
             />
 
-            {/* ─── Header Card (Green Theme) ─── */}
-            <div className="relative bg-green-600 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden mx-1 md:mx-2 mt-2 px-5 py-6 md:p-6 group text-white border border-green-500">
-                {/* Background blob */}
-                <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
 
+            {/* ─── Header Card ─── */}
+            <div className="relative bg-green-600 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_6px_25px_rgb(0,0,0,0.15)] transition-all overflow-hidden mx-1 md:mx-2 mt-2 px-5 py-6 md:p-6 group text-white border border-green-500">
+                <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
                 <div className="relative z-10">
                     <h1 className="text-xl md:text-2xl font-bold tracking-tight">My Profile</h1>
                     <p className="text-green-100 text-xs md:text-sm mt-1">
@@ -490,6 +583,15 @@ export default function StudentProfile({ user, userDoc }) {
                 <div className="bg-white rounded-2xl overflow-hidden border border-green-500">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                         <h3 className="text-base md:text-lg font-bold text-green-600">Personal Details</h3>
+                        {!editing && (
+                            <button
+                                onClick={() => setEditing(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 font-semibold rounded-xl transition text-sm"
+                            >
+                                <Mail className="w-4 h-4" />
+                                Edit Email
+                            </button>
+                        )}
                     </div>
 
                     <div className="p-6">
@@ -498,104 +600,87 @@ export default function StudentProfile({ user, userDoc }) {
                                 {/* Student No (Read-only) */}
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-gray-500 text-sm font-medium">Student No</label>
-                                    <input
-                                        type="text"
-                                        value={studentNo}
-                                        disabled
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed"
-                                        title="Student number cannot be changed"
-                                    />
+                                    <input type="text" value={studentNo} disabled className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-400 cursor-not-allowed" />
                                 </div>
 
-                                {/* Full Name */}
+                                {/* Full Name (Read-only) */}
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-gray-500 text-sm font-medium">Full Name</label>
-                                    <input
-                                        type="text"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
-                                        maxLength={100}
-                                    />
+                                    <input type="text" value={fullName} disabled className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-400 cursor-not-allowed" />
                                 </div>
 
-                                {/* Program */}
+                                {/* Program (Read-only) */}
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-gray-500 text-sm font-medium">Program</label>
-                                    <input
-                                        type="text"
-                                        value={department}
-                                        onChange={(e) => setDepartment(e.target.value)}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
-                                        maxLength={100}
-                                    />
+                                    <input type="text" value={department} disabled className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-400 cursor-not-allowed" />
                                 </div>
 
-                                {/* Year Level */}
+                                {/* Year Level (Read-only) */}
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-gray-500 text-sm font-medium">Year Level</label>
-                                    <select
-                                        value={year}
-                                        onChange={(e) => setYear(e.target.value)}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
-                                    >
-                                        <option value="">Select Year</option>
-                                        <option value="1">1st Year</option>
-                                        <option value="2">2nd Year</option>
-                                        <option value="3">3rd Year</option>
-                                        <option value="4">4th Year</option>
-                                        <option value="5">5th Year</option>
-                                    </select>
+                                    <input type="text" value={displayYear(year)} disabled className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-400 cursor-not-allowed" />
                                 </div>
 
-                                {/* Gender */}
+                                {/* Gender (Read-only) */}
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-gray-500 text-sm font-medium">Gender</label>
-                                    <select
-                                        value={gender}
-                                        onChange={(e) => setGender(e.target.value)}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
-                                    >
-                                        <option value="">Select Gender</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="Other">Other</option>
-                                        <option value="Prefer not to say">Prefer not to say</option>
-                                    </select>
+                                    <input type="text" value={gender || "-"} disabled className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-400 cursor-not-allowed" />
                                 </div>
 
-                                {/* Email */}
-                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
-                                    <label className="sm:w-40 text-gray-500 text-sm font-medium">Email Address</label>
-                                    <input
-                                        type="email"
-                                        value={emailAddr}
-                                        disabled
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-500 cursor-not-allowed"
-                                        title="Email address cannot be changed directly"
-                                    />
+                                {/* Email (Editable) */}
+                                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-start">
+                                    <label className="sm:w-40 text-gray-500 text-sm font-medium sm:pt-3">
+                                        Email Address
+                                        <span className="ml-1.5 text-xs text-green-600 font-semibold">(editable)</span>
+                                    </label>
+                                    <div className="w-full">
+                                        <div className="relative">
+                                            <input
+                                                type="email"
+                                                value={emailAddr}
+                                                onChange={(e) => handleEmailChange(e.target.value)}
+                                                className={`border p-2.5 pr-10 rounded-xl w-full focus:outline-none focus:ring-2 transition ${emailError
+                                                    ? "border-red-300 focus:ring-red-500/30 focus:border-red-400"
+                                                    : emailAddr.toLowerCase().trim() !== originalEmail && emailAddr.trim() && !checkingEmail
+                                                        ? "border-green-300 focus:ring-green-500/30 focus:border-green-400"
+                                                        : "border-gray-200 focus:ring-green-500/30 focus:border-green-400"
+                                                    }`}
+                                                placeholder="Enter email address"
+                                            />
+                                            {checkingEmail && (
+                                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
+                                            )}
+                                            {!checkingEmail && emailAddr.trim() && !emailError && emailAddr.toLowerCase().trim() !== originalEmail && (
+                                                <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                                            )}
+                                            {!checkingEmail && emailError && (
+                                                <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+                                            )}
+                                        </div>
+                                        {emailError && (
+                                            <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                                                <XCircle className="w-3 h-3 flex-shrink-0" /> {emailError}
+                                            </p>
+                                        )}
+                                        {!emailError && emailAddr.toLowerCase().trim() !== originalEmail && emailAddr.trim() && !checkingEmail && (
+                                            <p className="text-green-600 text-xs mt-1.5 flex items-center gap-1">
+                                                <CheckCircle className="w-3 h-3 flex-shrink-0" /> Email is available
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Phone */}
+                                {/* Phone (Read-only) */}
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
                                     <label className="sm:w-40 text-gray-500 text-sm font-medium">Phone</label>
-                                    <input
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => {
-                                            const value = e.target.value.replace(/\D/g, "");
-                                            if (value.length <= 11) setPhone(value);
-                                        }}
-                                        maxLength={11}
-                                        className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition"
-                                    />
+                                    <input type="text" value={phone || "-"} disabled className="border border-gray-200 p-2.5 rounded-xl w-full bg-gray-50 text-gray-400 cursor-not-allowed" />
                                 </div>
 
                                 {/* Save / Cancel buttons */}
                                 <div className="flex gap-3 pt-3 border-t border-gray-100">
                                     <button
                                         onClick={handleSaveProfile}
-                                        disabled={saving}
+                                        disabled={saving || !!emailError || checkingEmail}
                                         className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {saving ? (
@@ -610,14 +695,8 @@ export default function StudentProfile({ user, userDoc }) {
                                     <button
                                         onClick={() => {
                                             setEditing(false);
-                                            // Reset values
-                                            setFullName(userDoc?.name || user?.displayName || "");
-                                            setDepartment(userDoc?.program || "");
+                                            setEmailError("");
                                             setEmailAddr(userDoc?.emailAddress || user?.email || "");
-                                            setPhone(userDoc?.contactNo || "");
-                                            setBio(userDoc?.bio || "");
-                                            setYear(normalizeYear(userDoc?.year) || "");
-                                            setGender(userDoc?.gender || "");
                                         }}
                                         className="px-5 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-100 transition text-sm"
                                     >
@@ -657,9 +736,17 @@ export default function StudentProfile({ user, userDoc }) {
                                 </div>
                                 <div className="border-b border-gray-50" />
 
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
-                                    <span className="sm:w-40 text-gray-500 text-sm font-medium">Email Address</span>
-                                    <span className="font-semibold text-gray-800 break-all sm:break-normal">{emailAddr || "-"}</span>
+                                <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
+                                    <span className="sm:w-40 text-gray-500 text-sm font-medium sm:pt-0.5">Email Address</span>
+                                    <div>
+                                        <span className="font-semibold text-gray-800 break-all sm:break-normal">{emailAddr || "-"}</span>
+                                        {userDoc?.pendingEmail && (
+                                            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                                                <Mail className="w-3 h-3 flex-shrink-0" />
+                                                Pending change to <span className="font-semibold">{userDoc.pendingEmail}</span> — check your inbox to verify.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="border-b border-gray-50" />
 
@@ -759,10 +846,10 @@ export default function StudentProfile({ user, userDoc }) {
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             maxLength={16}
                                             className={`border p-2.5 pr-10 rounded-xl w-full focus:outline-none focus:ring-2 transition ${confirmPassword.length > 0
-                                                    ? passwordsMatch
-                                                        ? "border-green-300 focus:ring-green-500/30 focus:border-green-400"
-                                                        : "border-red-300 focus:ring-red-500/30 focus:border-red-400"
-                                                    : "border-gray-200 focus:ring-orange-500/30 focus:border-orange-400"
+                                                ? passwordsMatch
+                                                    ? "border-green-300 focus:ring-green-500/30 focus:border-green-400"
+                                                    : "border-red-300 focus:ring-red-500/30 focus:border-red-400"
+                                                : "border-gray-200 focus:ring-orange-500/30 focus:border-orange-400"
                                                 }`}
                                             placeholder="Re-enter new password"
                                         />
