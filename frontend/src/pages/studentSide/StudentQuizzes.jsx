@@ -583,13 +583,23 @@ export default function StudentQuizzes({ user, userDoc }) {
                                 Completed
                             </button>
                         ) : getQuizState(quiz) === "not_started" ? (
-                            <button
-                                disabled
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-100 text-blue-700 px-4 py-2.5 sm:py-2 rounded-lg cursor-not-allowed font-semibold text-sm sm:text-base"
-                            >
-                                <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
-                                Not Started
-                            </button>
+                            isSynchronous ? (
+                                <button
+                                    onClick={() => handleTakeSyncQuiz(quiz.id)}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 font-semibold text-sm sm:text-base transition"
+                                >
+                                    <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    Join Lobby
+                                </button>
+                            ) : (
+                                <button
+                                    disabled
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-100 text-blue-700 px-4 py-2.5 sm:py-2 rounded-lg cursor-not-allowed font-semibold text-sm sm:text-base"
+                                >
+                                    <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    Not Started
+                                </button>
+                            )
                         ) : getQuizState(quiz) === "late_entry_closed" ? (
                             <button
                                 disabled

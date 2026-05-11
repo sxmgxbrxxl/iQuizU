@@ -89,12 +89,23 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
   const submittingRef = useRef(false);
   const answersRef = useRef({});
   const questionsRef = useRef([]);
+  const assignmentRefData = useRef(null);
+  const quizRefData = useRef(null);
+  const hasAutoSubmittedRef = useRef(false);
+  const maxTabSwitchesRef = useRef(0);
 
   useEffect(() => { quizStartedRef.current = isQuizStarted; }, [isQuizStarted]);
   useEffect(() => { quizStartTimeRef.current = quizStartTime; }, [quizStartTime]);
   useEffect(() => { submittingRef.current = submitting; }, [submitting]);
   useEffect(() => { answersRef.current = answers; }, [answers]);
   useEffect(() => { questionsRef.current = questions; }, [questions]);
+  useEffect(() => { assignmentRefData.current = assignment; }, [assignment]);
+  useEffect(() => { quizRefData.current = quiz; }, [quiz]);
+  useEffect(() => { hasAutoSubmittedRef.current = hasAutoSubmitted; }, [hasAutoSubmitted]);
+  useEffect(() => {
+    const limit = Number(assignment?.settings?.maxTabSwitches) || 0;
+    maxTabSwitchesRef.current = limit > 0 ? limit : 0;
+  }, [assignment]);
 
   const isAssignedQuiz = !!assignmentId;
 
@@ -122,11 +133,17 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         tabSwitchOutTimeRef.current = new Date();
         tabCountRef.current += 1;
         setTabSwitchCount(tabCountRef.current);
+        const maxTabSwitches = maxTabSwitchesRef.current;
+        const tabLimitReached = maxTabSwitches > 0 && tabCountRef.current >= maxTabSwitches;
         const activity = {
           type: "tab_switch",
           timestamp: new Date().toISOString(),
-          details: "⚠️ Student switched AWAY from quiz tab",
+          details: tabLimitReached
+            ? `Student reached the tab switch limit (${tabCountRef.current}/${maxTabSwitches})`
+            : "Student switched away from quiz tab",
           switchedOutAt: tabSwitchOutTimeRef.current.toISOString(),
+          maxTabSwitches,
+          tabLimitReached,
         };
         activitiesRef.current = [...activitiesRef.current, activity];
         setSuspiciousActivities([...activitiesRef.current]);
@@ -136,9 +153,11 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
             await updateDoc(assignmentRef, {
               antiCheatData: {
                 tabSwitchCount: tabCountRef.current,
+                maxTabSwitches,
                 suspiciousActivities: activitiesRef.current,
                 totalSuspiciousActivities: activitiesRef.current.length,
                 flaggedForReview: true,
+                tabLimitReached,
                 quizDuration: quizStartTimeRef.current
                   ? Math.round((new Date() - quizStartTimeRef.current) / 1000)
                   : 0,
@@ -148,15 +167,24 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
             console.error("Error writing real-time anti-cheat data:", err);
           }
         }
+        if (tabLimitReached && !submittingRef.current && !hasAutoSubmittedRef.current) {
+          hasAutoSubmittedRef.current = true;
+          setHasAutoSubmitted(true);
+          await submitQuiz("tab_limit_reached");
+        }
       } else if (tabSwitchOutTimeRef.current) {
         const now = new Date();
         const durationAway = Math.floor((now - tabSwitchOutTimeRef.current) / 1000);
+        const maxTabSwitches = maxTabSwitchesRef.current;
+        const tabLimitReached = maxTabSwitches > 0 && tabCountRef.current >= maxTabSwitches;
         const activity = {
           type: "tab_switch",
           timestamp: now.toISOString(),
-          details: `✅ Student returned to quiz tab (was away for ${durationAway}s)`,
+          details: `Student returned to quiz tab (was away for ${durationAway}s)`,
           duration: durationAway,
           returnedAt: now.toISOString(),
+          maxTabSwitches,
+          tabLimitReached,
         };
         activitiesRef.current = [...activitiesRef.current, activity];
         setSuspiciousActivities([...activitiesRef.current]);
@@ -167,9 +195,11 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
             await updateDoc(assignmentRef, {
               antiCheatData: {
                 tabSwitchCount: tabCountRef.current,
+                maxTabSwitches,
                 suspiciousActivities: activitiesRef.current,
                 totalSuspiciousActivities: activitiesRef.current.length,
                 flaggedForReview: activitiesRef.current.length > 0,
+                tabLimitReached,
                 quizDuration: quizStartTimeRef.current
                   ? Math.round((new Date() - quizStartTimeRef.current) / 1000)
                   : 0,
@@ -620,28 +650,32 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
     try {
       const { rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints } = calculateScore();
       const currentUser = auth.currentUser;
+      const currentAssignment = assignmentRefData.current || assignment;
+      const currentQuiz = quizRefData.current || quiz;
+      const wasStoppedByViolation = submissionType === "force_stopped" || submissionType === "tab_limit_reached";
       const assignmentRef = doc(db, "assignedQuizzes", assignmentId);
       await updateDoc(assignmentRef, {
-        status: submissionType === "force_stopped" ? "force_stopped" : "completed",
+        status: wasStoppedByViolation ? "force_stopped" : "completed",
         completed: true,
         rawScorePercentage,
         base50ScorePercentage,
-        attempts: (assignment.attempts || 0) + 1,
+        attempts: (currentAssignment?.attempts || 0) + 1,
         submittedAt: serverTimestamp(),
+        stoppedByTabLimit: submissionType === "tab_limit_reached",
       });
       await addDoc(collection(db, "quizSubmissions"), {
         assignmentId,
-        quizId: quiz.id,
-        quizTitle: quiz.title || "Untitled Quiz",
+        quizId: currentQuiz.id,
+        quizTitle: currentQuiz.title || "Untitled Quiz",
         studentId: currentUser.uid,
         studentName: userDoc?.name || userDoc?.firstName + " " + (userDoc?.lastName || "") || currentUser.email || "Unknown",
-        studentNo: userDoc?.studentNo || assignment.studentNo || "",
-        studentDocId: assignment.studentDocId || null,
-        teacherEmail: assignment.teacherEmail || null,
-        teacherName: assignment.teacherName || null,
-        classId: assignment.classId || null,
-        className: assignment.className || "Unknown Class",
-        subject: assignment.subject || quiz.subject || "",
+        studentNo: userDoc?.studentNo || currentAssignment?.studentNo || "",
+        studentDocId: currentAssignment?.studentDocId || null,
+        teacherEmail: currentAssignment?.teacherEmail || null,
+        teacherName: currentAssignment?.teacherName || null,
+        classId: currentAssignment?.classId || null,
+        className: currentAssignment?.className || "Unknown Class",
+        subject: currentAssignment?.subject || currentQuiz.subject || "",
         answers: answersRef.current,
         rawScorePercentage,
         base50ScorePercentage,
@@ -652,16 +686,19 @@ export default function TakeAsyncQuiz({ user, userDoc }) {
         quizMode: "asynchronous",
         submissionType,
         forceStoppedByTeacher: submissionType === "force_stopped",
+        stoppedByTabLimit: submissionType === "tab_limit_reached",
         antiCheatData: {
           tabSwitchCount: tabCountRef.current,
+          maxTabSwitches: maxTabSwitchesRef.current,
           suspiciousActivities: activitiesRef.current,
           totalSuspiciousActivities: activitiesRef.current.length,
           quizDuration: quizStartTimeRef.current ? Math.round((new Date() - quizStartTimeRef.current) / 1000) : 0,
           flaggedForReview: activitiesRef.current.length > 0 || tabCountRef.current > 0,
+          tabLimitReached: submissionType === "tab_limit_reached",
         },
       });
       localStorage.removeItem(`quiz_progress_${assignmentId}`);
-      setQuizResults({ rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints, totalQuestions: questionsRef.current.length, forceStoppedByTeacher: submissionType === "force_stopped" });
+      setQuizResults({ rawScorePercentage, base50ScorePercentage, correctPoints, totalPoints, totalQuestions: questionsRef.current.length, forceStoppedByTeacher: submissionType === "force_stopped", stoppedByTabLimit: submissionType === "tab_limit_reached" });
       setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);

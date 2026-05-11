@@ -1,6 +1,15 @@
 import { Zap, AlertCircle, Loader } from "lucide-react";
 
 export default function WaitingRoom({ quiz, assignment, questions, onNavigate }) {
+  const startTime = assignment?.startDate ? new Date(assignment.startDate) : null;
+  const startsInFuture = startTime && new Date() < startTime;
+  const startLabel = startTime?.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-pink-50 to-green-100 flex items-center justify-center p-3 sm:p-4 md:p-6 font-Poppins">
       <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-500 hover:shadow-3xl animate-fadeIn">
@@ -15,7 +24,9 @@ export default function WaitingRoom({ quiz, assignment, questions, onNavigate })
               Waiting Room
             </h2>
             <p className="text-base sm:text-lg text-gray-600 animate-slideDown animation-delay-100">
-              Your teacher hasn't started the quiz yet
+              {startsInFuture
+                ? `Quiz starts at ${startLabel}`
+                : "Your teacher hasn't started the quiz yet"}
             </p>
           </div>
 
@@ -49,6 +60,12 @@ export default function WaitingRoom({ quiz, assignment, questions, onNavigate })
                   <span className="text-gray-900">{assignment.settings.timeLimit} minutes</span>
                 </div>
               )}
+              {startLabel && (
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2 p-2 bg-white rounded-lg transition-all hover:bg-green-100">
+                  <strong className="text-green-800">Starts:</strong>
+                  <span className="text-gray-900">{startLabel}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -60,8 +77,9 @@ export default function WaitingRoom({ quiz, assignment, questions, onNavigate })
                 Please Wait for Instructions
               </p>
               <p className="text-xs sm:text-sm text-yellow-800 leading-relaxed">
-                Your teacher will start the quiz session shortly. Stay on this page
-                and wait for the quiz to become active. Do not refresh or close this page.
+                {startsInFuture
+                  ? "Stay on this page. The live quiz will be available after the scheduled start time and once your teacher starts the session."
+                  : "Your teacher will start the quiz session shortly. Stay on this page and wait for the quiz to become active. Do not refresh or close this page."}
               </p>
             </div>
           </div>
@@ -69,7 +87,9 @@ export default function WaitingRoom({ quiz, assignment, questions, onNavigate })
           {/* Loading Status */}
           <div className="flex items-center justify-center gap-2 text-gray-500 mb-4 sm:mb-6 animate-pulse">
             <Loader className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-            <span className="text-xs sm:text-sm md:text-base">Waiting for teacher to start the quiz...</span>
+            <span className="text-xs sm:text-sm md:text-base">
+              {startsInFuture ? "Waiting for the scheduled start time..." : "Waiting for teacher to start the quiz..."}
+            </span>
           </div>
 
           {/* Back Button */}

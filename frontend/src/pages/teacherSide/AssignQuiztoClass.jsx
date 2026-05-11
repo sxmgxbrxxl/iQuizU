@@ -68,6 +68,7 @@ export default function AssignQuizToClass() {
     showCorrectAnswers: true,
     passingScore: 60,
     maxAttempts: 1,
+    maxTabSwitches: 0,
     gracePeriod: 0,
   });
 
@@ -115,6 +116,7 @@ export default function AssignQuizToClass() {
           deadline: quizData.settings.deadline || null,
           passingScore: quizData.settings.passingScore || 60,
           maxAttempts: quizData.settings.maxAttempts || 1,
+          maxTabSwitches: quizData.settings.maxTabSwitches || 0,
           shuffleQuestions: quizData.settings.shuffleQuestions || false,
           shuffleChoices: quizData.settings.shuffleChoices || false,
           showResults: quizData.settings.showResults !== false,
@@ -245,9 +247,7 @@ export default function AssignQuizToClass() {
 
     const teacherName =
       currentUser.displayName || currentUser.email?.split("@")[0] || "Teacher";
-    const finalDueDate = isSynchronous
-      ? assignmentSettings.deadline
-      : assignmentSettings.dueDate;
+    const finalDueDate = assignmentSettings.dueDate;
     const initialStatus = isSynchronous ? "not_started" : "pending";
 
     const codeToUse = isSynchronous ? generatedQuizCode : null;
@@ -259,7 +259,7 @@ export default function AssignQuizToClass() {
       classId: classData.id,
       className: classData.name,
       subject: classData.subject || "",
-      startDate: !isSynchronous ? assignmentSettings.startDate : null,
+      startDate: assignmentSettings.startDate,
       dueDate: finalDueDate,
       quizMode: assignmentSettings.mode,
       instructions: assignmentSettings.instructions || "",
@@ -273,7 +273,7 @@ export default function AssignQuizToClass() {
       settings: {
         mode: assignmentSettings.mode,
         timeLimit: assignmentSettings.timeLimit ?? null,
-        deadline: assignmentSettings.deadline ?? null,
+        deadline: isSynchronous ? assignmentSettings.dueDate : (assignmentSettings.deadline ?? null),
         shuffleQuestions: !!assignmentSettings.shuffleQuestions,
         shuffleChoices: !!assignmentSettings.shuffleChoices,
         showResults: !!assignmentSettings.showResults,
@@ -281,6 +281,7 @@ export default function AssignQuizToClass() {
         showCorrectAnswers: !!assignmentSettings.showCorrectAnswers,
         passingScore: Number(assignmentSettings.passingScore) || 60,
         maxAttempts: Number(assignmentSettings.maxAttempts) || 1,
+        maxTabSwitches: Number(assignmentSettings.maxTabSwitches) || 0,
         gracePeriod: Number(assignmentSettings.gracePeriod) || 0,
       },
     };
@@ -363,23 +364,15 @@ export default function AssignQuizToClass() {
 
     const isSynchronous = assignmentSettings.mode === "synchronous";
 
-    if (!isSynchronous) {
-      if (!assignmentSettings.startDate || !assignmentSettings.dueDate) {
-        showToast("warning", "Dates Required", "Please set both start and due dates for this assignment.");
-        isAssigningRef.current = false;
-        setAssigning(false);
-        return;
-      }
-      if (new Date(assignmentSettings.startDate) >= new Date(assignmentSettings.dueDate)) {
-        showToast("warning", "Invalid Dates", "Start date must be before the due date.");
-        isAssigningRef.current = false;
-        setAssigning(false);
-        return;
-      }
+    if (!assignmentSettings.startDate || !assignmentSettings.dueDate) {
+      showToast("warning", "Dates Required", "Please set both start and due dates for this assignment.");
+      isAssigningRef.current = false;
+      setAssigning(false);
+      return;
     }
 
-    if (isSynchronous && !assignmentSettings.deadline) {
-      showToast("warning", "Deadline Required", "Please set an expiration deadline for synchronous mode.");
+    if (new Date(assignmentSettings.startDate) >= new Date(assignmentSettings.dueDate)) {
+      showToast("warning", "Invalid Dates", "Start date must be before the due date.");
       isAssigningRef.current = false;
       setAssigning(false);
       return;
@@ -720,6 +713,27 @@ export default function AssignQuizToClass() {
                     className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    Allowed Tab Switches
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={assignmentSettings.maxTabSwitches || 0}
+                    onChange={(e) =>
+                      setAssignmentSettings({
+                        ...assignmentSettings,
+                        maxTabSwitches: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    0 = no auto-stop. Example: 5 auto-submits on the 5th tab switch.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -754,8 +768,7 @@ export default function AssignQuizToClass() {
             </h3>
 
             <div className="space-y-4">
-              {!isSynchronous ? (
-                <div className="space-y-4">
+              <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold mb-2">
                       Start Date & Time *
@@ -820,29 +833,7 @@ export default function AssignQuizToClass() {
                       How many minutes after the start time students can still enter the quiz (e.g., 10 = students can join up to 10 min late)
                     </p>
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-semibold mb-2">
-                    Expiration Deadline *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={assignmentSettings.deadline || ""}
-                    onChange={(e) =>
-                      setAssignmentSettings({
-                        ...assignmentSettings,
-                        deadline: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Assignment expires if not started before this time
-                  </p>
-                </div>
-              )}
+              </div>
 
               <div>
                 <label className="block text-sm font-semibold mb-2">
@@ -876,8 +867,8 @@ export default function AssignQuizToClass() {
               disabled={
                 assigning ||
                 selectedStudents.length === 0 ||
-                (!isSynchronous && !assignmentSettings.dueDate) ||
-                (isSynchronous && !assignmentSettings.deadline) ||
+                !assignmentSettings.startDate ||
+                !assignmentSettings.dueDate ||
                 (isSynchronous && !generatedQuizCode)
               }
               className={`w-full md:w-auto px-6 py-3 font-semibold rounded-lg flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed ${isSynchronous

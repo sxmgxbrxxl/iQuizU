@@ -51,6 +51,7 @@ export default function QuizSettings() {
     allowReview: true,
     passingScore: 60,
     maxAttempts: 1,
+    maxTabSwitches: 0,
     showCorrectAnswers: true,
     isPublic: false,
     status: "published",
@@ -466,6 +467,27 @@ export default function QuizSettings() {
                 }
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Allowed Tab Switches
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={settings.maxTabSwitches || 0}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    maxTabSwitches: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Set 0 for no auto-stop. Example: 5 means the quiz auto-submits on the 5th tab switch.
+              </p>
             </div>
 
             <label className="flex items-center gap-3 cursor-pointer">

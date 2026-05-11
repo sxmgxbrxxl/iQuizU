@@ -339,6 +339,30 @@ export default function QuizControlPanel() {
             where("classId", "==", classId)
           );
           const assignmentsSnap = await getDocs(q);
+          const firstAssignment = assignmentsSnap.docs[0]?.data();
+          const now = new Date();
+          const startDate = firstAssignment?.startDate ? new Date(firstAssignment.startDate) : null;
+          const dueDate = firstAssignment?.dueDate || firstAssignment?.deadline
+            ? new Date(firstAssignment.dueDate || firstAssignment.deadline)
+            : null;
+
+          if (startDate && now < startDate) {
+            showAlert(
+              "Too Early",
+              `This quiz is scheduled to start at ${startDate.toLocaleString()}.`,
+              "orange"
+            );
+            return;
+          }
+
+          if (dueDate && now > dueDate) {
+            showAlert(
+              "Past Due",
+              `This quiz is past its due date (${dueDate.toLocaleString()}) and can no longer be started.`,
+              "red"
+            );
+            return;
+          }
 
           const updatePromises = assignmentsSnap.docs.map((docSnap) =>
             updateDoc(doc(db, "assignedQuizzes", docSnap.id), {
