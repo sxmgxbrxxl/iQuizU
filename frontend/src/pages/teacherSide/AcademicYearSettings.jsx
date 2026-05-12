@@ -332,10 +332,15 @@ export default function AcademicYearSettings({ user }) {
       <div className="w-full font-Poppins animate-fadeIn">
         <div className="w-full">
           <div className="mb-8">
-            <div className="relative group flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
+            <div className="relative group flex gap-3 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start overflow-hidden">
               <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
-              <h1 className="text-xl md:text-2xl font-bold text-white">Academic Year Settings</h1>
-              <p className="text-white">Manage and archive classes by academic year and semester.</p>
+              <div className="flex items-center gap-3">
+                <CalendarRange className="w-6 h-6 text-white/80" />
+                <h1 className="text-xl md:text-2xl font-bold text-white">Academic Year Settings</h1>
+              </div>
+              <p className="text-white/80 text-sm max-w-lg">
+                Manage and archive classes by academic year and semester. Bulk archive an entire semester or academic year at once.
+              </p>
             </div>
           </div>
           <div className="space-y-4">
@@ -362,17 +367,17 @@ export default function AcademicYearSettings({ user }) {
       <div className="w-full">
         {/* Header */}
         <div className="mb-8">
-          <div className="relative group flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
-            <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
-            <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-              <CalendarRange className="w-6 h-6" />
-              Academic Year Settings
-            </h1>
-            <p className="text-white">
-              Manage and archive classes by academic year and semester. Bulk archive an entire semester or academic year at once.
-            </p>
+            <div className="relative group flex gap-3 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start overflow-hidden">
+              <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+              <div className="flex items-center gap-3">
+                <CalendarRange className="w-6 h-6 text-white/80" />
+                <h1 className="text-xl md:text-2xl font-bold text-white">Academic Year Settings</h1>
+              </div>
+              <p className="text-white/80 text-sm max-w-lg">
+                Manage and archive classes by academic year and semester. Bulk archive an entire semester or academic year at once.
+              </p>
+            </div>
           </div>
-        </div>
 
         {/* Info Banner */}
         <div className="flex items-start gap-3 p-4 mb-6 bg-blue-50 border border-blue-200 rounded-xl animate-slideIn">
