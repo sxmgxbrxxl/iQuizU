@@ -158,13 +158,14 @@ export default function ArchivedQuizzes({ user }) {
       <div className="w-full font-Poppins animate-fadeIn">
         <div className="w-full">
           {/* Header */}
-          <div className="mb-8 flex flex-col">
-            <div className="relative group flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
-               {/*BLOBBBB */}
+          <div className="mb-8">
+            <div className="relative group flex gap-3 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start overflow-hidden">
               <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
-
-              <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">Archived Quizzes</h1>
-                <p className="text-white">
+              <div className="flex items-center gap-3">
+                <Archive className="w-6 h-6 text-white/80" />
+                <h1 className="text-xl md:text-2xl font-bold text-white">Archived Quizzes</h1>
+              </div>
+              <p className="text-white/80 text-sm max-w-lg">
                 Manage your archived quizzes. You can restore or permanently delete them.
               </p>
             </div>
@@ -220,17 +221,18 @@ export default function ArchivedQuizzes({ user }) {
     <div className="w-full font-Poppins animate-fadeIn">
       <div className="w-full">
         {/* Header */}
-        <div className="mb-8">
-          <div className="relative group flex gap-3 mb-2 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start">
-            {/*BLOBBBB */}
-            <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
-
-            <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">Archived Quizzes</h1>
-              <p className="text-white">
+          <div className="mb-8">
+            <div className="relative group flex gap-3 bg-blue-600 p-10 rounded-3xl w-full flex-col items-start overflow-hidden">
+              <div className="absolute -top-16 -right-16 w-64 h-64 bg-white rounded-full opacity-10 transition-transform group-hover:scale-110 pointer-events-none" />
+              <div className="flex items-center gap-3">
+                <Archive className="w-6 h-6 text-white/80" />
+                <h1 className="text-xl md:text-2xl font-bold text-white">Archived Quizzes</h1>
+              </div>
+              <p className="text-white/80 text-sm max-w-lg">
                 Manage your archived quizzes. You can restore or permanently delete them.
               </p>
+            </div>
           </div>
-        </div>
 
         {/* Quizzes Grid */}
         {archivedQuizzes.length === 0 ? (
