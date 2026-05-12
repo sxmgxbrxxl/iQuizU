@@ -436,7 +436,7 @@ export default function LoginPage() {
           {/* Login Identifier */}
           <div className="mb-4">
             <label className="block text-gray-700 mb-2" htmlFor="loginInput">
-              Student Number or Email
+              Account ID
             </label>
             <input
               value={loginInput}
@@ -444,7 +444,7 @@ export default function LoginPage() {
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               type="text"
               id="loginInput"
-              placeholder="Enter your student number or email"
+              placeholder="Enter your account ID"
               required
               disabled={loading}
               autoComplete="username"

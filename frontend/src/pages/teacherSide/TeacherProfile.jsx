@@ -529,7 +529,7 @@ export default function TeacherProfile({ user, userDoc }) {
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value.replace(/[^a-zA-Z\s\-'.ÑñÁáÉéÍíÓóÚú]/g, ""))}
                                         className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
-                                        maxLength={70}
+                                        maxLength={50}
                                     />
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 sm:items-center">
@@ -539,7 +539,6 @@ export default function TeacherProfile({ user, userDoc }) {
                                         onChange={(e) => setDepartment(e.target.value)}
                                         className="border border-gray-200 p-2.5 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition bg-white"
                                     >
-                                        <option value="">— Select Department —</option>
                                         {departmentsList.map((dept) => (
                                             <option key={dept.id} value={dept.name}>
                                                 {dept.name}
