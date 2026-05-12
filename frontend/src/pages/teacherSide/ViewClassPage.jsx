@@ -1459,7 +1459,7 @@ export default function ViewClassPage() {
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2">
                               <button onClick={() => navigate(`/teacher/quiz-control/${a.quizId}/${a.classId}`)} className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm font-semibold flex items-center gap-1">
-                                <Zap className="w-4 h-4" /> Control
+                                <Zap className="w-4 h-4" /> Manage
                               </button>
                               <button onClick={() => navigate(`/teacher/assign-quiz-to-class/${a.quizId}/${a.classId}`)} className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm font-semibold flex items-center gap-1">
                                 <Pen className="w-4 h-4" />
@@ -1497,7 +1497,7 @@ export default function ViewClassPage() {
                       </div>
                       <div className="mt-3 flex gap-2">
                         <button onClick={() => navigate(`/teacher/quiz-control/${a.quizId}/${a.classId}`)} className="flex-1 px-3 py-2 bg-yellow-600 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1">
-                          <Zap className="w-3.5 h-3.5" /> Control
+                          <Zap className="w-3.5 h-3.5" /> Manage
                         </button>
                         <button onClick={() => navigate(`/teacher/assign-quiz-to-class/${a.quizId}/${a.classId}`)} className="px-3 py-2 bg-gray-600 text-white rounded-lg text-xs font-semibold">
                           <Pen className="w-3.5 h-3.5" />

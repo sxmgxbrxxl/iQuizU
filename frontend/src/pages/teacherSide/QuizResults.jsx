@@ -336,11 +336,15 @@ export default function QuizResults() {
     setShowReschedModal(true);
   };
 
-  const handleGrantRetake = async () => {
-    if (!retakeDeadline) {
-      showToast("warning", "Missing Deadline", "Please select a deadline for the retake");
-      return;
-    }
+ const handleGrantRetake = async () => {
+  if (!retakeDeadline) {
+    showToast("warning", "Missing Deadline", "Please select a deadline for the retake");
+    return;
+  }
+  if (new Date(retakeDeadline) <= new Date()) {
+    showToast("error", "Invalid Time", "Selected time has already passed. Please choose a later time.");
+    return;
+  }
 
     setActionLoading(true);
     try {
@@ -415,11 +419,15 @@ export default function QuizResults() {
     }
   };
 
-  const handleReschedule = async () => {
-    if (!reschedDeadline) {
-      showToast("warning", "Missing Deadline", "Please select a new deadline");
-      return;
-    }
+ const handleReschedule = async () => {
+  if (!reschedDeadline) {
+    showToast("warning", "Missing Deadline", "Please select a new deadline");
+    return;
+  }
+  if (new Date(reschedDeadline) <= new Date()) {
+    showToast("error", "Invalid Time", "Selected time has already passed. Please choose a later time.");
+    return;
+  }
 
     setActionLoading(true);
     try {
@@ -559,6 +567,13 @@ export default function QuizResults() {
   }
 
   const stats = calculateStats();
+
+  const getLocalDateTimeMin = () => {
+  const now = new Date();
+  const offset = now.getTimezoneOffset(); // in minutes
+  const localDate = new Date(now.getTime() - offset * 60000);
+  return localDate.toISOString().slice(0, 16);
+};
 
   // ─── Sorting Logic ───
   const handleSort = (key) => {
@@ -1423,15 +1438,25 @@ export default function QuizResults() {
             </p>
 
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Set New Deadline</label>
-              <input
-                type="datetime-local"
-                value={retakeDeadline}
-                onChange={(e) => setRetakeDeadline(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">Set New Deadline</label>
+  <input
+    type="datetime-local"
+    value={retakeDeadline}
+    onChange={(e) => setRetakeDeadline(e.target.value)}
+    min={getLocalDateTimeMin()}
+    className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none transition-colors ${
+      retakeDeadline && new Date(retakeDeadline) <= new Date()
+        ? "border-red-400 focus:border-red-500 bg-red-50"
+        : "border-gray-300 focus:border-blue-600"
+    }`}
+  />
+  {retakeDeadline && new Date(retakeDeadline) <= new Date() && (
+    <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1">
+      <AlertCircle className="w-3 h-3" />
+      Selected time has already passed. Please choose a later time.
+    </p>
+  )}
+</div>
 
             <div className="flex gap-3">
               <button
@@ -1444,7 +1469,7 @@ export default function QuizResults() {
               <button
                 onClick={handleGrantRetake}
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                disabled={actionLoading}
+                disabled={actionLoading || (!!retakeDeadline && new Date(retakeDeadline) <= new Date())}
               >
                 {actionLoading ? (
                   <>
@@ -1479,15 +1504,25 @@ export default function QuizResults() {
             </p>
 
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Set Extended Deadline</label>
-              <input
-                type="datetime-local"
-                value={reschedDeadline}
-                onChange={(e) => setReschedDeadline(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">Set Extended Deadline</label>
+  <input
+    type="datetime-local"
+    value={reschedDeadline}
+    onChange={(e) => setReschedDeadline(e.target.value)}
+    min={getLocalDateTimeMin()}
+    className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none transition-colors ${
+      reschedDeadline && new Date(reschedDeadline) <= new Date()
+        ? "border-red-400 focus:border-red-500 bg-red-50"
+        : "border-gray-300 focus:border-blue-600"
+    }`}
+  />
+  {reschedDeadline && new Date(reschedDeadline) <= new Date() && (
+    <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1">
+      <AlertCircle className="w-3 h-3" />
+      Selected time has already passed. Please choose a later time.
+    </p>
+  )}
+</div>
 
             <div className="flex gap-3">
               <button
@@ -1500,7 +1535,7 @@ export default function QuizResults() {
               <button
                 onClick={handleReschedule}
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                disabled={actionLoading}
+                disabled={actionLoading || (!!reschedDeadline && new Date(reschedDeadline) <= new Date())}
               >
                 {actionLoading ? (
                   <>

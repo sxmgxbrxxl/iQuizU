@@ -975,53 +975,90 @@ export default function ManageQuizzes() {
     const hotsTotal = counts.analysis + counts.evaluation + counts.creating;
     const total = lotsTotal + hotsTotal;
 
-    const exportToCSV = () => {
-      const lotsPercent = total > 0 ? ((lotsTotal / total) * 100).toFixed(0) : 0;
-      const hotsPercent = total > 0 ? ((hotsTotal / total) * 100).toFixed(0) : 0;
+    const exportToPDF = () => {
+  const lotsPercent = total > 0 ? ((lotsTotal / total) * 100).toFixed(0) : 0;
+  const hotsPercent = total > 0 ? ((hotsTotal / total) * 100).toFixed(0) : 0;
 
-      // Create a CSV layout that matches the HTML table visually
-      const rows = [
-        ["Table of Specifications"],
-        [], // Empty row for spacing
-        // Header Row 1
-        ["TOPIC", `LOTS (${lotsPercent}%)`, "", "", `HOTS (${hotsPercent}%)`, "", "", "TOTAL"],
-        // Header Row 2
-        ["", "Recalling", "Comprehending", "Applying", "Analyzing", "Evaluating", "Synthesizing or Creating", ""],
-        // Data Row
-        [
-          title || "Quiz",
-          counts.remembering,
-          counts.understanding,
-          counts.application,
-          counts.analysis,
-          counts.evaluation,
-          counts.creating,
-          total
-        ],
-        // Total Row
-        [
-          "TOTAL",
-          counts.remembering,
-          counts.understanding,
-          counts.application,
-          counts.analysis,
-          counts.evaluation,
-          counts.creating,
-          total
-        ]
-      ];
-
-      const csvContent = rows.map(row => row.map(v => `"${v}"`).join(",")).join("\\n");
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `${title || "Quiz"}_TOS.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${title || 'Quiz'} - Table of Specifications</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 30px; }
+        h2 { text-align: center; margin-bottom: 24px; font-size: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 10px 12px; text-align: center; }
+        th { font-weight: bold; }
+        .lots-header { background-color: #eff6ff; }
+        .hots-header { background-color: #f5f3ff; }
+        .sub-header { background-color: #f9fafb; font-size: 12px; color: #555; }
+        .topic-col { text-align: left; }
+        .total-row { font-weight: bold; background-color: #f9fafb; }
+        .lots-total { color: #2563eb; font-weight: bold; }
+        .hots-total { color: #7c3aed; font-weight: bold; }
+        @media print {
+          body { padding: 15px; }
+          @page { margin: 1cm; }
+        }
+      </style>
+    </head>
+    <body>
+      <h2>Table of Specifications</h2>
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2" class="topic-col">TOPIC</th>
+            <th colspan="3" class="lots-header">LOTS (${lotsPercent}%)</th>
+            <th colspan="3" class="hots-header">HOTS (${hotsPercent}%)</th>
+            <th rowspan="2">TOTAL</th>
+          </tr>
+          <tr class="sub-header">
+            <th>Recalling</th>
+            <th>Comprehending</th>
+            <th>Applying</th>
+            <th>Analyzing</th>
+            <th>Evaluating</th>
+            <th>Synthesizing or Creating</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="topic-col">${title || 'Quiz'}</td>
+            <td>${counts.remembering}</td>
+            <td>${counts.understanding}</td>
+            <td>${counts.application}</td>
+            <td>${counts.analysis}</td>
+            <td>${counts.evaluation}</td>
+            <td>${counts.creating}</td>
+            <td><strong>${total}</strong></td>
+          </tr>
+          <tr class="total-row">
+            <td style="text-align:right">TOTAL</td>
+            <td class="lots-total">${counts.remembering}</td>
+            <td class="lots-total">${counts.understanding}</td>
+            <td class="lots-total">${counts.application}</td>
+            <td class="hots-total">${counts.analysis}</td>
+            <td class="hots-total">${counts.evaluation}</td>
+            <td class="hots-total">${counts.creating}</td>
+            <td>${total}</td>
+          </tr>
+        </tbody>
+      </table>
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+            window.close();
+          }, 300);
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 overflow-x-auto">
@@ -1029,13 +1066,13 @@ export default function ManageQuizzes() {
           <div className="w-24"></div> {/* Spacer to center the title */}
           <h3 className="text-xl font-bold text-gray-800 text-center">Table of Specifications</h3>
           <button
-            onClick={exportToCSV}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium text-sm shadow-sm"
-            title="Export to CSV (Excel compatible)"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </button>
+  onClick={exportToPDF}
+  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium text-sm shadow-sm"
+  title="Export as PDF"
+>
+  <Download className="w-4 h-4" />
+  Export PDF
+</button>
         </div>
         <table className="w-full text-sm text-center border-collapse border border-gray-300">
           <thead className="bg-gray-100">
