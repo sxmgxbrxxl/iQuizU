@@ -975,89 +975,85 @@ export default function ManageQuizzes() {
     const hotsTotal = counts.analysis + counts.evaluation + counts.creating;
     const total = lotsTotal + hotsTotal;
 
-    const exportToPDF = () => {
-  const lotsPercent = total > 0 ? ((lotsTotal / total) * 100).toFixed(0) : 0;
-  const hotsPercent = total > 0 ? ((hotsTotal / total) * 100).toFixed(0) : 0;
+const exportToPDF = () => {
+  const loadScript = (src) =>
+    new Promise((resolve) => {
+      // If already loaded, resolve immediately
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      document.head.appendChild(script);
+    });
 
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${title || 'Quiz'} - Table of Specifications</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 30px; }
-        h2 { text-align: center; margin-bottom: 24px; font-size: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { border: 1px solid #ccc; padding: 10px 12px; text-align: center; }
-        th { font-weight: bold; }
-        .lots-header { background-color: #eff6ff; }
-        .hots-header { background-color: #f5f3ff; }
-        .sub-header { background-color: #f9fafb; font-size: 12px; color: #555; }
-        .topic-col { text-align: left; }
-        .total-row { font-weight: bold; background-color: #f9fafb; }
-        .lots-total { color: #2563eb; font-weight: bold; }
-        .hots-total { color: #7c3aed; font-weight: bold; }
-        @media print {
-          body { padding: 15px; }
-          @page { margin: 1cm; }
-        }
-      </style>
-    </head>
-    <body>
-      <h2>Table of Specifications</h2>
-      <table>
-        <thead>
-          <tr>
-            <th rowspan="2" class="topic-col">TOPIC</th>
-            <th colspan="3" class="lots-header">LOTS (${lotsPercent}%)</th>
-            <th colspan="3" class="hots-header">HOTS (${hotsPercent}%)</th>
-            <th rowspan="2">TOTAL</th>
-          </tr>
-          <tr class="sub-header">
-            <th>Recalling</th>
-            <th>Comprehending</th>
-            <th>Applying</th>
-            <th>Analyzing</th>
-            <th>Evaluating</th>
-            <th>Synthesizing or Creating</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="topic-col">${title || 'Quiz'}</td>
-            <td>${counts.remembering}</td>
-            <td>${counts.understanding}</td>
-            <td>${counts.application}</td>
-            <td>${counts.analysis}</td>
-            <td>${counts.evaluation}</td>
-            <td>${counts.creating}</td>
-            <td><strong>${total}</strong></td>
-          </tr>
-          <tr class="total-row">
-            <td style="text-align:right">TOTAL</td>
-            <td class="lots-total">${counts.remembering}</td>
-            <td class="lots-total">${counts.understanding}</td>
-            <td class="lots-total">${counts.application}</td>
-            <td class="hots-total">${counts.analysis}</td>
-            <td class="hots-total">${counts.evaluation}</td>
-            <td class="hots-total">${counts.creating}</td>
-            <td>${total}</td>
-          </tr>
-        </tbody>
-      </table>
-      <script>
-        window.onload = function() {
-          setTimeout(function() {
-            window.print();
-            window.close();
-          }, 300);
-        };
-      <\/script>
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
+  // Sequential load: jsPDF first, then autoTable plugin
+  loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+    .then(() => loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'))
+    .then(() => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+
+      const lotsPercent = total > 0 ? ((lotsTotal / total) * 100).toFixed(0) : 0;
+      const hotsPercent = total > 0 ? ((hotsTotal / total) * 100).toFixed(0) : 0;
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Table of Specifications', doc.internal.pageSize.getWidth() / 2, 16, { align: 'center' });
+
+      doc.autoTable({
+        startY: 24,
+        head: [
+          [
+            { content: 'TOPIC',                      rowSpan: 2, styles: { halign: 'left',   valign: 'middle', fontStyle: 'bold', fillColor: [255,255,255], textColor: [0,0,0] } },
+            { content: `LOTS (${lotsPercent}%)`,     colSpan: 3, styles: { halign: 'center', fillColor: [239,246,255], textColor: [37,99,235],  fontStyle: 'bold' } },
+            { content: `HOTS (${hotsPercent}%)`,     colSpan: 3, styles: { halign: 'center', fillColor: [245,243,255], textColor: [124,58,237], fontStyle: 'bold' } },
+            { content: 'TOTAL',                      rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fillColor: [255,255,255], textColor: [0,0,0] } },
+          ],
+          [
+            { content: 'Recalling',                  styles: { halign: 'center', fillColor: [249,250,251], textColor: [80,80,80], fontSize: 9 } },
+            { content: 'Comprehending',              styles: { halign: 'center', fillColor: [249,250,251], textColor: [80,80,80], fontSize: 9 } },
+            { content: 'Applying',                   styles: { halign: 'center', fillColor: [249,250,251], textColor: [80,80,80], fontSize: 9 } },
+            { content: 'Analyzing',                  styles: { halign: 'center', fillColor: [249,250,251], textColor: [80,80,80], fontSize: 9 } },
+            { content: 'Evaluating',                 styles: { halign: 'center', fillColor: [249,250,251], textColor: [80,80,80], fontSize: 9 } },
+            { content: 'Synthesizing\nor Creating',  styles: { halign: 'center', fillColor: [249,250,251], textColor: [80,80,80], fontSize: 9 } },
+          ],
+        ],
+        body: [
+          [
+            { content: title || 'Quiz',          styles: { halign: 'left',   fillColor: [255,255,255], textColor: [0,0,0] } },
+            { content: counts.remembering,        styles: { halign: 'center', fillColor: [255,255,255] } },
+            { content: counts.understanding,      styles: { halign: 'center', fillColor: [255,255,255] } },
+            { content: counts.application,        styles: { halign: 'center', fillColor: [255,255,255] } },
+            { content: counts.analysis,           styles: { halign: 'center', fillColor: [255,255,255] } },
+            { content: counts.evaluation,         styles: { halign: 'center', fillColor: [255,255,255] } },
+            { content: counts.creating,           styles: { halign: 'center', fillColor: [255,255,255] } },
+            { content: total, styles: { halign: 'center', fontStyle: 'bold', fillColor: [255,255,255] } },
+          ],
+          [
+            { content: 'TOTAL',                   styles: { halign: 'left',   fontStyle: 'bold', fillColor: [249,250,251], textColor: [0,0,0] } },
+            { content: counts.remembering,        styles: { halign: 'center', fontStyle: 'bold', textColor: [37,99,235],  fillColor: [249,250,251] } },
+            { content: counts.understanding,      styles: { halign: 'center', fontStyle: 'bold', textColor: [37,99,235],  fillColor: [249,250,251] } },
+            { content: counts.application,        styles: { halign: 'center', fontStyle: 'bold', textColor: [37,99,235],  fillColor: [249,250,251] } },
+            { content: counts.analysis,           styles: { halign: 'center', fontStyle: 'bold', textColor: [124,58,237], fillColor: [249,250,251] } },
+            { content: counts.evaluation,         styles: { halign: 'center', fontStyle: 'bold', textColor: [124,58,237], fillColor: [249,250,251] } },
+            { content: counts.creating,           styles: { halign: 'center', fontStyle: 'bold', textColor: [124,58,237], fillColor: [249,250,251] } },
+            { content: total, styles: { halign: 'center', fontStyle: 'bold', fillColor: [249,250,251], textColor: [0,0,0] } },
+          ],
+        ],
+        styles: { fontSize: 11, cellPadding: 6, valign: 'middle', lineColor: [200,200,200], lineWidth: 0.3 },
+        headStyles: { fontStyle: 'bold', lineColor: [200,200,200], lineWidth: 0.3 },
+        theme: 'grid',
+        columnStyles: {
+          0: { cellWidth: 40 },
+          7: { cellWidth: 30 },
+        },
+      });
+
+      doc.save(`${title || 'Quiz'}_Table_of_Specifications.pdf`);
+    });
 };
 
     return (
