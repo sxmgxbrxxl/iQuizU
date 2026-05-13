@@ -425,8 +425,8 @@ export default function ArchivedClasses({ user }) {
 
       {/* ── Delete confirmation modal ── */}
       {mounted && showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm font-Poppins">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-96 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm font-Poppins animate-overlayFade">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-96 text-center animate-popIn">
             <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-6 h-6 text-red-600" />
             </div>
